@@ -10,7 +10,7 @@ def planck_tapering_function(x: jax.Array, x_min: float, delta: float) -> jax.Ar
     """Planck tapering function to smoothly transition between 0 and 1.
 
     References:
-        - GWTC-4.0: Population Properties of Merging Compact Binaries: https://arxiv.org/abs/2508.18083
+    - GWTC-4.0: Population Properties of Merging Compact Binaries: https://arxiv.org/abs/2508.18083
 
     Args:
         x: The input value.
