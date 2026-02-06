@@ -10,10 +10,9 @@ def planck_tapering_function(x: jax.Array, x_min: float, delta: float) -> jax.Ar
     """Planck tapering function to smoothly transition between 0 and 1.
 
     Args:
-        x (float): The input value.
-        x_min (float): The minimum value of the transition region.
-        x_max (float): The maximum value of the transition region.
-        delta (float): The width of the transition region.
+        x: The input value.
+        x_min: The minimum value of the transition region.
+        delta: The width of the transition region.
 
     Returns:
         An array with the value of the tapering function at x.
