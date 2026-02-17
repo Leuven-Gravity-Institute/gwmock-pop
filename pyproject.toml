@@ -4,51 +4,49 @@ build-backend = "hatchling.build"
 
 [project]
 name = "gwsim_pop"
-authors = [{ name = "Isaac C. F. Wong"}]
+authors = [{ name = "Isaac C. F. Wong" }]
 description = "A python package for simulating populations of gravitational-wave sources."
 readme = "README.md"
 classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
 ]
 requires-python = ">=3.10"
 dynamic = ["version"]
-dependencies = [
-    "typer",
-]
+dependencies = ["typer", "jax"]
 
 [project.optional-dependencies]
 test = [
-    "bandit[toml]==1.9.3",
-    "black==26.1.0",
-    "check-manifest==0.51",
-    "flake8-bugbear==25.11.29",
-    "flake8-docstrings",
-    "flake8-formatter_junit_xml",
-    "flake8",
-    "flake8-pyproject",
-    "pre-commit==4.5.1",
-    "pytest-cov==7.0.0",
-    "pytest-mock<3.15.2",
-    "pytest-runner",
-    "pytest==9.0.2",
-    "pytest-github-actions-annotate-failures",
-    "shellcheck-py==0.11.0.1",
+  "bandit[toml]==1.9.3",
+  "black==26.1.0",
+  "check-manifest==0.51",
+  "flake8-bugbear==25.11.29",
+  "flake8-docstrings",
+  "flake8-formatter_junit_xml",
+  "flake8",
+  "flake8-pyproject",
+  "pre-commit==4.5.1",
+  "pytest-cov==7.0.0",
+  "pytest-mock<3.15.2",
+  "pytest-runner",
+  "pytest==9.0.2",
+  "pytest-github-actions-annotate-failures",
+  "shellcheck-py==0.11.0.1",
 ]
 dev = ["pytest", "pre-commit", "black", "flake8"]
 docs = [
-    "mkdocs",
-    "mkdocs-material",
-    "mkdocstrings[python]",
-    "mkdocs-gen-files",
-    "mkdocs-literate-nav",
-    "mkdocs-section-index",
-    "mike",
+  "mkdocs",
+  "mkdocs-material",
+  "mkdocstrings[python]",
+  "mkdocs-gen-files",
+  "mkdocs-literate-nav",
+  "mkdocs-section-index",
+  "mike",
 ]
 
 [project.scripts]
@@ -87,16 +85,16 @@ fail_under = 0
 max-line-length = 120
 select = "F,E,W,B,B901,B902,B903"
 exclude = [
-    ".eggs",
-    ".git",
-    ".tox",
-    "nssm",
-    "obj",
-    "out",
-    "packages",
-    "pywin32",
-    "tests",
-    "swagger_client",
+  ".eggs",
+  ".git",
+  ".tox",
+  "nssm",
+  "obj",
+  "out",
+  "packages",
+  "pywin32",
+  "tests",
+  "swagger_client",
 ]
 ignore = ["E722", "B001", "W503", "E203"]
 
@@ -119,12 +117,12 @@ pythonpath = ["src"]
 testpaths = "tests"
 junit_family = "xunit2"
 markers = [
-    "integration: marks as integration test",
-    "notebooks: marks as notebook test",
-    "gpu: marks as gpu test",
-    "spark: marks tests which need Spark",
-    "slow: marks tests as slow",
-    "unit: fast offline tests",
+  "integration: marks as integration test",
+  "notebooks: marks as notebook test",
+  "gpu: marks as gpu test",
+  "spark: marks tests which need Spark",
+  "slow: marks tests as slow",
+  "unit: fast offline tests",
 ]
 
 [tool.tox]
@@ -161,27 +159,27 @@ commands =
 line-length = 120 # Matches Black's default
 target-version = "py310" # Align with CI (3.10–3.12) and requires-python (>=3.10)
 lint.extend-select = [
-    "E",
-    "F",
-    "W",   # pycodestyle errors and warnings
-    "I",   # isort rules
-    "UP",  # pyupgrade rules
-    "C90", # McCabe complexity
-    "N",   # PEP8 naming
-    "B",   # Bugbear (opinionated checks)
-    "A",   # Flake8-builtins
-    "C4",  # Flake8-comprehensions
-    "PT",  # Flake8-pytest
-    "RUF", # Ruff-specific rules
-    "PL",  # Add pylint rules for fuller coverage
-    "SIM",  # Similarities
-    "T10",  # Debugger statements
-    "DOC", # Docstring
-    "D",   # Doc style
+  "E",
+  "F",
+  "W",   # pycodestyle errors and warnings
+  "I",   # isort rules
+  "UP",  # pyupgrade rules
+  "C90", # McCabe complexity
+  "N",   # PEP8 naming
+  "B",   # Bugbear (opinionated checks)
+  "A",   # Flake8-builtins
+  "C4",  # Flake8-comprehensions
+  "PT",  # Flake8-pytest
+  "RUF", # Ruff-specific rules
+  "PL",  # Add pylint rules for fuller coverage
+  "SIM", # Similarities
+  "T10", # Debugger statements
+  "DOC", # Docstring
+  "D",   # Doc style
 ]
 lint.ignore = [
-    "E501", # Line length (handled by formatter)
-    "C901", # Disable overly strict complexity checks (optional, adjust as needed)
+  "E501", # Line length (handled by formatter)
+  "C901", # Disable overly strict complexity checks (optional, adjust as needed)
 ]
 fix = true # Enable autofix
 lint.unfixable = [] # List rules that should not be autofixed, if any
