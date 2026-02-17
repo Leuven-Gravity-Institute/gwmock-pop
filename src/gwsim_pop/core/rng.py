@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import os
+import secrets
 from pathlib import Path
 from typing import cast
 
@@ -15,18 +15,40 @@ from jax._src.prng import PRNGKeyArray
 class RNGManager:
     """Manager for random number generation with state persistence."""
 
-    _key: PRNGKeyArray = cast(PRNGKeyArray, jax.random.key(int.from_bytes(os.urandom(4), "big")))
-
     def __init__(self, seed: int | None = None) -> None:
         """Initialize the RNG manager.
 
         Args:
-            seed: Random seed. If None, uses system entropy.
+            seed: Random seed. If None, draw a random integer between [0, 2**63).
 
         """
         self._seed = seed
-        if seed is not None:
-            self._key = cast(PRNGKeyArray, jax.random.key(seed))
+        self._key = cast(typ=PRNGKeyArray, val=jax.random.key(secrets.randbelow(2**63) if seed is None else seed))
+
+    def __repr__(self) -> str:
+        """Return the string representation.
+
+        Returns:
+            String representation.
+
+        """
+        return f"RNGManager(seed={self._seed})"
+
+    def __enter__(self) -> RNGManager:
+        """Enter the context manager.
+
+        Use the context manager when keeping the initial state of the RNG is preferred.
+
+        Returns:
+            RNGManager.
+
+        """
+        self._saved_key = self._key
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Exit the context manager."""
+        self._key = self._saved_key
 
     @property
     def key(self) -> PRNGKeyArray:
@@ -79,6 +101,20 @@ class RNGManager:
 
         """
         self._key = jax.random.wrap_key_data(value)
+
+    @property
+    def new_key(self) -> PRNGKeyArray:
+        """Get a new key.
+
+        The internal key is updated to the new key.
+
+        Returns:
+            A new key.
+
+        """
+        _, sub_key = jax.random.split(key=self._key)
+        self._key = cast(typ=PRNGKeyArray, val=sub_key)
+        return sub_key
 
     def save_key(self, path: str | Path) -> None:
         """Save RNG key to file.

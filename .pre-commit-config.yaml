@@ -56,26 +56,6 @@ repos:
         args: [--fix, --config=pyproject.toml]
         stages: [pre-commit]
 
-  - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 26.1.0 # Matches pyproject.toml
-    hooks:
-      - id: black
-        args: [--config=pyproject.toml]
-        stages: [pre-commit]
-
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.21.2
-    hooks:
-      - id: pyupgrade
-        args: [--py39-plus]
-        stages: [pre-commit]
-
-  - repo: https://github.com/hadialqattan/pycln
-    rev: v2.6.0
-    hooks:
-      - id: pycln
-        stages: [pre-commit]
-
   - repo: https://github.com/streetsidesoftware/cspell-cli
     rev: v9.6.0 # Keep this version or update to the latest stable
     hooks:
