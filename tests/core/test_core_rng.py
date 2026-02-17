@@ -222,7 +222,7 @@ class TestRNGManager:
         """Test key setter raises ValueError with invalid type."""
         rng = RNGManager(seed=789)
 
-        with pytest.raises(ValueError, match="value = invalid"):
+        with pytest.raises(ValueError, match=r"value has to be jax.Array."):
             rng.key = "invalid"
 
     def test_key_data_property_getter(self) -> None:

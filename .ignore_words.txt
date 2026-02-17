@@ -72,3 +72,4 @@ urandom
 maxval
 minval
 subkey
+dtype

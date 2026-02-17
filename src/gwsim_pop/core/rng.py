@@ -9,7 +9,6 @@ from typing import cast
 import jax
 import jax.numpy as jnp
 from jax import Array
-from jax._src.prng import PRNGKeyArray
 
 
 class RNGManager:
@@ -23,7 +22,7 @@ class RNGManager:
 
         """
         self._seed = seed
-        self._key = cast(typ=PRNGKeyArray, val=jax.random.key(secrets.randbelow(2**63) if seed is None else seed))
+        self._key = jax.random.key(secrets.randbelow(2**63) if seed is None else seed)
 
     def __repr__(self) -> str:
         """Return the string representation.
@@ -51,7 +50,7 @@ class RNGManager:
         self._key = self._saved_key
 
     @property
-    def key(self) -> PRNGKeyArray:
+    def key(self) -> Array:
         """Get the random number generator key.
 
         Returns:
@@ -61,7 +60,7 @@ class RNGManager:
         return self._key
 
     @key.setter
-    def key(self, value: PRNGKeyArray | Array) -> None:
+    def key(self, value: Array) -> None:
         """Set the random number generator key.
 
         Args:
@@ -73,12 +72,15 @@ class RNGManager:
             ValueError: If the value is neither a PRNGKeyArray nor a jax.Array.
 
         """
-        if isinstance(value, PRNGKeyArray):
+        if not isinstance(value, Array):
+            raise ValueError("value has to be jax.Array.")
+        value_dtype_str = str(value.dtype)
+        if value_dtype_str == "key<fry>":
             self._key = value
-        elif isinstance(value, jax.Array):
-            self._key = cast(PRNGKeyArray, jax.random.wrap_key_data(value))
+        elif value_dtype_str == "uint32":
+            self._key = jax.random.wrap_key_data(value)
         else:
-            raise ValueError(f"value = {value} has to be either a PRNGKeyArray or a jax Array.")
+            raise ValueError(f"Expected dtype of value={value_dtype_str}.")
 
     @property
     def key_data(self) -> Array:
@@ -103,7 +105,7 @@ class RNGManager:
         self._key = jax.random.wrap_key_data(value)
 
     @property
-    def new_key(self) -> PRNGKeyArray:
+    def new_key(self) -> Array:
         """Get a new key.
 
         The internal key is updated to the new key.
@@ -113,7 +115,7 @@ class RNGManager:
 
         """
         _, sub_key = jax.random.split(key=self._key)
-        self._key = cast(typ=PRNGKeyArray, val=sub_key)
+        self._key = cast(Array, sub_key)
         return sub_key
 
     def save_key(self, path: str | Path) -> None:
