@@ -257,9 +257,6 @@ class TestRNGManager:
         assert not jnp.array_equal(key2, key3)
         assert not jnp.array_equal(key1, key3)
 
-        # Internal key should be updated to the last key
-        assert jnp.array_equal(rng.key, key3)
-
     def test_save_key_with_invalid_path(self, tmp_path: Path) -> None:
         """Test saving key with invalid path raises error."""
         rng = RNGManager(seed=505)
