@@ -69,3 +69,6 @@ tkinter
 venv
 xunit
 urandom
+maxval
+minval
+subkey
