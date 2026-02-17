@@ -22,6 +22,7 @@ class RNGManager:
         """
         self._seed = seed
         self._key = jax.random.key(secrets.randbelow(2**63) if seed is None else seed)
+        self._saved_keys: list[Array] = []
 
     def __repr__(self) -> str:
         """Return the string representation.
@@ -41,12 +42,12 @@ class RNGManager:
             RNGManager.
 
         """
-        self._saved_key = self._key
+        self._saved_keys.append(self._key)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Exit the context manager."""
-        self._key = self._saved_key
+        self._key = self._saved_keys.pop()
 
     @property
     def key(self) -> Array:
