@@ -64,12 +64,12 @@ class RNGManager:
         """Set the random number generator key.
 
         Args:
-            value: The new key value, which can be either a jax._src.prng.PRNGKeyArray
-                or a jax.Array. If a jax.Array is provided, it will be wrapped into
-                a PRNGKeyArray.
+            value: The new key value as a jax.Array. If the dtype starts with
+                ``key<``, it is used as-is. If the dtype is ``uint32``, it is
+                wrapped into a PRNG key via ``jax.random.wrap_key_data``.
 
         Raises:
-            ValueError: If the value is neither a PRNGKeyArray nor a jax.Array.
+            TypeError: If the value is not a jax.Array or has an unsupported dtype.
 
         """
         if not isinstance(value, Array):
