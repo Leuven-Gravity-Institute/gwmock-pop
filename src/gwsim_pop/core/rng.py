@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import secrets
 from pathlib import Path
-from typing import cast
 
 import jax
 import jax.numpy as jnp
@@ -108,14 +107,11 @@ class RNGManager:
     def new_key(self) -> Array:
         """Get a new key.
 
-        The internal key is updated to the new key.
-
         Returns:
             A new key.
 
         """
-        _, sub_key = jax.random.split(key=self._key)
-        self._key = cast(Array, sub_key)
+        self._key, sub_key = jax.random.split(key=self._key)
         return sub_key
 
     def save_key(self, path: str | Path) -> None:
