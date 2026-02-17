@@ -80,7 +80,7 @@ class RNGManager:
         elif value_dtype_str == "uint32":
             self._key = jax.random.wrap_key_data(value)
         else:
-            raise ValueError(f"Expected dtype of value={value_dtype_str}.")
+            raise TypeError(f"Unexpected dtype of value={value_dtype_str}.")
 
     @property
     def key_data(self) -> Array:
