@@ -75,6 +75,10 @@ nav:
       - Modules:
           - gwsim_pop:
               - Overview: reference/gwsim_pop/index.md
+              - Core:
+                  - Overview: reference/gwsim_pop/core/index.md
+                  - RNG Manager:
+                      - Overview: reference/gwsim_pop/core/rng.md
               - version: reference/gwsim_pop/version.md
               - Utils:
                   - Overview: reference/gwsim_pop/utils/index.md
