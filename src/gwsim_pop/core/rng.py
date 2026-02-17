@@ -75,7 +75,7 @@ class RNGManager:
         if not isinstance(value, Array):
             raise ValueError("value has to be jax.Array.")
         value_dtype_str = str(value.dtype)
-        if value_dtype_str == "key<fry>":
+        if value_dtype_str.startswith("key<"):
             self._key = value
         elif value_dtype_str == "uint32":
             self._key = jax.random.wrap_key_data(value)
