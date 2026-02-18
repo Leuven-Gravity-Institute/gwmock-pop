@@ -99,12 +99,14 @@ repos:
           - id: prettier
             stages: [pre-commit]
 
-    - repo: https://github.com/igorshubovych/markdownlint-cli
-      rev: v0.47.0
+    - repo: https://github.com/DavidAnson/markdownlint-cli2
+      rev: v0.20.0
       hooks:
-          - id: markdownlint
-            args: [--config, .markdownlint.yaml]
+          - id: markdownlint-cli2
             stages: [pre-commit]
+            args:
+                - --config
+                - .markdownlint.yaml
 
     - repo: https://github.com/Yelp/detect-secrets
       rev: v1.5.0 # Use the latest stable version
