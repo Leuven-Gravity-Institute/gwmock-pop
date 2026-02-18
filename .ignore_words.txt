@@ -68,3 +68,9 @@ testpypi
 tkinter
 venv
 xunit
+urandom
+maxval
+minval
+subkey
+dtype
+npy
