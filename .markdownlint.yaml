@@ -3,7 +3,7 @@
 MD013:
     line_length: 120
     # Allow headings to exceed line length
-    heading: false
+    headings: false
     # Allow code blocks to exceed line length
     code_blocks: false
 
@@ -29,16 +29,14 @@ MD033: false
 # to allow flexibility in document structure
 MD041: false
 
-# Enforce consistent quote style
-MD014:
-    style: double
+# Dollar signs used before commands without showing output
+MD014: true
 
 # Disable no-space-in-emphasis to allow flexibility in emphasis formatting
 MD036: false
 
-# Enforce proper list marker style (e.g., - or *)
-MD032:
-    style: dash
+# Lists should be surrounded by blank lines
+MD032: true
 
 MD046:
     style: fenced
