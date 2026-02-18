@@ -1,5 +1,6 @@
 site_name: gwsim_pop Documentation
-site_description: A Python package for simulating populations of gravitational wave sources.
+site_description:
+    A Python package for simulating populations of gravitational wave sources.
 site_url: https://leuven-gravity-institute.github.io/gwsim_pop/
 repo_url: https://github.com/Leuven-Gravity-Institute/gwsim_pop
 repo_name: gwsim_pop

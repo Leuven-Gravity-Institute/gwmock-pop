@@ -14,12 +14,15 @@ A Python package for simulating populations of gravitational-wave sources.
 
 ## Installation
 
-We recommend using `uv` to manage virtual environments for installing `gwsim_pop`.
+We recommend using `uv` to manage virtual environments for installing
+`gwsim_pop`.
 
-If you don't have `uv` installed, you can install it with pip. See the project pages for more details:
+If you don't have `uv` installed, you can install it with pip. See the project
+pages for more details:
 
 - Install via pip: `pip install --upgrade pip && pip install uv`
-- Project pages: [uv on PyPI](https://pypi.org/project/uv/) | [uv on GitHub](https://github.com/astral-sh/uv)
+- Project pages: [uv on PyPI](https://pypi.org/project/uv/) |
+  [uv on GitHub](https://github.com/astral-sh/uv)
 - Full documentation and usage guide: [uv docs](https://docs.astral.sh/uv/)
 
 ### Requirements
@@ -27,10 +30,11 @@ If you don't have `uv` installed, you can install it with pip. See the project p
 - Python 3.10 or higher
 - Operating System: Linux, macOS, or Windows
 
-**Note:** The package is built and tested against Python 3.10-3.12. When creating a virtual environment with `uv`,
-specify the Python version to ensure compatibility:
-`uv venv --python 3.10` (replace `3.10` with your preferred version in the 3.10-3.12 range).
-This avoids potential issues with unsupported Python versions.
+**Note:** The package is built and tested against Python 3.10-3.12. When
+creating a virtual environment with `uv`, specify the Python version to ensure
+compatibility: `uv venv --python 3.10` (replace `3.10` with your preferred
+version in the 3.10-3.12 range). This avoids potential issues with unsupported
+Python versions.
 
 ### Install from PyPI
 
@@ -106,7 +110,8 @@ python -c "import gwsim_pop; print(gwsim_pop.__version__)"
 
 ## Documentation
 
-Full documentation to be available at [https://leuven-gravity-institute.github.io/gwsim_pop](https://leuven-gravity-institute.github.io/gwsim_pop).
+Full documentation to be available at
+[https://leuven-gravity-institute.github.io/gwsim_pop](https://leuven-gravity-institute.github.io/gwsim_pop).
 
 ## Contributing
 
@@ -120,10 +125,9 @@ Contributions are welcome!
 
 ### Release Schedule
 
-Releases follow a fixed schedule: every Tuesday at 00:00 UTC,
-unless an emergent bugfix is required.
-This ensures predictable updates while allowing flexibility for critical issues.
-Users can view upcoming changes in the draft release on the
+Releases follow a fixed schedule: every Tuesday at 00:00 UTC, unless an emergent
+bugfix is required. This ensures predictable updates while allowing flexibility
+for critical issues. Users can view upcoming changes in the draft release on the
 [GitHub Releases page](https://github.com/Leuven-Gravity-Institute/gwsim_pop/releases).
 
 ## Testing
@@ -136,9 +140,11 @@ pytest
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
+for details.
 
 ## Support
 
-For questions or issues, please open an issue on [GitHub](https://github.com/Leuven-Gravity-Institute/gwsim_pop/issues/new)
-or contact the maintainers.
+For questions or issues, please open an issue on
+[GitHub](https://github.com/Leuven-Gravity-Institute/gwsim_pop/issues/new) or
+contact the maintainers.

@@ -88,7 +88,9 @@ jobs:
               uses: actions/cache@v5
               with:
                   path: ~/.cache/pip
-                  key: ${{ runner.os }}-pip-3.10-${{ hashFiles('**/pyproject.toml') }}
+                  key:
+                      ${{ runner.os }}-pip-3.10-${{
+                      hashFiles('**/pyproject.toml') }}
                   restore-keys: |
                       ${{ runner.os }}-pip-3.10-
                       ${{ runner.os }}-pip-

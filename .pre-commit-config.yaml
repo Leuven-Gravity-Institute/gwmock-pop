@@ -113,4 +113,5 @@ repos:
       hooks:
           - id: detect-secrets
             name: Detect secrets within the codebase
-            description: Detect and block secrets from committing to the codebase
+            description:
+                Detect and block secrets from committing to the codebase

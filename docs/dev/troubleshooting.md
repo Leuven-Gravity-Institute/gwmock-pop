@@ -1,6 +1,7 @@
 # Troubleshooting
 
-This guide covers common issues you might encounter when using this package and how to resolve them.
+This guide covers common issues you might encounter when using this package and
+how to resolve them.
 
 ## Setup Issues
 
@@ -101,7 +102,8 @@ This guide covers common issues you might encounter when using this package and 
 
 ### Python Version Mismatch
 
-**Problem:** `python -m venv .venv` fails or tests don't run with wrong Python version.
+**Problem:** `python -m venv .venv` fails or tests don't run with wrong Python
+version.
 
 **Solutions:**
 

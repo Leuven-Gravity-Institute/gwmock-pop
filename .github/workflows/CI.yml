@@ -23,7 +23,9 @@ jobs:
               uses: actions/cache@v5
               with:
                   path: ~/.cache/pip
-                  key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml') }}
+                  key:
+                      ${{ runner.os }}-pip-${{ matrix.python-version }}-${{
+                      hashFiles('**/pyproject.toml') }}
                   restore-keys: |
                       ${{ runner.os }}-pip-${{ matrix.python-version }}-
                       ${{ runner.os }}-pip-
@@ -40,7 +42,10 @@ jobs:
               uses: codecov/codecov-action@v5
 
     codeql:
-        if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_call') }}
+        if:
+            ${{ github.event_name == 'push' || github.event_name ==
+            'pull_request' || github.event_name == 'workflow_dispatch' ||
+            (github.event_name == 'workflow_call') }}
         name: codeql
         runs-on: ubuntu-latest
         permissions:
