@@ -52,8 +52,11 @@ repos:
     - repo: https://github.com/astral-sh/ruff-pre-commit
       rev: v0.15.1
       hooks:
-          - id: ruff
+          - id: ruff-check
             args: [--fix, --config=pyproject.toml]
+            stages: [pre-commit]
+          - id: ruff-format
+            args: [--config=pyproject.toml]
             stages: [pre-commit]
 
     - repo: https://github.com/nikaro/taplo-pre-commit
