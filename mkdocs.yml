@@ -5,107 +5,107 @@ repo_url: https://github.com/Leuven-Gravity-Institute/gwsim_pop
 repo_name: gwsim_pop
 
 theme:
-  name: material
-  palette:
-    - scheme: default
-      primary: blue
-      accent: blue
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
-    - scheme: slate
-      primary: blue
-      accent: blue
-      toggle:
-        icon: material/brightness-4
-        name: Switch to light mode
-  features:
-    - navigation.tabs
-    - navigation.sections
-    - navigation.expand
-    - navigation.top
-    - search.highlight
-    - content.code.copy
+    name: material
+    palette:
+        - scheme: default
+          primary: blue
+          accent: blue
+          toggle:
+              icon: material/brightness-7
+              name: Switch to dark mode
+        - scheme: slate
+          primary: blue
+          accent: blue
+          toggle:
+              icon: material/brightness-4
+              name: Switch to light mode
+    features:
+        - navigation.tabs
+        - navigation.sections
+        - navigation.expand
+        - navigation.top
+        - search.highlight
+        - content.code.copy
 extra_css:
-  - style/api.css
+    - style/api.css
 
 plugins:
-  - search
-  - mkdocstrings:
-      default_handler: python
-      handlers:
-        python:
-          paths: [src]
-          options:
-            show_docstring_attributes: true
-            show_docstring_description: true
-            members_order: source
-            group_by_category: true
-            separate_signature: true
-            docstring_style: google
-            show_source: true
-            show_root_heading: true
-            show_root_full_path: false
-            show_submodules: false
-            show_bases: true
-            show_category_heading: true
-            show_signature: true
-            merge_init_into_class: true
-            show_signature_annotations: true
-            show_symbol_type_heading: true
-            signature_crossrefs: false
-            show_object_full_path: false
-            heading_level: 2
-            filters:
-              - "!^_"
-  - gen-files:
-      scripts:
-        - docs/gen_ref_pages.py
-  - mike:
-      version_selector: true
-      canonical_version: latest
+    - search
+    - mkdocstrings:
+          default_handler: python
+          handlers:
+              python:
+                  paths: [src]
+                  options:
+                      show_docstring_attributes: true
+                      show_docstring_description: true
+                      members_order: source
+                      group_by_category: true
+                      separate_signature: true
+                      docstring_style: google
+                      show_source: true
+                      show_root_heading: true
+                      show_root_full_path: false
+                      show_submodules: false
+                      show_bases: true
+                      show_category_heading: true
+                      show_signature: true
+                      merge_init_into_class: true
+                      show_signature_annotations: true
+                      show_symbol_type_heading: true
+                      signature_crossrefs: false
+                      show_object_full_path: false
+                      heading_level: 2
+                      filters:
+                          - '!^_'
+    - gen-files:
+          scripts:
+              - docs/gen_ref_pages.py
+    - mike:
+          version_selector: true
+          canonical_version: latest
 
 nav:
-  - Home: index.md
-  - Installation: user_guide/installation.md
-  - User Guide:
-      - Quick Start: user_guide/quick_start.md
-  - API Reference:
-      - Overview: reference/index.md
-      - Modules:
-          - gwsim_pop:
-              - Overview: reference/gwsim_pop/index.md
-              - Core:
-                  - Overview: reference/gwsim_pop/core/index.md
-                  - RNG Manager:
-                      - Overview: reference/gwsim_pop/core/rng.md
-              - version: reference/gwsim_pop/version.md
-              - Utils:
-                  - Overview: reference/gwsim_pop/utils/index.md
-                  - Logging: reference/gwsim_pop/utils/log.md
-  - Developer Guide:
-      - Contributing: CONTRIBUTING.md
-  - Security: SECURITY.md
-  - Troubleshooting: dev/troubleshooting.md
+    - Home: index.md
+    - Installation: user_guide/installation.md
+    - User Guide:
+          - Quick Start: user_guide/quick_start.md
+    - API Reference:
+          - Overview: reference/index.md
+          - Modules:
+                - gwsim_pop:
+                      - Overview: reference/gwsim_pop/index.md
+                      - Core:
+                            - Overview: reference/gwsim_pop/core/index.md
+                            - RNG Manager:
+                                  - Overview: reference/gwsim_pop/core/rng.md
+                      - version: reference/gwsim_pop/version.md
+                      - Utils:
+                            - Overview: reference/gwsim_pop/utils/index.md
+                            - Logging: reference/gwsim_pop/utils/log.md
+    - Developer Guide:
+          - Contributing: CONTRIBUTING.md
+    - Security: SECURITY.md
+    - Troubleshooting: dev/troubleshooting.md
 
 markdown_extensions:
-  - pymdownx.highlight:
-      anchor_linenums: true
-  - pymdownx.inlinehilite
-  - pymdownx.snippets
-  - pymdownx.superfences
-  - pymdownx.tasklist:
-      custom_checkbox: true
-  - admonition
-  - pymdownx.details
-  - pymdownx.tabbed:
-      alternate_style: true
-  - attr_list
-  - md_in_html
-  - pymdownx.arithmatex:
-      generic: true
+    - pymdownx.highlight:
+          anchor_linenums: true
+    - pymdownx.inlinehilite
+    - pymdownx.snippets
+    - pymdownx.superfences
+    - pymdownx.tasklist:
+          custom_checkbox: true
+    - admonition
+    - pymdownx.details
+    - pymdownx.tabbed:
+          alternate_style: true
+    - attr_list
+    - md_in_html
+    - pymdownx.arithmatex:
+          generic: true
 
 extra_javascript:
-  - javascripts/mathjax.js
-  - https://polyfill.io/v3/polyfill.min.js?features=es6
-  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+    - javascripts/mathjax.js
+    - https://polyfill.io/v3/polyfill.min.js?features=es6
+    - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
