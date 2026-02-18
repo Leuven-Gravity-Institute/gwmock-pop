@@ -146,3 +146,6 @@ lint.unfixable = [] # List rules that should not be autofixed, if any
 quote-style = "double"       # Use double quotes for strings
 indent-style = "space"       # Use spaces for indentation
 docstring-code-format = true # Format code in docstrings
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
