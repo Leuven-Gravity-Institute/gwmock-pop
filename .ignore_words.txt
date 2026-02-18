@@ -76,3 +76,4 @@ minval
 subkey
 dtype
 npy
+taplo

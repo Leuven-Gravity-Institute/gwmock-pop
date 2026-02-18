@@ -59,12 +59,6 @@ repos:
             args: [--config=pyproject.toml]
             stages: [pre-commit]
 
-    - repo: https://github.com/nikaro/taplo-pre-commit
-      rev: 0.1.0
-      hooks:
-          - id: taplo-lint
-          - id: taplo-format
-
     - repo: https://github.com/streetsidesoftware/cspell-cli
       rev: v9.6.0 # Keep this version or update to the latest stable
       hooks:
@@ -85,6 +79,11 @@ repos:
                 - .git/COMMIT_EDITMSG
             stages: [commit-msg]
             always_run: true
+
+    - repo: https://github.com/ComPWA/taplo-pre-commit
+      rev: v0.9.3
+      hooks:
+          - id: taplo-format
 
     - repo: https://github.com/PyCQA/bandit
       rev: '1.9.3'
