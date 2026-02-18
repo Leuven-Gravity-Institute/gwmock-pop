@@ -26,10 +26,12 @@ envpython
 getrecursionlimit
 glightbox
 gwsim
+GWTC
 hotfixes
 htmlcov
 inlinevar
 isort
+logpdf
 mathjax
 metaclass
 mkdocstrings
@@ -74,3 +76,4 @@ minval
 subkey
 dtype
 npy
+taplo

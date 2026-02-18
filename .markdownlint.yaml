@@ -1,26 +1,26 @@
 ---
 # Enable line length check, set to 80 for readability
 MD013:
-  line_length: 120
-  # Allow headings to exceed line length
-  heading: false
-  # Allow code blocks to exceed line length
-  code_blocks: false
+    line_length: 120
+    # Allow headings to exceed line length
+    headings: false
+    # Allow code blocks to exceed line length
+    code_blocks: false
 
 # Require ATX-style headings (# instead of = or -)
 MD003:
-  style: atx
+    style: atx
 
 # Enforce consistent list indentation
 MD007:
-  indent: 2
+    indent: 4
 
 # Allow multiple consecutive blank lines for flexibility
 MD012: false
 
 # Enforce trailing punctuation in headings for consistency
 MD026:
-  punctuation: ".,;:!?"
+    punctuation: '.,;:!?'
 
 # Allow inline HTML for flexibility in Markdown rendering
 MD033: false
@@ -29,16 +29,14 @@ MD033: false
 # to allow flexibility in document structure
 MD041: false
 
-# Enforce consistent quote style
-MD014:
-  style: double
+# Dollar signs used before commands without showing output
+MD014: true
 
 # Disable no-space-in-emphasis to allow flexibility in emphasis formatting
 MD036: false
 
-# Enforce proper list marker style (e.g., - or *)
-MD032:
-  style: dash
+# Lists should be surrounded by blank lines
+MD032: true
 
 MD046:
-  style: fenced
+    style: fenced

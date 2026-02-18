@@ -2,12 +2,14 @@
 
 Thank you for your interest in **gwsim_pop**!
 
-If you have questions, suggestions, or need help using the project, here are some ways to get support:
+If you have questions, suggestions, or need help using the project, here are
+some ways to get support:
 
 ## 💬 Ask a Question
 
-If you're experiencing a problem or have a question about how to use `gwsim_pop`,
-please open a [GitHub Discussion](https://github.com/Leuven-Gravity-Institute/gwsim_pop/discussions)
+If you're experiencing a problem or have a question about how to use
+`gwsim_pop`, please open a
+[GitHub Discussion](https://github.com/Leuven-Gravity-Institute/gwsim_pop/discussions)
 or [Issue](https://github.com/Leuven-Gravity-Institute/gwsim_pop/issues),
 depending on the nature of your question.
 
@@ -16,8 +18,9 @@ depending on the nature of your question.
 
 ## 🐛 Found a Bug
 
-Please check if your issue has already been reported. If not,
-create a [new issue](https://github.com/Leuven-Gravity-Institute/gwsim_pop/issues/new/choose) with:
+Please check if your issue has already been reported. If not, create a
+[new issue](https://github.com/Leuven-Gravity-Institute/gwsim_pop/issues/new/choose)
+with:
 
 - A clear and descriptive title.
 - Steps to reproduce the problem.
@@ -26,8 +29,9 @@ create a [new issue](https://github.com/Leuven-Gravity-Institute/gwsim_pop/issue
 
 ## 🙋 Want to Contribute
 
-Contributions are welcome! Please check out the [Contributing Guide](CONTRIBUTING.md)
-and our [Code of Conduct](CODE_OF_CONDUCT.md) to get started.
+Contributions are welcome! Please check out the
+[Contributing Guide](CONTRIBUTING.md) and our
+[Code of Conduct](CODE_OF_CONDUCT.md) to get started.
 
 ---
 

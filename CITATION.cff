@@ -1,12 +1,14 @@
 cff-version: 1.2.0
-title: "gwsim_pop: A Python package for simulating populations of gravitational wave sources"
-license: "MIT"
+title:
+    'gwsim_pop: A Python package for simulating populations of gravitational
+    wave sources'
+license: 'MIT'
 type: software
 authors:
-  - given-names: Isaac C. F.
-    family-names: Wong
-    affiliation: KU Leuven
-    orcid: "https://orcid.org/0000-0003-2166-0027"
+    - given-names: Isaac C. F.
+      family-names: Wong
+      affiliation: KU Leuven
+      orcid: 'https://orcid.org/0000-0003-2166-0027'
 keywords:
-  - gravitational waves
-  - population simulation
+    - gravitational waves
+    - population simulation

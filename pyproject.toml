@@ -23,22 +23,14 @@ dependencies = ["typer", "jax"]
 [project.optional-dependencies]
 test = [
   "bandit[toml]==1.9.3",
-  "black==26.1.0",
-  "check-manifest==0.51",
-  "flake8-bugbear==25.11.29",
-  "flake8-docstrings",
-  "flake8-formatter_junit_xml",
-  "flake8",
-  "flake8-pyproject",
   "pre-commit==4.5.1",
   "pytest-cov==7.0.0",
   "pytest-mock<3.15.2",
   "pytest-runner",
   "pytest==9.0.2",
   "pytest-github-actions-annotate-failures",
-  "shellcheck-py==0.11.0.1",
 ]
-dev = ["pytest", "pre-commit", "black", "flake8"]
+dev = ["pytest", "pre-commit"]
 docs = [
   "mkdocs",
   "mkdocs-material",
@@ -71,45 +63,11 @@ number = 4
 recursive = true
 targets = "src"
 
-[tool.black]
-line-length = 120
-fast = true
-
 [tool.coverage.run]
 branch = true
 
 [tool.coverage.report]
 fail_under = 0
-
-[tool.flake8]
-max-line-length = 120
-select = "F,E,W,B,B901,B902,B903"
-exclude = [
-  ".eggs",
-  ".git",
-  ".tox",
-  "nssm",
-  "obj",
-  "out",
-  "packages",
-  "pywin32",
-  "tests",
-  "swagger_client",
-]
-ignore = ["E722", "B001", "W503", "E203"]
-
-[tool.pyright]
-include = ["src"]
-exclude = ["**/node_modules", "**/__pycache__"]
-venv = "env37"
-
-reportMissingImports = true
-reportMissingTypeStubs = false
-
-pythonVersion = "3.7"
-pythonPlatform = "Linux"
-
-executionEnvironments = [{ root = "src" }]
 
 [tool.pytest.ini_options]
 addopts = "--cov-report xml:coverage.xml --cov src --cov-append -m 'not integration'"
@@ -188,3 +146,6 @@ lint.unfixable = [] # List rules that should not be autofixed, if any
 quote-style = "double"       # Use double quotes for strings
 indent-style = "space"       # Use spaces for indentation
 docstring-code-format = true # Format code in docstrings
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
