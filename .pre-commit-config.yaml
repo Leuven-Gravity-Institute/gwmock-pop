@@ -56,6 +56,12 @@ repos:
             args: [--fix, --config=pyproject.toml]
             stages: [pre-commit]
 
+    - repo: https://github.com/nikaro/taplo-pre-commit
+      rev: 0.1.0
+      hooks:
+          - id: taplo-lint
+          - id: taplo-format
+
     - repo: https://github.com/streetsidesoftware/cspell-cli
       rev: v9.6.0 # Keep this version or update to the latest stable
       hooks:
