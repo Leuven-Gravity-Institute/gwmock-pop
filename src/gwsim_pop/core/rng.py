@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 import secrets
 from pathlib import Path
 
 import jax
 import jax.numpy as jnp
 from jax import Array
+
+logger = logging.getLogger("gwsim_pop")
 
 
 class RNGManager:
@@ -123,6 +126,10 @@ class RNGManager:
 
         """
         path = Path(path)
+        if path.suffix != ".npy":
+            logger.warning(f"The suffix of path={path} is not '.npy'.")
+            path = path.with_suffix(".npy")
+            logger.warning(f"The path is updated to {path}.")
         jnp.save(file=path, arr=self.key_data)
 
     def load_key(self, path: str | Path) -> None:
@@ -133,5 +140,9 @@ class RNGManager:
 
         """
         path = Path(path)
+        if path.suffix != ".npy":
+            logger.warning(f"The suffix of path={path} is not '.npy'.")
+            path = path.with_suffix(".npy")
+            logger.warning(f"The path is updated to {path}.")
         key_data = jnp.load(path)
         self.key_data = key_data
