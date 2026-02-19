@@ -43,7 +43,10 @@ def get_version_information() -> str:
 
 
 def setup_logger(
-    outdir: str = ".", label: str | None = None, log_level: str | int = "INFO", print_version: bool = False
+    outdir: str = ".",
+    label: str | None = None,
+    log_level: LoggingLevel | str | int = "INFO",
+    print_version: bool = False,
 ) -> None:
     """Set up logging output: call at the start of the script to use.
 
@@ -54,7 +57,9 @@ def setup_logger(
         print_version: Whether to print version information to the log.
 
     """
-    if isinstance(log_level, str):
+    if isinstance(log_level, LoggingLevel):
+        level = log_level.value
+    elif isinstance(log_level, str):
         try:
             level = getattr(logging, log_level.upper())
         except AttributeError as e:
