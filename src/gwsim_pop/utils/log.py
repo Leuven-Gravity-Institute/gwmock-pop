@@ -44,7 +44,7 @@ def get_version_information() -> str:
 
 def setup_logger(
     outdir: str = ".",
-    label: str | None = None,
+    filename: str | None = None,
     log_level: LoggingLevel | str | int = "INFO",
     print_version: bool = False,
 ) -> None:
@@ -52,7 +52,7 @@ def setup_logger(
 
     Args:
         outdir: Output directory for log file.
-        label: Label for log file name. If None, no log file is created.
+        filename: Name of the log file. If None, no log file is created.
         log_level: Logging level as string or integer.
         print_version: Whether to print version information to the log.
 
@@ -81,10 +81,10 @@ def setup_logger(
         stream_handler.setLevel(level)
         logger.addHandler(stream_handler)
 
-    if label:
+    if filename:
         outdir_path = Path(outdir)
         outdir_path.mkdir(parents=True, exist_ok=True)
-        log_file = outdir_path / f"{label}.log"
+        log_file = outdir_path / filename
         if not any(isinstance(h, logging.FileHandler) for h in logger.handlers):
             file_handler = logging.FileHandler(log_file, mode="a")
             file_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)-8s: %(message)s", datefmt="%H:%M"))
