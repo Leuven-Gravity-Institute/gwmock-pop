@@ -3,9 +3,33 @@
 from __future__ import annotations
 
 import logging
+from enum import Enum
 from pathlib import Path
 
 from gwsim_pop.version import __version__
+
+
+class LoggingLevel(str, Enum):
+    """Logging level."""
+
+    NOTSET = "NOTSET"
+    """When set on a logger, indicates that ancestor loggers are to be consulted to determine the effective level.
+    If that still resolves to NOTSET, then all events are logged. When set on a handler, all events are handled."""
+
+    DEBUG = "DEBUG"
+    """Detailed information, typically only of interest to a developer trying to diagnose a problem."""
+
+    INFO = "INFO"
+    """Confirmation that things are working as expected."""
+
+    WARNING = "WARNING"
+    """An indication that something unexpected happened, or that a problem might occur in the near future (e.g. 'disk space low'). The software is still working as expected."""
+
+    ERROR = "ERROR"
+    """Due to a more serious problem, the software has not been able to perform some function."""
+
+    CRITICAL = "CRITICAL"
+    """A serious error, indicating that the program itself may be unable to continue running."""
 
 
 def get_version_information() -> str:
