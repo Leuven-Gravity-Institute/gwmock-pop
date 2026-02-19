@@ -81,15 +81,15 @@ def setup_logger(
         stream_handler.setLevel(level)
         logger.addHandler(stream_handler)
 
-    if not any(isinstance(h, logging.FileHandler) for h in logger.handlers) and label:
+    if label:
         outdir_path = Path(outdir)
         outdir_path.mkdir(parents=True, exist_ok=True)
         log_file = outdir_path / f"{label}.log"
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)-8s: %(message)s", datefmt="%H:%M"))
-
-        file_handler.setLevel(level)
-        logger.addHandler(file_handler)
+        if not any(isinstance(h, logging.FileHandler) for h in logger.handlers):
+            file_handler = logging.FileHandler(log_file, mode="a")
+            file_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)-8s: %(message)s", datefmt="%H:%M"))
+            file_handler.setLevel(level)
+            logger.addHandler(file_handler)
 
     for handler in logger.handlers:
         handler.setLevel(level)
