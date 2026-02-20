@@ -84,3 +84,4 @@ pmap
 szip
 ruyaml
 WMAP
+softplus

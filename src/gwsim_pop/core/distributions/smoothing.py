@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import jax
 import jax.numpy as jnp
 from jax import Array
 
@@ -76,8 +77,8 @@ def log_planck_tapering_function(x: Array, x_min: float, delta: float) -> Array:
             The log of the rise function value at x, in the range (-inf, 0].
 
         """
-        a = jnp.exp(delta / (x - x_min) + delta / (x - (x_min + delta)))
-        return -jnp.log(1.0 + a)
+        exponent = delta / (x - x_min) + delta / (x - (x_min + delta))
+        return -jax.nn.softplus(exponent)
 
     return jnp.where(
         x < x_min,
