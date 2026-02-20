@@ -39,7 +39,7 @@ class MainConfiguration(BaseModel):
     """Configuration for the post-processing."""
 
     advanced: AdvancedConfiguration = Field(
-        default_factory=AdvancedConfiguration, description="Configuration fro the advanced features."
+        default_factory=AdvancedConfiguration, description="Configuration for the advanced features."
     )
     """Configuration for the advanced features."""
 
