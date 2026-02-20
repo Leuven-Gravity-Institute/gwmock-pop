@@ -26,6 +26,11 @@ def _yaml_enum_representer(dumper, data: Enum):
 
 _yaml_representers = ((Enum, _yaml_enum_representer),)
 
+# Register it globally for PyYAML
+for data_type, representer in _yaml_representers:
+    yaml.add_multi_representer(data_type=data_type, multi_representer=representer)
+    yaml.SafeDumper.add_multi_representer(data_type=data_type, representer=representer)
+
 
 def read_yaml(filename: str | Path, encoding: str = "utf-8") -> dict[str, Any]:
     """Read from file.
