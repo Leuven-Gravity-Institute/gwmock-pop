@@ -65,7 +65,7 @@ def log_planck_tapering_function(x: Array, x_min: float, delta: float) -> Array:
     """
 
     def log_planck_rise(x: Array, x_min: float, delta: float) -> Array:
-        """Planck rise function from 0 to 1 over the interval [x_min, x_min + delta].
+        """Log of the Planck rise function from -inf to 0 over the interval [x_min, x_min + delta].
 
         Args:
             x: The input value.
@@ -73,7 +73,7 @@ def log_planck_tapering_function(x: Array, x_min: float, delta: float) -> Array:
             delta: The width of the transition region.
 
         Returns:
-            The value of the rise function at x.
+            The log of the rise function value at x, in the range (-inf, 0].
 
         """
         a = jnp.exp(delta / (x - x_min) + delta / (x - (x_min + delta)))
