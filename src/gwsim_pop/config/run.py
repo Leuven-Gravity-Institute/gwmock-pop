@@ -20,7 +20,7 @@ class RunConfiguration(BaseModel):
     """Global RNG seed (overridable via CLI)."""
 
     mode: Literal["fixed_n_samples", "duration"] = Field(
-        default="duration", description="Mode of generation. Supported: 'fixed_n_samples', 'duration'."
+        default="duration", description="Mode of simulation. Supported: 'fixed_n_samples', 'duration'."
     )
     """Mode of simulation. Supported: 'fixed_n_samples', 'duration'."""
 
