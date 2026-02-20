@@ -85,7 +85,10 @@ def setup_logger(
         outdir_path = Path(outdir)
         outdir_path.mkdir(parents=True, exist_ok=True)
         log_file = outdir_path / filename
-        if not any(isinstance(h, logging.FileHandler) for h in logger.handlers):
+        if not any(
+            isinstance(h, logging.FileHandler) and Path(h.baseFilename).resolve() == log_file.resolve()
+            for h in logger.handlers
+        ):
             file_handler = logging.FileHandler(log_file, mode="a")
             file_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)-8s: %(message)s", datefmt="%H:%M"))
             file_handler.setLevel(level)
