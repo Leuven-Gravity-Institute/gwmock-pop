@@ -122,8 +122,8 @@ class TestYAMLUtils:
         test_file = tmp_path / "empty.yaml"
         test_file.write_text("")
 
-        result = read_yaml(test_file)
-        assert result is None
+        with pytest.raises(ValueError, match="Expected a YAML mapping at the top level of"):
+            _result = read_yaml(test_file)
 
     def test_read_yaml_comments_preserved(self, tmp_path: Path) -> None:
         """Test that comments are preserved when round_trip is used."""
