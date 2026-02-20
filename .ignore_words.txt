@@ -77,3 +77,10 @@ subkey
 dtype
 npy
 taplo
+unflatten
+autouse
+vmap
+pmap
+szip
+ruyaml
+WMAP

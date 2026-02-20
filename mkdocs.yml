@@ -76,6 +76,17 @@ nav:
           - Modules:
                 - gwsim_pop:
                       - Overview: reference/gwsim_pop/index.md
+                      - Config:
+                            - Overview: reference/gwsim_pop/config/index.md
+                            - Advanced: reference/gwsim_pop/config/advanced.md
+                            - Cosmology: reference/gwsim_pop/config/cosmology.md
+                            - Logging: reference/gwsim_pop/config/logging.md
+                            - Main: reference/gwsim_pop/config/main.md
+                            - Output: reference/gwsim_pop/config/output.md
+                            - Population: reference/gwsim_pop/config/population.md
+                            - Post-Processing: reference/gwsim_pop/config/post_processing.md
+                            - Run: reference/gwsim_pop/config/run.md
+                            - Selection: reference/gwsim_pop/config/selection.md
                       - Core:
                             - Overview: reference/gwsim_pop/core/index.md
                             - RNG Manager:
