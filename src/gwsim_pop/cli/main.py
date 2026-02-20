@@ -7,17 +7,7 @@ import enum
 from typing import Annotated
 
 import typer
-
-
-class LoggingLevel(str, enum.Enum):
-    """Logging levels for the CLI."""
-
-    NOTSET = "NOTSET"
-    DEBUG = "DEBUG"
-    INFO = "INFO"
-    WARNING = "WARNING"
-    ERROR = "ERROR"
-    CRITICAL = "CRITICAL"
+from gwsim_pop.utils.log import LoggingLevel
 
 
 # Create the main Typer app
