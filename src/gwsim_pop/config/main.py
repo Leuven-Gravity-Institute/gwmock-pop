@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from gwsim_pop.config.advanced import AdvancedConfiguration
 from gwsim_pop.config.cosmology import CosmologyConfiguration
@@ -16,6 +16,9 @@ from gwsim_pop.utils.yaml import read_yaml, write_yaml
 
 class MainConfiguration(BaseModel):
     """Configuration of simulation."""
+
+    model_config = ConfigDict(extra="forbid")
+    """Forbid the extra fields."""
 
     config_version: str = Field(default="0.1.0", description="Version of the configuration file.")
     """Version of the configuration file."""
