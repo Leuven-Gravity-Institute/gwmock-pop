@@ -3,6 +3,9 @@
 import tempfile
 from pathlib import Path
 
+import pytest
+from pydantic import ValidationError
+
 from gwsim_pop.config.main import MainConfiguration
 
 
@@ -62,3 +65,9 @@ run:
             assert Path(temp_file).exists()
         finally:
             Path(temp_file).unlink()
+
+    def test_extra_fields_forbidden(self):
+        """Test that extra fields are forbidden in MainConfiguration."""
+        # This should raise a ValidationError when trying to create a config with extra field
+        with pytest.raises(ValidationError):
+            MainConfiguration(extra_field="should_not_be_allowed")
