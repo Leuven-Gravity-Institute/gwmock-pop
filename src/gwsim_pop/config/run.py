@@ -26,9 +26,9 @@ class RunConfiguration(BaseModel):
 
     n_samples: int = Field(
         default=1_000_000,
-        description="Number of samples. This is used when 'mode' is 'fixed_n_samples'.",
+        description="Number of samples. Only used when 'mode' is 'fixed_n_samples'.",
     )
-    """Number of samples. Set this to 0 when 'duration' is used to determine the number of samples."""
+    """Number of samples. Only used when 'mode' is 'fixed_n_samples'."""
 
     duration: float = Field(
         default=1.0, description="Duration in year (365 days). This is used when 'mode' is 'duration'."
