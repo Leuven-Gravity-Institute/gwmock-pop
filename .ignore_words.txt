@@ -79,3 +79,7 @@ npy
 taplo
 unflatten
 autouse
+vmap
+pmap
+szip
+ruyaml
