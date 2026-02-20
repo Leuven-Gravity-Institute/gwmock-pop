@@ -83,3 +83,4 @@ vmap
 pmap
 szip
 ruyaml
+WMAP
