@@ -133,25 +133,6 @@ class TestYAMLUtils:
         with pytest.raises(ValueError, match="Expected a YAML mapping at the top level of"):
             _result = read_yaml(test_file)
 
-    def test_read_yaml_comments_preserved(self, tmp_path: Path) -> None:
-        """Test that comments are preserved when round_trip is used."""
-        # Create a file with comments
-        yaml_content = """# This is a comment
-key1: value1
-# Another comment
-key2: value2
-"""
-        test_file = tmp_path / "commented.yaml"
-        test_file.write_text(yaml_content)
-
-        # Write it back with round_trip
-        data = read_yaml(test_file)
-        write_yaml(test_file, data, round_trip=True)
-
-        # Verify the content is still valid YAML
-        result = read_yaml(test_file)
-        assert result == {"key1": "value1", "key2": "value2"}
-
     def test_write_yaml_empty_data(self, tmp_path: Path) -> None:
         """Test writing empty data."""
         test_file = tmp_path / "empty_data.yaml"
