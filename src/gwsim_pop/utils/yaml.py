@@ -77,5 +77,21 @@ def write_yaml(
             yaml_handler.dump(data, f, **kwargs)
 
     else:
+        # For non-round_trip, we create a copy of the data to avoid modifying the original
+        # and handle enum values that need special representation
+        data_copy = _prepare_data_for_yaml_dump(data)
         with path.open("w", encoding=encoding) as f:
-            yaml.safe_dump(data, f, sort_keys=False, allow_unicode=True, **kwargs)
+            yaml.safe_dump(data_copy, f, sort_keys=False, allow_unicode=True, **kwargs)
+
+
+def _prepare_data_for_yaml_dump(data: Any) -> Any:
+    """Prepare data for YAML dumping, handling enums that might not be natively supported."""
+    if isinstance(data, dict):
+        return {key: _prepare_data_for_yaml_dump(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        return [_prepare_data_for_yaml_dump(item) for item in data]
+    elif isinstance(data, Enum):
+        # Convert enums to their string representation for yaml.safe_dump
+        return str(data.value)
+    else:
+        return data
