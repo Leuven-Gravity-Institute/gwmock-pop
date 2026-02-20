@@ -2,12 +2,20 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from pathlib import Path
 
 import pytest
 import yaml
 
 from gwsim_pop.utils.yaml import read_yaml, write_yaml
+
+
+class Color(Enum):
+    """An Enum for testing."""
+
+    RED = "red"
+    """Red color."""
 
 
 class TestYAMLUtils:
@@ -82,13 +90,13 @@ class TestYAMLUtils:
         """Test writing YAML data containing enums with round_trip."""
         test_file = tmp_path / "enum_round_trip.yaml"
         # Test enum is defined in the yaml module, but for testing, let's just use a simple dict
-        data = {"enum_key": "value1", "normal_key": "value"}
+        data = {"enum_key": Color.RED, "normal_key": "value"}
 
         write_yaml(test_file, data, round_trip=True)
 
         # Read back the file to verify
         result = read_yaml(test_file)
-        assert result == {"enum_key": "value1", "normal_key": "value"}
+        assert result == {"enum_key": Color.RED.value, "normal_key": "value"}
 
     def test_write_yaml_directory_creation(self, tmp_path: Path) -> None:
         """Test that write_yaml creates parent directories if they don't exist."""
