@@ -53,5 +53,5 @@ class TestPostProcessingConfiguration:
 
     def test_hooks_validation_non_empty_raises_error(self):
         """Test that non-empty hooks list raises validation error."""
-        with pytest.raises(ValidationError, match=r"Post-processing hook is not implemented yet."):
+        with pytest.raises(ValidationError, match=r"Post-processing hook is not implemented yet"):
             PostProcessingConfiguration(hooks=[HookConfiguration(name="test_hook")])
