@@ -18,7 +18,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dynamic = ["version"]
-dependencies = ["typer", "jax", "PyYAML", "ruyaml"]
+dependencies = ["typer", "jax", "PyYAML", "ruyaml", "pydantic"]
 
 [project.optional-dependencies]
 test = [
