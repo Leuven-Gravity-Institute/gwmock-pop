@@ -13,7 +13,7 @@
     },
     "packageRules": [
         {
-            "matchManagers": ["uv"],
+            "matchManagers": ["pep621"],
             "matchUpdateTypes": ["patch", "minor"],
             "groupName": "runtime minor & patch",
             "minimumReleaseAge": "3 days",
@@ -26,8 +26,8 @@
             "enabled": false
         },
         {
-            "matchManagers": ["uv"],
-            "matchDepTypes": ["optionalDependencies"],
+            "matchManagers": ["pep621"],
+            "matchDepTypes": ["project.optional-dependencies"],
             "groupName": "test/dev/docs tools",
             "automerge": true,
             "automergeType": "pr",
