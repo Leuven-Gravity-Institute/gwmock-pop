@@ -138,6 +138,12 @@ class TestSetupLogger:
             assert len(file_handlers) == 1
             assert new_dir.exists()
 
+            if file_handlers:
+                handler = file_handlers[0]
+                handler.flush()  # ensure all writes are done
+                handler.close()  # closes the file descriptor
+                logger.removeHandler(handler)  # detach from logger
+
     def test_stream_handler_added(self) -> None:
         """Test that stream handler is added."""
         setup_logger()
