@@ -16,6 +16,7 @@
             "matchManagers": ["uv"],
             "matchUpdateTypes": ["patch", "minor"],
             "groupName": "runtime minor & patch",
+            "minimumReleaseAge": "3 days",
             "automerge": true,
             "automergeType": "pr",
             "automergeStrategy": "squash"
