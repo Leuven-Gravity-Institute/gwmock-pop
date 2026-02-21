@@ -53,6 +53,13 @@
             "automergeType": "pr",
             "automergeStrategy": "squash",
             "groupName": "lock file maintenance"
+        },
+        {
+            "matchDepTypes": ["devDependencies"],
+            "rangeStrategy": "pin",
+            "automerge": true,
+            "automergeType": "pr",
+            "automergeStrategy": "squash"
         }
     ],
     "rangeStrategy": "bump"
