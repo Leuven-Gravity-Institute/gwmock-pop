@@ -10,7 +10,7 @@ permissions:
 
 jobs:
     test:
-        uses: .github/workflows/CI.yml
+        uses: ./.github/workflows/CI.yml
         permissions:
             security-events: write
     create_tag:
