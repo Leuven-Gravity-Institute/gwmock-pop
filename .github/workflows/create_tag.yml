@@ -11,6 +11,7 @@ permissions:
 jobs:
     test:
         uses: ./.github/workflows/CI.yml
+        secrets: inherit # pragma: allowlist secret`
         permissions:
             security-events: write
     create_tag:
