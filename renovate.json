@@ -37,7 +37,7 @@
             "matchManagers": ["github-actions"],
             "groupName": "github actions",
             "schedule": ["every weekend"],
-            "stabilityDays": 3,
+            "minimumReleaseAge": "3 days",
             "automerge": true,
             "automergeType": "pr",
             "automergeStrategy": "squash"
