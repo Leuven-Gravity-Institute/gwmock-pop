@@ -9,7 +9,12 @@ permissions:
     contents: write
 
 jobs:
+    test:
+        uses: .github/workflows/CI.yml
+        permissions:
+            security-events: write
     create_tag:
+        needs: test
         runs-on: ubuntu-latest
         outputs:
             new_tag: ${{ steps.tag_version.outputs.new_tag }}
