@@ -8,7 +8,7 @@
 [![Python Versions](https://img.shields.io/pypi/pyversions/gwsim_pop)](https://pypi.org/project/gwsim_pop/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://github.com/PyCQA/bandit)
-[![DOI](https://zenodo.org/badge/924023559.svg)](https://doi.org/10.5281/zenodo.18017404)
+[![DOI](https://zenodo.org/badge/1147941311.svg)](https://doi.org/10.5281/zenodo.18574076)
 
 A Python package for simulating populations of gravitational-wave sources.
 

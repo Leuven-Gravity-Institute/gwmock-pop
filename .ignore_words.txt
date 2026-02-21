@@ -85,3 +85,4 @@ szip
 ruyaml
 WMAP
 softplus
+Zenodo
