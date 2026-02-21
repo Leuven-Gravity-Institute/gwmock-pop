@@ -2,8 +2,8 @@
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": [
         "config:recommended",
-        ":semanticPrefixChore(deps): ",
-        ":semanticCommitType(chore)"
+        "config:best-practices",
+        ":semanticPrefixChore"
     ],
     "dependencyDashboard": true,
     "dependencyDashboardTitle": "Dependency Dashboard – gwsim_pop",
@@ -17,19 +17,8 @@
             "matchUpdateTypes": ["patch", "minor"],
             "groupName": "runtime minor & patch",
             "automerge": true,
-            "automergeType": "branch",
-            "automergeComment": "Auto-merge: patch/minor update"
-        },
-        {
-            "matchPackageNames": ["jax", "jaxlib"],
-            "groupName": "jax ecosystem",
-            "schedule": ["every weekend"],
-            "stabilityDays": 7
-        },
-        {
-            "matchPackageNames": ["pydantic"],
-            "groupName": "pydantic",
-            "allowedVersions": "/^2\\./"
+            "automergeType": "pr",
+            "automergeStrategy": "squash"
         },
         {
             "matchUpdateTypes": ["major"],
@@ -38,8 +27,24 @@
         {
             "matchManagers": ["uv"],
             "matchDepTypes": ["optionalDependencies"],
+            "groupName": "test/dev/docs tools",
             "automerge": true,
-            "groupName": "test/dev/docs tools"
+            "automergeType": "pr",
+            "automergeStrategy": "squash"
+        },
+        {
+            "matchManagers": ["github-actions"],
+            "groupName": "github actions",
+            "schedule": ["every weekend"],
+            "stabilityDays": 3,
+            "automerge": true,
+            "automergeType": "pr",
+            "automergeStrategy": "squash"
+        },
+        {
+            "matchManagers": ["github-actions"],
+            "matchUpdateTypes": ["major"],
+            "enabled": false
         }
     ],
     "rangeStrategy": "bump"
