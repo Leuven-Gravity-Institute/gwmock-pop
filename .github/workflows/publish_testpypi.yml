@@ -48,14 +48,14 @@ jobs:
                   else
                     # For untagged builds, use a dev version without local part
                     # Get the dev version from hatch-vcs, then strip +local
-                    VERSION=$(hatch version | sed 's/+.*//')
+                    VERSION=$(uv run --frozen hatch version | sed 's/+.*//')
                   fi
 
                   # Update pyproject.toml with sed
                   sed -i "s/dynamic = \[\"version\"\]/version = \"$VERSION\"\ndynamic = []/" pyproject.toml
 
             - name: Build distribution
-              run: python -m build
+              run: uv build
 
             - name: Upload build artifacts
               uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
