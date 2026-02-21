@@ -60,6 +60,10 @@
             "automerge": true,
             "automergeType": "pr",
             "automergeStrategy": "squash"
+        },
+        {
+            "matchDatasources": ["python-version"],
+            "enabled": false
         }
     ],
     "rangeStrategy": "bump"
