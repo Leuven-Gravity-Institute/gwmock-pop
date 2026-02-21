@@ -4,11 +4,45 @@ from __future__ import annotations
 
 import logging
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
 
 from gwsim_pop.utils.log import LoggingLevel, get_version_information, setup_logger
+
+
+@contextmanager
+def _temp_file_logger(log_file: Path, level=logging.INFO):
+    """Context manager: adds & removes FileHandler cleanly."""
+    logger = logging.getLogger("test_logger")  # ← use a dedicated name to avoid pollution
+    handler = logging.FileHandler(log_file, encoding="utf-8")
+    handler.setLevel(level)
+    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))  # your format
+
+    logger.addHandler(handler)
+    logger.setLevel(level)
+
+    try:
+        yield handler, log_file  # or just yield log_file if you don't need the handler
+    finally:
+        # Critical cleanup — do this BEFORE temp dir is removed
+        handler.flush()
+        handler.close()
+        logger.removeHandler(handler)
+        # Optional: logger.setLevel(logging.NOTSET) or remove if you reset everything
+
+
+@pytest.fixture
+def temp_log_file(tmp_path: Path):
+    """Fixture: provides a temp directory + sets up logging to test.log inside it.
+
+    Automatically cleans up the FileHandler so Windows doesn't complain.
+    """
+    log_path = tmp_path / "test.log"
+
+    with _temp_file_logger(log_path) as (_handler, path):
+        yield path  # ← tests receive only the Path to the log file
 
 
 @pytest.fixture(autouse=True)
@@ -86,15 +120,13 @@ class TestSetupLogger:
         file_handlers = [h for h in logger.handlers if isinstance(h, logging.FileHandler)]
         assert len(file_handlers) == 0
 
-    def test_file_handler_with_filename(self) -> None:
+    def test_file_handler_with_filename(self, temp_log_file) -> None:
         """Test that file handler is created with filename."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            setup_logger(outdir=tmpdir, filename="test.log")
-            logger = logging.getLogger("gwsim_pop")
-            file_handlers = [h for h in logger.handlers if isinstance(h, logging.FileHandler)]
-            assert len(file_handlers) == 1
-            log_file = Path(tmpdir) / "test.log"
-            assert log_file.exists()
+        setup_logger(outdir=temp_log_file.parent, filename=temp_log_file.name)
+        logger = logging.getLogger("gwsim_pop")
+        file_handlers = [h for h in logger.handlers if isinstance(h, logging.FileHandler)]
+        assert len(file_handlers) == 1
+        assert temp_log_file.exists()
 
     def test_creates_output_directory(self) -> None:
         """Test that output directory is created if it doesn't exist."""
@@ -129,35 +161,26 @@ class TestSetupLogger:
         ]
         assert len(stream_handlers) == 1
 
-    def test_no_duplicate_file_handler(self) -> None:
+    def test_no_duplicate_file_handler(self, temp_log_file) -> None:
         """Test that duplicate file handlers are not added."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            setup_logger(outdir=tmpdir, filename="test.log")
-            setup_logger(outdir=tmpdir, filename="test.log")
-            logger = logging.getLogger("gwsim_pop")
-            file_handlers = [h for h in logger.handlers if isinstance(h, logging.FileHandler)]
-            assert len(file_handlers) == 1
+        setup_logger(outdir=temp_log_file.parent, filename=temp_log_file.name)
+        setup_logger(outdir=temp_log_file.parent, filename=temp_log_file.name)
+        logger = logging.getLogger("gwsim_pop")
+        file_handlers = [h for h in logger.handlers if isinstance(h, logging.FileHandler)]
+        assert len(file_handlers) == 1
 
-    def test_print_version(self) -> None:
+    def test_print_version(self, temp_log_file) -> None:
         """Test that version is printed when print_version=True."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            setup_logger(outdir=tmpdir, filename="test.log", print_version=True)
-            logger = logging.getLogger("gwsim_pop")
-            for handler in logger.handlers:
-                handler.flush()
-            log_file = Path(tmpdir) / "test.log"
-            content = log_file.read_text()
-            assert "Running gwsim_pop version:" in content
+        setup_logger(outdir=temp_log_file.parent, filename=temp_log_file.name, print_version=True)
+        _logger = logging.getLogger("gwsim_pop")
+        content = temp_log_file.read_text()
+        assert "Running gwsim_pop version:" in content
 
-    def test_log_message_format(self) -> None:
+    def test_log_message_format(self, temp_log_file) -> None:
         """Test that log messages have correct format."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            setup_logger(outdir=tmpdir, filename="test.log", log_level=logging.INFO)
-            logger = logging.getLogger("gwsim_pop")
-            logger.info("Test message")
-            for handler in logger.handlers:
-                handler.flush()
-            log_file = Path(tmpdir) / "test.log"
-            content = log_file.read_text()
-            assert "Test message" in content
-            assert "INFO" in content
+        setup_logger(outdir=temp_log_file.parent, filename=temp_log_file.name, log_level=logging.INFO)
+        logger = logging.getLogger("gwsim_pop")
+        logger.info("Test message")
+        content = temp_log_file.read_text()
+        assert "Test message" in content
+        assert "INFO" in content
