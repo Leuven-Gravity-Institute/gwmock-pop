@@ -108,6 +108,12 @@ repos:
                 - --config
                 - .markdownlint.yaml
 
+    - repo: https://github.com/astral-sh/uv-pre-commit
+      rev: 0.10.4
+      hooks:
+          # Update the uv lockfile
+          - id: uv-lock
+
     - repo: https://github.com/Yelp/detect-secrets
       rev: v1.5.0 # Use the latest stable version
       hooks:
