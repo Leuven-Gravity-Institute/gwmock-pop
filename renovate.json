@@ -1,0 +1,52 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        "config:recommended",
+        "config:best-practices",
+        ":semanticPrefixChore"
+    ],
+    "dependencyDashboard": true,
+    "dependencyDashboardTitle": "Dependency Dashboard – gwsim_pop",
+    "lockFileMaintenance": {
+        "enabled": true,
+        "schedule": ["before 4am on monday"]
+    },
+    "packageRules": [
+        {
+            "matchManagers": ["pep621"],
+            "matchUpdateTypes": ["patch", "minor"],
+            "groupName": "runtime minor & patch",
+            "minimumReleaseAge": "3 days",
+            "automerge": true,
+            "automergeType": "pr",
+            "automergeStrategy": "squash"
+        },
+        {
+            "matchUpdateTypes": ["major"],
+            "enabled": false
+        },
+        {
+            "matchManagers": ["pep621"],
+            "matchDepTypes": ["project.optional-dependencies"],
+            "groupName": "test/dev/docs tools",
+            "automerge": true,
+            "automergeType": "pr",
+            "automergeStrategy": "squash"
+        },
+        {
+            "matchManagers": ["github-actions"],
+            "groupName": "github actions",
+            "schedule": ["every weekend"],
+            "stabilityDays": 3,
+            "automerge": true,
+            "automergeType": "pr",
+            "automergeStrategy": "squash"
+        },
+        {
+            "matchManagers": ["github-actions"],
+            "matchUpdateTypes": ["major"],
+            "enabled": false
+        }
+    ],
+    "rangeStrategy": "bump"
+}

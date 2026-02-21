@@ -19,33 +19,32 @@ classifiers = [
 requires-python = ">=3.11"
 dynamic = ["version"]
 dependencies = [
-  "typer==0.24.0",
-  "jax==0.9.0.1",
-  "PyYAML==6.0.3",
-  "ruyaml==0.91.0",
-  "pydantic==2.12.5",
-  "h5py==3.15.1",
+  "typer>=0.24.0",
+  "jax>=0.9.0",
+  "PyYAML>=6.0.3",
+  "ruyaml>=0.91.0",
+  "pydantic>=2.12.5",
+  "h5py>=3.15.1",
 ]
 
 [project.optional-dependencies]
 test = [
-  "bandit[toml]==1.9.3",
-  "pre-commit==4.5.1",
-  "pytest-cov==7.0.0",
-  "pytest-mock<3.15.2",
-  "pytest-runner",
-  "pytest==9.0.2",
-  "pytest-github-actions-annotate-failures",
+  "bandit[toml]>=1.9.3",
+  "pre-commit>=4.5.1",
+  "pytest-cov>=7.0.0",
+  "pytest-mock>=3.15.1",
+  "pytest-runner>=6.0.1",
+  "pytest>=9.0.2",
+  "pytest-github-actions-annotate-failures>=0.3.0",
 ]
-dev = ["pytest", "pre-commit"]
+dev = ["pytest>=9.0.2", "pre-commit>=4.5.1"]
 docs = [
-  "mkdocs",
-  "mkdocs-material",
-  "mkdocstrings[python]",
-  "mkdocs-gen-files",
-  "mkdocs-literate-nav",
-  "mkdocs-section-index",
-  "mike",
+  "mkdocs>=1.6.1",
+  "mkdocs-material>=9.7.2",
+  "mkdocstrings[python]>=1.0.3",
+  "mkdocs-gen-files>=0.6.0",
+  "mkdocs-literate-nav>=0.6.2",
+  "mkdocs-section-index>=0.3.10",
 ]
 
 [project.scripts]
