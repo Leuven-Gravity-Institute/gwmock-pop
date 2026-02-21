@@ -27,9 +27,11 @@ class TestPopulationConfiguration:
     def test_initialization_with_arguments(self):
         """Test that PopulationConfiguration can be initialized with arguments."""
         # Test with default arguments
-        config = PopulationConfiguration(model="test_model")
+        args = PopulationArguments(custom_param="value", extra_value=42)
+        config = PopulationConfiguration(model="test_model", arguments=args)
         assert config.model == "test_model"
         assert isinstance(config.arguments, PopulationArguments)
+        assert config.arguments.custom_param == "value"
 
     def test_model_validation(self):
         """Test that model validation works correctly."""
