@@ -28,6 +28,9 @@ jobs:
 
             - name: Upload coverage to Codecov
               uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5
+              with:
+                  token: ${{ secrets.CODECOV_TOKEN }}
+                  slug: leuven-gravity-institute/gwsim_pop
 
     codeql:
         if:
