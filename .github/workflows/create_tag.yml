@@ -15,7 +15,7 @@ jobs:
             new_tag: ${{ steps.tag_version.outputs.new_tag }}
             has_new_commits: ${{ steps.check_commits.outputs.has_new_commits }}
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
               with:
                   fetch-depth: 0
 
@@ -37,7 +37,7 @@ jobs:
             - name: Bump version and push tag
               if: steps.check_commits.outputs.has_new_commits == 'true'
               id: tag_version
-              uses: mathieudutour/github-tag-action@v6.2
+              uses: mathieudutour/github-tag-action@a22cf08638b34d5badda920f9daf6e72c477b07b # v6.2
               with:
                   github_token: ${{ secrets.GITHUB_TOKEN }}
                   release_branches: main
@@ -69,7 +69,7 @@ jobs:
         if: needs.create_tag.outputs.has_new_commits == 'true'
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
               with:
                   ref: ${{ needs.create_tag.outputs.new_tag }}
                   fetch-depth: 0
@@ -80,12 +80,12 @@ jobs:
                   echo "- **Version tag**: ${{ needs.create_tag.outputs.new_tag }}" >> $GITHUB_STEP_SUMMARY
 
             - name: Set up Python
-              uses: actions/setup-python@v6
+              uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
               with:
-                  python-version: '3.10'
+                  python-version: '3.14.3'
 
             - name: Cache pip dependencies
-              uses: actions/cache@v5
+              uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
               with:
                   path: ~/.cache/pip
                   key:
@@ -104,7 +104,7 @@ jobs:
               run: python -m build
 
             - name: Upload build artifacts
-              uses: actions/upload-artifact@v6
+              uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
               with:
                   name: python-package-distributions
                   path: dist/
@@ -119,17 +119,17 @@ jobs:
 
         steps:
             - name: Download build artifacts
-              uses: actions/download-artifact@v7
+              uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
               with:
                   name: python-package-distributions
                   path: dist/
 
             - name: Generate attestation
-              uses: actions/attest-build-provenance@v3
+              uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
               with:
                   subject-path: dist/*
 
             - name: Publish to PyPI
-              uses: pypa/gh-action-pypi-publish@v1.13.0
+              uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
               with:
                   packages-dir: dist/
