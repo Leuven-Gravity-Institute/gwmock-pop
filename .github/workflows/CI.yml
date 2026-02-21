@@ -27,7 +27,7 @@ jobs:
               run: uv sync --extra test --frozen
 
             - name: Run tests with pytest
-              run: pytest
+              run: uv run --frozen pytest
 
             - name: Upload coverage to Codecov
               uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5
