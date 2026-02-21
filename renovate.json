@@ -1,0 +1,46 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        "config:recommended",
+        ":semanticPrefixChore(deps): ",
+        ":semanticCommitType(chore)"
+    ],
+    "dependencyDashboard": true,
+    "dependencyDashboardTitle": "Dependency Dashboard – gwsim_pop",
+    "lockFileMaintenance": {
+        "enabled": true,
+        "schedule": ["before 4am on monday"]
+    },
+    "packageRules": [
+        {
+            "matchManagers": ["uv"],
+            "matchUpdateTypes": ["patch", "minor"],
+            "groupName": "runtime minor & patch",
+            "automerge": true,
+            "automergeType": "branch",
+            "automergeComment": "Auto-merge: patch/minor update"
+        },
+        {
+            "matchPackageNames": ["jax", "jaxlib"],
+            "groupName": "jax ecosystem",
+            "schedule": ["every weekend"],
+            "stabilityDays": 7
+        },
+        {
+            "matchPackageNames": ["pydantic"],
+            "groupName": "pydantic",
+            "allowedVersions": "/^2\\./"
+        },
+        {
+            "matchUpdateTypes": ["major"],
+            "enabled": false
+        },
+        {
+            "matchManagers": ["uv"],
+            "matchDepTypes": ["optionalDependencies"],
+            "automerge": true,
+            "groupName": "test/dev/docs tools"
+        }
+    ],
+    "rangeStrategy": "bump"
+}
