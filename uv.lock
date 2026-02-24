@@ -586,7 +586,7 @@ requires-dist = [
     { name = "pytest-runner", marker = "extra == 'test'", specifier = ">=6.0.1" },
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "ruyaml", specifier = ">=0.91.0" },
-    { name = "typer", specifier = ">=0.24.0" },
+    { name = "typer", specifier = ">=0.24.1" },
 ]
 provides-extras = ["build", "dev", "docs", "test"]
 
