@@ -3,7 +3,7 @@
     "extends": [
         "config:recommended",
         "config:best-practices",
-        ":semanticPrefixChore"
+        ":semanticCommitTypeAll(chore)"
     ],
     "dependencyDashboard": true,
     "dependencyDashboardTitle": "Dependency Dashboard",
