@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import jax.numpy as jnp
 from jax import Array
+from jax.experimental import checkify
 
 
 def compute_chirp_mass_from_mass_1_mass_2(mass_1: Array, mass_2: Array) -> Array:
@@ -55,5 +56,5 @@ def compute_mass_ratio_from_mass_1_mass_2(mass_1: Array, mass_2: Array) -> Array
     Returns:
         The mass ratio, m2/m1, where m2 <= m1.
     """
-    return mass_2 / mass_1
+    checkify.check(jnp.all(mass_1 >= mass_2), "Input 'mass_1' must be >= 'mass_2' element-wise.")
     return mass_2 / mass_1
