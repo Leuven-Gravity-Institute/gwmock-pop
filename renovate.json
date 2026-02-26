@@ -6,7 +6,7 @@
         ":semanticPrefixChore"
     ],
     "dependencyDashboard": true,
-    "dependencyDashboardTitle": "Dependency Dashboard – gwsim_pop",
+    "dependencyDashboardTitle": "Dependency Dashboard",
     "lockFileMaintenance": {
         "enabled": true,
         "schedule": ["before 4am on monday"]
