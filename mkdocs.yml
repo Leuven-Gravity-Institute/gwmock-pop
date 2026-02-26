@@ -76,6 +76,10 @@ nav:
           - Modules:
                 - gwsim_pop:
                       - Overview: reference/gwsim_pop/index.md
+                      - API:
+                            - Overview: reference/gwsim_pop/api/index.md
+                            - Parameters: reference/gwsim_pop/api/parameters/index.md
+                            - Simulators: reference/gwsim_pop/api/simulators/index.md
                       - Config:
                             - Overview: reference/gwsim_pop/config/index.md
                             - Advanced: reference/gwsim_pop/config/advanced.md
@@ -87,11 +91,16 @@ nav:
                             - Post-Processing: reference/gwsim_pop/config/post_processing.md
                             - Run: reference/gwsim_pop/config/run.md
                             - Selection: reference/gwsim_pop/config/selection.md
-                      - Core:
-                            - Overview: reference/gwsim_pop/core/index.md
-                            - RNG Manager:
-                                  - Overview: reference/gwsim_pop/core/rng.md
-                      - version: reference/gwsim_pop/version.md
+                      - Conversion:
+                            - Overview: reference/gwsim_pop/conversion/index.md
+                            - Compact Binary Coalescense: reference/gwsim_pop/conversion/cbc.md
+                      - Parameters:
+                            - Overview: reference/gwsim_pop/parameters/index.md
+                            - Binary Black Holes: reference/gwsim_pop/parameters/bbh.md
+                      - Random Number Generator:
+                            - Overview: reference/gwsim_pop/rng/index.md
+                            - RNG Manager: reference/gwsim_pop/rng/rng.md
+                      - Version: reference/gwsim_pop/version.md
                       - Utils:
                             - Overview: reference/gwsim_pop/utils/index.md
                             - Logging: reference/gwsim_pop/utils/log.md
