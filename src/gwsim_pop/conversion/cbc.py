@@ -58,3 +58,16 @@ def compute_mass_ratio_from_mass_1_mass_2(mass_1: Array, mass_2: Array) -> Array
     """
     checkify.check(jnp.all(mass_1 >= mass_2), "Input 'mass_1' must be >= 'mass_2' element-wise.")
     return mass_2 / mass_1
+
+
+def compute_source_frame_mass_from_detector_frame_mass(detector_frame_mass: Array, redshift: Array) -> Array:
+    """Compute the source frame mass from the detector frame mass.
+
+    Args:
+        detector_frame_mass: Detector frame mass (in solar mass).
+        redshift: Redshift.
+
+    Returns:
+        Source frame mass (in solar mass).
+    """
+    return detector_frame_mass / (1 + redshift)
