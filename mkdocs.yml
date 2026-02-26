@@ -79,7 +79,6 @@ nav:
                       - API:
                             - Overview: reference/gwsim_pop/api/index.md
                             - Parameters: reference/gwsim_pop/api/parameters/index.md
-                            - Simulators: reference/gwsim_pop/api/simulators/index.md
                       - Config:
                             - Overview: reference/gwsim_pop/config/index.md
                             - Advanced: reference/gwsim_pop/config/advanced.md
