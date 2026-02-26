@@ -86,3 +86,6 @@ ruyaml
 WMAP
 softplus
 Zenodo
+checkify
+BBH
+rtol
