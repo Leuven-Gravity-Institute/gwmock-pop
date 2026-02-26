@@ -2,7 +2,7 @@
 
 import jax.numpy as jnp
 
-from gwsim_pop.core.distributions.smoothing import log_planck_tapering_function, planck_tapering_function
+from gwsim_pop.distributions.smoothing import log_planck_tapering_function, planck_tapering_function
 
 
 class TestPlanckTaperingFunction:
