@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Any
 
 from jax import Array
@@ -64,8 +66,12 @@ class BBHParameters:
     """Redshift."""
     f_ref: Array
     """The reference frequency that defines the spin components."""
-    extra: dict[str, Any] = field(default_factory=dict)
+    extra: Mapping[str, Any] = field(default_factory=dict, metadata={"static": True})
     """Extra parameters."""
+
+    def __post_init__(self) -> None:
+        """Called after initialization."""
+        object.__setattr__(self, "extra", MappingProxyType(dict(self.extra)))
 
     @property
     def chirp_mass(self) -> Array:
