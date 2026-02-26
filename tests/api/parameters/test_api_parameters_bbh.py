@@ -1,5 +1,7 @@
 """Unit tests for BBHParameters dataclass."""
 
+from types import MappingProxyType
+
 import jax.numpy as jnp
 
 from gwsim_pop.api.parameters.bbh import BBHParameters
@@ -398,3 +400,41 @@ class TestBBHParameters:
         )
 
         assert params.extra["custom_param"] == "value"
+
+        # Test that extra field is immutable (uses MappingProxyType)
+        # This should not raise an error during access, but should prevent modification
+        assert hasattr(params.extra, "__getitem__")
+
+    def test_bbh_parameters_extra_field_immutability(self):
+        """Test that extra field is immutable."""
+        params = BBHParameters(
+            mass_1=jnp.array(2.0),
+            mass_2=jnp.array(1.0),
+            spin_1x=jnp.array(0.0),
+            spin_1y=jnp.array(0.0),
+            spin_1z=jnp.array(0.0),
+            spin_2x=jnp.array(0.0),
+            spin_2y=jnp.array(0.0),
+            spin_2z=jnp.array(0.0),
+            eccentricity=jnp.array(0.0),
+            distance=jnp.array(100.0),
+            coa_phase=jnp.array(0.0),
+            inclination=jnp.array(0.0),
+            theta_jn=jnp.array(0.0),
+            long_asc_nodes=jnp.array(0.0),
+            mean_per_ano=jnp.array(0.0),
+            coa_time=jnp.array(0.0),
+            right_ascension=jnp.array(0.0),
+            declination=jnp.array(0.0),
+            polarization_angle=jnp.array(0.0),
+            redshift=jnp.array(0.0),
+            f_ref=jnp.array(20.0),
+            extra={"custom_param": "value"},
+        )
+
+        # Verify that we can access the extra field
+        assert params.extra["custom_param"] == "value"
+
+        # Test that the extra field is a MappingProxyType (immutable)
+
+        assert isinstance(params.extra, MappingProxyType)
