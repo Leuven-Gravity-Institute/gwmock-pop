@@ -4,7 +4,7 @@ from types import MappingProxyType
 
 import jax.numpy as jnp
 
-from gwsim_pop.api.parameters.bbh import BBHParameters
+from gwsim_pop.parameters.bbh import BBHParameters
 
 
 class TestBBHParameters:
