@@ -61,7 +61,7 @@ def setup_logging(level: LoggingLevel = LoggingLevel.INFO) -> None:
 def main(
     verbose: Annotated[
         LoggingLevel,
-        typer.Option("--verbose", "-v", help="Set verbosity level."),
+        typer.Option("--verbose", help="Set verbosity level."),
     ] = LoggingLevel.INFO,
 ) -> None:
     """Main entry point for the CLI application.
@@ -74,6 +74,10 @@ def main(
 
 def register_commands() -> None:
     """Register CLI commands."""
+
+    from gwsim_pop.cli.simulate import simulate_command
+
+    app.command("simulate", help="Simulate populations.")(simulate_command)
 
 
 register_commands()
