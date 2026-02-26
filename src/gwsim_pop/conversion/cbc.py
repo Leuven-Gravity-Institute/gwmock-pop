@@ -30,3 +30,16 @@ def compute_symmetric_mass_ratio_from_mass_1_mass_2(mass_1: Array, mass_2: Array
         The symmetric mass ratio of the binary.
     """
     return jnp.minimum((mass_1 * mass_2) / (mass_1 + mass_2) ** 2, 0.25)
+
+
+def compute_total_mass_from_mass_1_mass_2(mass_1: Array, mass_2: Array) -> Array:
+    """Compute the total mass from the component masses of the binary.
+
+    Args:
+        mass_1: The mass of the first component object in the binary (in solar masses).
+        mass_2: The mass of the second component object in the binary (in solar masses).
+
+    Returns:
+        The total mass of the binary (in solar masses).
+    """
+    return mass_1 + mass_2
