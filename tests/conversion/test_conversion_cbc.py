@@ -97,7 +97,7 @@ class TestCBCConversionFunctions:
         mass_1 = jnp.array([1.0])
         mass_2 = jnp.array([2.0])
         with pytest.raises(
-            Exception, match="Input 'mass_1' must be >= 'mass_2' element-wise"
+            ValueError, match="Input 'mass_1' must be >= 'mass_2' element-wise"
         ):  # checkify will raise an exception
             compute_mass_ratio_from_mass_1_mass_2(mass_1, mass_2)
 
