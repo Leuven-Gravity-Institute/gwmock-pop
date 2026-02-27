@@ -18,4 +18,4 @@ def simulate_command(filename: Annotated[str, typer.Argument(help="File name of 
 
     logger = logging.getLogger("gwsim_pop")
     logger.error("The simulate command has not been implemented yet.")
-    typer.Exit(1)
+    raise typer.Exit(1)
