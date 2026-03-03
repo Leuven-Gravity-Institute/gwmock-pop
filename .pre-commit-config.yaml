@@ -50,7 +50,7 @@ repos:
             stages: [pre-commit]
 
     - repo: https://github.com/astral-sh/ruff-pre-commit
-      rev: v0.15.2
+      rev: v0.15.4
       hooks:
           - id: ruff-check
             args: [--fix, --config=pyproject.toml]
@@ -86,7 +86,7 @@ repos:
           - id: taplo-format
 
     - repo: https://github.com/PyCQA/bandit
-      rev: '1.9.3'
+      rev: '1.9.4'
       hooks:
           - id: bandit
             args: ['-c', 'pyproject.toml']
@@ -109,7 +109,7 @@ repos:
                 - .markdownlint.yaml
 
     - repo: https://github.com/astral-sh/uv-pre-commit
-      rev: 0.10.4
+      rev: 0.10.7
       hooks:
           # Update the uv lockfile
           - id: uv-lock
