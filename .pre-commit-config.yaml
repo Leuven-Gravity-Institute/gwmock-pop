@@ -50,7 +50,7 @@ repos:
             stages: [pre-commit]
 
     - repo: https://github.com/astral-sh/ruff-pre-commit
-      rev: v0.15.4
+      rev: v0.15.5
       hooks:
           - id: ruff-check
             args: [--fix, --config=pyproject.toml]
@@ -109,7 +109,7 @@ repos:
                 - .markdownlint.yaml
 
     - repo: https://github.com/astral-sh/uv-pre-commit
-      rev: 0.10.7
+      rev: 0.10.9
       hooks:
           # Update the uv lockfile
           - id: uv-lock
