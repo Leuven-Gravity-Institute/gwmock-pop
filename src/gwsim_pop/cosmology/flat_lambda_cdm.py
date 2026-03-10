@@ -62,11 +62,9 @@ def compute_comoving_distance(redshift: Array, hubble_constant: Array, omega_m: 
 
     z_grid = jnp.linspace(start=0.0, stop=redshift, num=n_grid)
 
-    dz = z_grid[1] - z_grid[0]
-
     integrand = compute_integrand(z_grid)
 
-    return SPEED_OF_LIGHT / 1000 / hubble_constant * jscipy.integrate.trapezoid(y=integrand, x=z_grid, dx=dz)
+    return SPEED_OF_LIGHT / 1000 / hubble_constant * jscipy.integrate.trapezoid(y=integrand, x=z_grid, axis=0)
 
 
 def compute_differential_comoving_volume(
