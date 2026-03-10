@@ -89,3 +89,11 @@ Zenodo
 checkify
 BBH
 rtol
+mathrm
+cumlogsumexp
+logcdf
+astropy
+comoving
+jscipy
+CODATA
+CDM
