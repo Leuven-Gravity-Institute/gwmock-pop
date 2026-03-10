@@ -184,3 +184,32 @@ class TestRandomMixin:
         assert not jnp.array_equal(key1, key2)
         assert not jnp.array_equal(key2, key3)
         assert not jnp.array_equal(key1, key3)
+
+    def test_rng_key_data_property(self) -> None:
+        """Test that rng_key_data property returns key data."""
+        mixin = RandomMixin(seed=700)
+
+        key_data = mixin.rng_key_data
+
+        assert isinstance(key_data, jax.Array)
+        assert key_data.shape == (2,)
+
+    def test_rng_key_data_matches_rng_manager(self) -> None:
+        """Test that rng_key_data matches rng_manager.key_data."""
+        mixin = RandomMixin(seed=800)
+
+        assert jnp.array_equal(mixin.rng_key_data, mixin.rng_manager.key_data)
+
+    def test_rng_key_data_reproducibility(self) -> None:
+        """Test that same seed produces same key data."""
+        mixin1 = RandomMixin(seed=900)
+        mixin2 = RandomMixin(seed=900)
+
+        assert jnp.array_equal(mixin1.rng_key_data, mixin2.rng_key_data)
+
+    def test_rng_key_data_with_different_seeds(self) -> None:
+        """Test that different seeds produce different key data."""
+        mixin1 = RandomMixin(seed=910)
+        mixin2 = RandomMixin(seed=920)
+
+        assert not jnp.array_equal(mixin1.rng_key_data, mixin2.rng_key_data)
