@@ -5,6 +5,7 @@ from __future__ import annotations
 import jax.numpy as jnp
 from jax import Array
 
+from gwsim_pop.constants import SPEED_OF_LIGHT
 from gwsim_pop.cosmology.flat_lambda_cdm import (
     compute_comoving_distance,
     compute_differential_comoving_volume,
@@ -145,20 +146,19 @@ class TestFlatLambdaCDM:
 
     def test_numerical_integration_accuracy(self) -> None:
         """Test that the numerical integration produces reasonable results."""
-        # Test with known simple case: omega_m = 1.0 (pure matter)
+        # Test with known simple case: omega_m = 1.0 (Einstein-de Sitter)
         redshift = jnp.array(1.0)
         hubble_constant = jnp.array(70.0)
         omega_m = jnp.array(1.0)
 
-        # For omega_m = 1, the result should be simple to compute
-        # The exact solution for comoving distance in Einstein-de Sitter (omega_m=1)
-        # is d_C = 2*c/(H_0*sqrt(2)) * (1 - 1/sqrt(1+z))
+        # Exact comoving distance for Einstein-de Sitter:
+        # d_C = 2*c/H_0 * (1 - 1/sqrt(1+z))
         distance = compute_comoving_distance(
             redshift=redshift, hubble_constant=hubble_constant, omega_m=omega_m, n_grid=1000
         )
+        expected = SPEED_OF_LIGHT / 1000 / hubble_constant * 2.0 * (1.0 - 1.0 / jnp.sqrt(1.0 + redshift))
 
-        assert isinstance(distance, Array)
-        assert distance > 0.0
+        assert jnp.isclose(distance, expected, rtol=1e-3)
 
     def test_parameter_ranges(self) -> None:
         """Test that functions handle parameter ranges appropriately."""
