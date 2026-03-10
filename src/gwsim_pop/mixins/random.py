@@ -10,12 +10,12 @@ from gwsim_pop.rng.rng import RNGManager
 class RandomMixin:
     """Mixin class to handle random number generation."""
 
-    def __init__(self, seed: int | None = None, *args, **kwargs) -> None:
+    def __init__(self, *args, seed: int | None = None, **kwargs) -> None:
         """Initialize the instance.
 
         Args:
-            seed: Seed to initialize a random number generator.
             *args: Positional arguments.
+            seed: Seed to initialize a random number generator.
             **kwargs: Keyword arguments.
         """
         self._rng_manager = RNGManager(seed=seed)
