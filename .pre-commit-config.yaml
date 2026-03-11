@@ -1,16 +1,3 @@
----
-ci:
-    autofix_commit_msg: |
-        fix: auto fixes from pre-commit hooks
-
-        for more information, see https://pre-commit.ci
-    autofix_prs: true
-    autoupdate_branch: ''
-    autoupdate_commit_msg: 'chore(deps): pre-commit autoupdate'
-    autoupdate_schedule: weekly
-    skip: []
-    submodules: false
-
 repos:
     - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
       rev: v9.24.0
