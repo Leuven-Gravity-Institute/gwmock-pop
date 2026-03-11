@@ -539,9 +539,22 @@ dependencies = [
 build = [
     { name = "hatch" },
 ]
+ci = [
+    { name = "pytest-github-actions-annotate-failures" },
+]
 dev = [
+    { name = "bandit" },
+    { name = "mike" },
+    { name = "mkdocs" },
+    { name = "mkdocs-gen-files" },
+    { name = "mkdocs-literate-nav" },
+    { name = "mkdocs-material" },
+    { name = "mkdocs-section-index" },
+    { name = "mkdocstrings", extra = ["python"] },
     { name = "pre-commit" },
     { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-mock" },
 ]
 docs = [
     { name = "mike" },
@@ -557,38 +570,45 @@ test = [
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-cov" },
-    { name = "pytest-github-actions-annotate-failures" },
     { name = "pytest-mock" },
-    { name = "pytest-runner" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "bandit", extras = ["toml"], marker = "extra == 'dev'", specifier = ">=1.9.4" },
     { name = "bandit", extras = ["toml"], marker = "extra == 'test'", specifier = ">=1.9.4" },
     { name = "h5py", specifier = ">=3.16.0" },
     { name = "hatch", marker = "extra == 'build'", specifier = ">=1.16.5" },
     { name = "jax", specifier = ">=0.9.1" },
+    { name = "mike", marker = "extra == 'dev'", specifier = ">=2.1.4" },
     { name = "mike", marker = "extra == 'docs'", specifier = ">=2.1.4" },
+    { name = "mkdocs", marker = "extra == 'dev'", specifier = ">=1.6.1" },
     { name = "mkdocs", marker = "extra == 'docs'", specifier = ">=1.6.1" },
+    { name = "mkdocs-gen-files", marker = "extra == 'dev'", specifier = ">=0.6.0" },
     { name = "mkdocs-gen-files", marker = "extra == 'docs'", specifier = ">=0.6.0" },
+    { name = "mkdocs-literate-nav", marker = "extra == 'dev'", specifier = ">=0.6.2" },
     { name = "mkdocs-literate-nav", marker = "extra == 'docs'", specifier = ">=0.6.2" },
+    { name = "mkdocs-material", marker = "extra == 'dev'", specifier = ">=9.7.4" },
     { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.7.4" },
+    { name = "mkdocs-section-index", marker = "extra == 'dev'", specifier = ">=0.3.10" },
     { name = "mkdocs-section-index", marker = "extra == 'docs'", specifier = ">=0.3.10" },
+    { name = "mkdocstrings", extras = ["python"], marker = "extra == 'dev'", specifier = ">=1.0.3" },
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'", specifier = ">=1.0.3" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.5.1" },
     { name = "pre-commit", marker = "extra == 'test'", specifier = ">=4.5.1" },
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.2" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=9.0.2" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=7.0.0" },
-    { name = "pytest-github-actions-annotate-failures", marker = "extra == 'test'", specifier = ">=0.4.0" },
+    { name = "pytest-github-actions-annotate-failures", marker = "extra == 'ci'", specifier = ">=0.4.0" },
+    { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.15.1" },
     { name = "pytest-mock", marker = "extra == 'test'", specifier = ">=3.15.1" },
-    { name = "pytest-runner", marker = "extra == 'test'", specifier = ">=6.0.1" },
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "ruyaml", specifier = ">=0.91.0" },
     { name = "typer", specifier = ">=0.24.1" },
 ]
-provides-extras = ["build", "dev", "docs", "test"]
+provides-extras = ["build", "ci", "dev", "docs", "test"]
 
 [[package]]
 name = "h11"
@@ -1625,15 +1645,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/68/14/eb014d26be205d38ad5ad20d9a80f7d201472e08167f0bb4361e251084a9/pytest_mock-3.15.1.tar.gz", hash = "sha256:1849a238f6f396da19762269de72cb1814ab44416fa73a8686deac10b0d87a0f", size = 34036, upload-time = "2025-09-16T16:37:27.081Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5a/cc/06253936f4a7fa2e0f48dfe6d851d9c56df896a9ab09ac019d70b760619c/pytest_mock-3.15.1-py3-none-any.whl", hash = "sha256:0a25e2eb88fe5168d535041d09a4529a188176ae608a6d249ee65abc0949630d", size = 10095, upload-time = "2025-09-16T16:37:25.734Z" },
-]
-
-[[package]]
-name = "pytest-runner"
-version = "6.0.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/d7/7d/60976d532519c3a0b41e06a59ad60949e2be1af937cf02738fec91bfd808/pytest-runner-6.0.1.tar.gz", hash = "sha256:70d4739585a7008f37bf4933c013fdb327b8878a5a69fcbb3316c88882f0f49b", size = 16056, upload-time = "2023-12-04T01:03:30.835Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/23/2b/73982c02d28538b6a1182c0a2faf764ca6a76a6dbe89a69288184051a67b/pytest_runner-6.0.1-py3-none-any.whl", hash = "sha256:ea326ed6f6613992746062362efab70212089a4209c08d67177b3df1c52cd9f2", size = 7186, upload-time = "2023-12-04T01:03:28.706Z" },
 ]
 
 [[package]]
