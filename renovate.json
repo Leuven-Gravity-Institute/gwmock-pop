@@ -7,6 +7,9 @@
     ],
     "dependencyDashboard": true,
     "dependencyDashboardTitle": "Dependency Dashboard",
+    "pre-commit": {
+        "enabled": true
+    },
     "lockFileMaintenance": {
         "enabled": true,
         "schedule": ["before 4am on monday"]
@@ -64,6 +67,12 @@
         {
             "matchDatasources": ["python-version"],
             "enabled": false
+        },
+        {
+            "matchManagers": ["pre-commit"],
+            "automerge": true,
+            "automergeType": "pr",
+            "automergeStrategy": "squash"
         }
     ],
     "rangeStrategy": "bump"
