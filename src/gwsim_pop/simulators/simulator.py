@@ -15,6 +15,8 @@ from jax import Array
 class Simulator(ABC):
     """A simulator base class for generating gravitational wave source populations."""
 
+    _last_data: Array | None = None
+
     @property
     @abstractmethod
     def parameter_names(self) -> list[str]:
@@ -175,3 +177,7 @@ class Simulator(ABC):
         expected_ndim = 2
         if array.ndim != expected_ndim:
             raise ValueError(f"Expected 2D array, got {array.ndim}D array")
+
+        expected_n_parameters = len(self.parameter_names)
+        if array.shape[1] != expected_n_parameters:
+            raise ValueError(f"Expected {expected_n_parameters} parameters, got {array.shape[1]}")
