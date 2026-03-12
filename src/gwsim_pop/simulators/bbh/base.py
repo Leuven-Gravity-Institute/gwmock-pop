@@ -2,17 +2,28 @@
 
 from __future__ import annotations
 
+from gwsim_pop.mixins.random import RandomMixin
 from gwsim_pop.simulators.simulator import Simulator
 
 
-class BBHSimulator(Simulator):
+class BBHSimulator(RandomMixin, Simulator):
     """Base class for binary black hole population simulator."""
+
+    def __init__(self, *args, seed: int | None = None, **kwargs) -> None:
+        """Initialize the instance.
+
+        Args:
+            *args: Positional arguments.
+            seed: Random seed for reproducibility.
+            **kwargs: Keyword arguments.
+        """
+        super().__init__(seed=seed, **kwargs)
 
     @property
     def parameter_names(self) -> list[str]:
         """Get the names of the parameters.
 
-        Definition of te parameters:
+        Definition of the parameters:
 
         - detector_frame_mass_1: The mass of the first component object in the binary (in solar masses) in detector frame.
         - detector_frame_mass_2: The mass of the second component object in the binary (in solar masses) in the detector frame.
@@ -40,6 +51,9 @@ class BBHSimulator(Simulator):
             List of parameter names.
 
         """
+        # Allow subclasses to override with dynamic parameter names
+        if hasattr(self, "_parameter_names"):
+            return self._parameter_names
         return [
             "detector_frame_mass_1",
             "detector_frame_mass_2",
