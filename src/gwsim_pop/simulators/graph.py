@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import secrets
 from pathlib import Path
 from typing import Any
 
@@ -237,5 +238,5 @@ class GraphSimulator(RandomMixin, Simulator):
         self._sampled_values = {}
         # Reset RNG by using a fresh key
         if hasattr(self, "_rng_manager"):
-            seed = getattr(self._rng_manager, "_seed", 42)
-            self._rng_manager.key = jax.random.key(seed if seed is not None else 42)
+            seed = getattr(self._rng_manager, "_seed", jax.random.key(secrets.randbelow(2**63)))
+            self._rng_manager.key = jax.random.key(seed)
