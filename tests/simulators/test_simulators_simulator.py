@@ -180,6 +180,17 @@ class TestSimulator:
         loaded = jnp.load(output_path)
         assert jnp.allclose(loaded, data)
 
+    def test_save_explicit_file_format(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
+        """Test save method with explicit file_format (bypasses extension inference)."""
+        data = jnp.array([[1.0, 2.0], [3.0, 4.0]])
+        simulator._last_data = data
+        # Use a path without extension, but specify format explicitly
+        output_path = tmp_path / "testfile"
+        simulator.save(output_path, file_format="csv")
+
+        loaded = np.loadtxt(output_path, delimiter=",")
+        assert np.allclose(loaded, data)
+
     def test_save_no_last_data(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
         """Test save method raises error when no data available."""
         simulator._last_data = None
