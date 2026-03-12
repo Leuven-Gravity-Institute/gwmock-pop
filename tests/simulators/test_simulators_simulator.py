@@ -167,7 +167,8 @@ class TestSimulator:
             loaded = np.loadtxt(output_path, delimiter=",")
             assert np.allclose(loaded, data)
         elif file_format == "hdf5":
-            loaded = jnp.array(h5py.File(output_path, "r")["data"])
+            with h5py.File(output_path, "r") as f:
+                loaded = jnp.array(f["data"])
             assert jnp.allclose(loaded, data)
 
     def test_save_with_explicit_data(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
