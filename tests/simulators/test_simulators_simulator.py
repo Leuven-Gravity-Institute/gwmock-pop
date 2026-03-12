@@ -18,10 +18,9 @@ class ConcreteSimulator(Simulator):
 
     def __init__(self, *args, **kwargs) -> None:
         """Initialize the concrete simulator."""
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self._parameter_names = ["mass", "spin", "redshift"]
         self._source_type = "BBH"
-        super().__init__(*args, **kwargs)
 
     @property
     def parameter_names(self) -> list[str]:
