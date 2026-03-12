@@ -672,7 +672,7 @@ lambda_1 = 0.586
 
         simulator = GraphSimulator(config=config, n_samples=10)
         result = simulator()
-        assert result.shape[0] == 0
+        assert result.shape[0] == 10  # noqa: PLR2004
 
     def test_sampler_with_explicit_n_samples(self) -> None:
         """Test that sampler works with explicit n_samples in arguments."""
