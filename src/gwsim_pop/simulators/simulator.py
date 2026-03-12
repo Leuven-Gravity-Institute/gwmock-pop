@@ -15,7 +15,14 @@ from jax import Array
 class Simulator(ABC):
     """A simulator base class for generating gravitational wave source populations."""
 
-    _last_data: Array | None = None
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize the instance.
+
+        Args:
+            *args: Positional arguments.
+            **kwargs: Keyword arguments.
+        """
+        self._last_data: Array | None = None
 
     @property
     @abstractmethod
