@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
+from functools import wraps
 from pathlib import Path
-from typing import cast
 
 import h5py
 import jax.numpy as jnp
+import networkx as nx
 import numpy as np
 from jax import Array
 
@@ -22,7 +24,10 @@ class Simulator(ABC):
             *args: Positional arguments.
             **kwargs: Keyword arguments.
         """
+        self.graph = nx.DiGraph()
         self._last_data: Array | None = None
+        self._node_funcs: dict[str, Callable] = {}
+        self._node_depends: dict[str, list[str]] = {}
 
     @property
     @abstractmethod
@@ -43,6 +48,42 @@ class Simulator(ABC):
             Source type string.
 
         """
+
+    def register_node(self, name: str, func: Callable, depends_on: list[str] | None = None) -> None:
+        """Register a node function on this instance.
+
+        Args:
+            name: Parameter name.
+            func: A function to simulate this parameter.
+            depends_on: A list of dependent parameters.
+        """
+        self._node_funcs[name] = func
+        self._node_depends[name] = depends_on or []
+        self.graph.add_node(name, func=func)
+        for dep in depends_on or []:
+            self.graph.add_edge(dep, name)
+
+    def node(self, depends_on: list[str] | None = None) -> Callable:
+        """Implement a decorator to bind a node to this instance.
+
+        Args:
+            depends_on: A list of dependencies.
+
+        Returns:
+            A callable.
+        """
+
+        def decorator(func: Callable):
+            node_name = func.__name__  # ty:ignore[unresolved-attribute]
+            self.register_node(node_name, func, depends_on)
+
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                return func(*args, **kwargs)
+
+            return wrapper
+
+        return decorator
 
     @abstractmethod
     def _simulate_impl(self, *args, **kwargs) -> Array:
@@ -108,7 +149,7 @@ class Simulator(ABC):
         if data is None:
             if self._last_data is None:
                 raise ValueError("No data provided and no last simulated data available.")
-            data = cast(Array, self._last_data)
+            data = self._last_data
 
         if file_format == "npy":
             jnp.save(output_path, data)

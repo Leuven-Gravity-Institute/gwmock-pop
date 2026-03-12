@@ -26,6 +26,7 @@ dependencies = [
   "ruyaml>=0.91.0",
   "pydantic>=2.12.5",
   "h5py>=3.16.0",
+  "networkx>=3.6.1",
 ]
 
 [project.optional-dependencies]
