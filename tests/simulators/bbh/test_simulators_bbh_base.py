@@ -10,6 +10,10 @@ from gwsim_pop.simulators.bbh.base import BBHSimulator
 class ConcreteBBHSimulator(BBHSimulator):
     """Concrete implementation of BBHSimulator for testing."""
 
+    def __init__(self, *args, **kwargs):
+        """Initialize the instance."""
+        super().__init__(*args, **kwargs)
+
     def _simulate_impl(self, *args, **kwargs):
         """Implement simulation (returns dummy data)."""
         return jnp.ones((1, len(self.parameter_names)))
@@ -192,5 +196,5 @@ class TestBBHSimulator:
 
     def test_instantiation_with_kwargs(self) -> None:
         """Test that ConcreteBBHSimulator can be instantiated with kwargs."""
-        simulator = ConcreteBBHSimulator()
+        simulator = ConcreteBBHSimulator(test_kwargs="input")
         assert simulator is not None

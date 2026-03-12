@@ -17,10 +17,11 @@ from gwsim_pop.simulators.simulator import Simulator
 class ConcreteSimulator(Simulator):
     """Concrete implementation of Simulator for testing."""
 
-    def __init__(self) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         """Initialize the concrete simulator."""
         self._parameter_names = ["mass", "spin", "redshift"]
         self._source_type = "BBH"
+        super().__init__(*args, **kwargs)
 
     @property
     def parameter_names(self) -> list[str]:
