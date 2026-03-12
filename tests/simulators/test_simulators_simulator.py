@@ -84,6 +84,21 @@ class TestSimulator:
         assert "mass" in simulator._node_depends
         assert simulator._node_funcs["mass"] is mass
 
+    def test_node_decorator_wrapper_calls_original_function(self, simulator: ConcreteSimulator) -> None:
+        """Test that calling the decorated function invokes the original function."""
+        call_count = 0
+
+        def counter() -> jnp.ndarray:
+            nonlocal call_count
+            call_count += 1
+            return jnp.array([[1.0, 2.0, 3.0]])
+
+        decorated = simulator.node()(counter)
+        result = decorated()
+
+        assert call_count == 1
+        assert result.shape == (1, 3)
+
     def test_node_decorator_with_dependencies(self, simulator: ConcreteSimulator) -> None:
         """Test node decorator with dependencies."""
 
@@ -133,6 +148,24 @@ class TestSimulator:
         assert "mass" in simulator._node_funcs
         assert "mass" in simulator._node_depends
         assert simulator._node_funcs["mass"] is mass
+
+    def test_register_node_replaces_existing_node(self, simulator: ConcreteSimulator) -> None:
+        """Test register_node removes edges from existing node when re-registering."""
+
+        def func1() -> jnp.ndarray:
+            return jnp.array([[1.0, 2.0, 3.0]])
+
+        def func2() -> jnp.ndarray:
+            return jnp.array([[4.0, 5.0, 6.0]])
+
+        # Register initial node with dependency
+        simulator.register_node("test_node", func1, depends_on=["mass"])
+        assert list(simulator.graph.predecessors("test_node")) == ["mass"]
+
+        # Re-register node without dependency (should remove existing edge)
+        simulator.register_node("test_node", func2, depends_on=[])
+        assert list(simulator.graph.predecessors("test_node")) == []
+        assert simulator._node_funcs["test_node"] is func2
 
     def test_simulate(self, simulator: ConcreteSimulator) -> None:
         """Test simulate method."""
