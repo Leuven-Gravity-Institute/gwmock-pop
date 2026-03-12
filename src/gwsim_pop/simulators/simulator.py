@@ -57,10 +57,13 @@ class Simulator(ABC):
             func: A function to simulate this parameter.
             depends_on: A list of dependent parameters.
         """
+        dependencies = list(depends_on or [])
+        if name in self.graph:
+            self.graph.remove_edges_from((dep, name) for dep in list(self.graph.predecessors(name)))
         self._node_funcs[name] = func
-        self._node_depends[name] = depends_on or []
+        self._node_depends[name] = dependencies
         self.graph.add_node(name, func=func)
-        for dep in depends_on or []:
+        for dep in dependencies:
             self.graph.add_edge(dep, name)
 
     def node(self, depends_on: list[str] | None = None) -> Callable:
