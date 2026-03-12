@@ -27,7 +27,7 @@ class BBHSimulator(Simulator):
         - coa_phase: Coalescence phase of the binary (in rad).
         - inclination: Inclination (rad), defined as the angle between the orbital angular momentum L and the line-of-sight at the reference frequency.
         - theta_jn: The angle between the total angular momentum J and the line-of-sight.
-        - long_asc_nodes: Longitude of ascending nodes axis (rad).
+        - long_asc_node: Longitude of ascending nodes axis (rad).
         - mean_per_ano: Mean anomaly of the periastron (rad).
         - coa_time: Coalescence time (s) is the time when a GW reaches the origin of a certain coordinate system.
         - right_ascension: Right ascension (rad).
