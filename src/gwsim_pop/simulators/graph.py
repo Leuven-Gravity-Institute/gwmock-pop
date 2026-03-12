@@ -55,19 +55,40 @@ class GraphSimulator(RandomMixin, Simulator):
     def __init__(
         self,
         config: dict[str, Any],
+        n_samples: int = 100,
         **kwargs: Any,
     ) -> None:
         """Initialize the graph-based BBH simulator.
 
         Args:
             config: Configuration dictionary with parameter definitions.
+            n_samples: Number of samples to generate.
             **kwargs: Additional arguments passed to parent class.
         """
         super().__init__(**kwargs)
         self._config = config
+        self._n_samples = n_samples
         self._sampled_values: dict[str, Array] = {}
         self._parameter_names = list(config.keys())
         self._build_graph()
+
+    @property
+    def parameter_names(self) -> list[str]:
+        """Get the names of the parameters.
+
+        Returns:
+            List of parameter names.
+        """
+        return self._parameter_names
+
+    @property
+    def source_type(self) -> str:
+        """Get the source type.
+
+        Returns:
+            Source type string.
+        """
+        return "bbh"
 
     def _build_graph(self) -> None:
         """Build the dependency graph from the configuration."""
@@ -112,6 +133,10 @@ class GraphSimulator(RandomMixin, Simulator):
         # Add random key if needed
         if "key" not in resolved_args:
             resolved_args["key"] = self.rng_manager.new_key
+
+        # Add n_samples if not provided
+        if "n_samples" not in resolved_args:
+            resolved_args["n_samples"] = self._n_samples
 
         # Dispatch to sampler function
         sampler_func = import_from_string(object_path=sampler_name, default_module="gwsim_pop.samplers")
@@ -178,11 +203,12 @@ class GraphSimulator(RandomMixin, Simulator):
                 self._sampled_values[param_name] = transformed
 
         # Build output array in parameter order
+        # Include parameters that don't have intermediate=False (i.e., default to True)
         output = jnp.column_stack(
             [
                 data
                 for parameter_name, data in self._sampled_values.items()
-                if self._config[parameter_name].get("intermediate", False)
+                if self._config[parameter_name].get("intermediate", True) is not False
             ]
         )
         return output
@@ -208,7 +234,7 @@ class GraphSimulator(RandomMixin, Simulator):
         elif config_path.suffix == ".toml":
             import tomllib  # noqa: PLC0415
 
-            with open(config_path) as f:
+            with open(config_path, "rb") as f:
                 config = tomllib.load(f)
         else:
             raise ValueError(
