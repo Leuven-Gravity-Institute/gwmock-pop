@@ -89,8 +89,7 @@ class GraphSimulator(RandomMixin, Simulator):
     def _build_graph(self) -> None:
         """Build the dependency graph from the configuration."""
         # Extract only parameters with samplers (not transforms)
-        sampler_config = {name: spec for name, spec in self._config.items() if "sampler" in spec}
-        self._graph = build_dependency_graph(sampler_config)
+        self._graph = build_dependency_graph(self._config)
 
     def _get_ordered_parameters(self) -> list[str]:
         """Get parameters in topological order.
