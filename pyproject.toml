@@ -26,6 +26,7 @@ dependencies = [
   "ruyaml>=0.91.0",
   "pydantic>=2.12.5",
   "h5py>=3.16.0",
+  "networkx>=3.6.1",
 ]
 
 [project.optional-dependencies]
@@ -78,7 +79,7 @@ branch = true
 fail_under = 0
 
 [tool.pytest.ini_options]
-addopts = "--cov-report xml:coverage.xml --cov src --cov-append -m 'not integration'"
+addopts = "--cov-report xml:coverage.xml --cov src --cov-append -m 'not integration' --cov-report=term-missing"
 pythonpath = ["src"]
 testpaths = "tests"
 junit_family = "xunit2"
