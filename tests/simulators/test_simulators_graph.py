@@ -29,6 +29,7 @@ class TestGraphSimulator:
                 "sampler": {
                     "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
+                        "n_samples": 100,
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
                         "transition": 35.6,
@@ -57,6 +58,7 @@ class TestGraphSimulator:
                 "sampler": {
                     "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
+                        "n_samples": 100,
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
                         "transition": 35.6,
@@ -90,6 +92,7 @@ class TestGraphSimulator:
                 "sampler": {
                     "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
+                        "n_samples": 100,
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
                         "transition": 35.6,
@@ -125,6 +128,7 @@ class TestGraphSimulator:
                 "sampler": {
                     "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
+                        "n_samples": 100,
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
                         "transition": 35.6,
@@ -152,6 +156,7 @@ class TestGraphSimulator:
                 "sampler": {
                     "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
+                        "n_samples": 100,
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
                         "transition": 35.6,
@@ -295,7 +300,7 @@ lambda_1 = 0.586
             Path(temp_path).unlink()
 
     def test_init_with_custom_n_samples(self) -> None:
-        """Test initialization with custom n_samples."""
+        """Test initialization with custom n_samples passed to sampler arguments."""
         config = {
             "mass_1": {
                 "sampler": {
@@ -313,18 +318,17 @@ lambda_1 = 0.586
                         "taper_range": 4.32,
                         "lambda_0": 0.361,
                         "lambda_1": 0.586,
+                        "n_samples": 50,
                     },
                 },
             },
         }
 
-        n_samples = 50
-        simulator = GraphSimulator(config=config, n_samples=n_samples)
+        simulator = GraphSimulator(config=config)
         assert simulator is not None
-        assert simulator._n_samples == n_samples
 
         result = simulator()
-        assert result.shape[0] == n_samples
+        assert result.shape[0] == 50  # noqa: PLR2004
         assert result.shape[1] == len(simulator.parameter_names)
 
     def test_simulate_with_multiple_parameters(self) -> None:
@@ -346,18 +350,19 @@ lambda_1 = 0.586
                         "taper_range": 4.32,
                         "lambda_0": 0.361,
                         "lambda_1": 0.586,
+                        "n_samples": 20,
                     },
                 },
             },
             "mass_ratio": {
                 "sampler": {
                     "function": "gwsim_pop.samplers.planck_tapered_conditional_ratio_power_law",
-                    "arguments": {"denominator": "@mass_1"},
+                    "arguments": {"denominator": "@mass_1", "n_samples": 20},
                 },
             },
         }
 
-        simulator = GraphSimulator(config=config, n_samples=20)
+        simulator = GraphSimulator(config=config)
         result = simulator()
 
         assert result.shape[0] == 20  # noqa: PLR2004  # n_samples
@@ -384,17 +389,17 @@ lambda_1 = 0.586
                         "taper_range": 4.32,
                         "lambda_0": 0.361,
                         "lambda_1": 0.586,
+                        "n_samples": 75,
                     },
                 },
             },
         }
 
-        n_samples = 75
-        simulator = GraphSimulator(config=config, n_samples=n_samples)
+        simulator = GraphSimulator(config=config)
         result = simulator()
 
         assert result.ndim == 2  # noqa: PLR2004
-        assert result.shape[0] == n_samples
+        assert result.shape[0] == 75  # noqa: PLR2004
         assert result.shape[1] == len(simulator.parameter_names)
 
     def test_reset_with_custom_seed(self) -> None:
@@ -404,6 +409,7 @@ lambda_1 = 0.586
                 "sampler": {
                     "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
+                        "n_samples": 100,
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
                         "transition": 35.6,
@@ -436,6 +442,7 @@ lambda_1 = 0.586
                 "sampler": {
                     "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
+                        "n_samples": 100,
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
                         "transition": 35.6,
@@ -466,6 +473,7 @@ lambda_1 = 0.586
                 "sampler": {
                     "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
+                        "n_samples": 100,
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
                         "transition": 35.6,
@@ -491,6 +499,7 @@ lambda_1 = 0.586
                 "sampler": {
                     "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
+                        "n_samples": 100,
                         "alpha_1": 1.0,
                         "alpha_2": 2.0,
                         "transition": 10.0,
@@ -519,6 +528,7 @@ lambda_1 = 0.586
                 "sampler": {
                     "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
+                        "n_samples": 100,
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
                         "transition": 35.6,
@@ -550,6 +560,7 @@ lambda_1 = 0.586
                 "sampler": {
                     "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
+                        "n_samples": 100,
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
                         "transition": 35.6,
@@ -603,18 +614,19 @@ lambda_1 = 0.586
                         "taper_range": 4.32,
                         "lambda_0": 0.361,
                         "lambda_1": 0.586,
+                        "n_samples": 30,
                     },
                 },
             },
             "mass_ratio": {
                 "sampler": {
                     "function": "gwsim_pop.samplers.planck_tapered_conditional_ratio_power_law",
-                    "arguments": {"denominator": "@mass_1"},
+                    "arguments": {"denominator": "@mass_1", "n_samples": 30},
                 },
             },
         }
 
-        simulator = GraphSimulator(config=config, n_samples=30)
+        simulator = GraphSimulator(config=config)
         _ = simulator()
 
         # Check that sampled_values is populated
@@ -641,7 +653,7 @@ lambda_1 = 0.586
             },
         }
 
-        simulator = GraphSimulator(config=config, n_samples=10)
+        simulator = GraphSimulator(config=config)
         with pytest.raises(ValueError, match="Dependency 'mass_1' not sampled yet"):
             _ = simulator()
 
@@ -652,6 +664,7 @@ lambda_1 = 0.586
                 "sampler": {
                     "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
+                        "n_samples": 100,
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
                         "transition": 35.6,
@@ -670,9 +683,9 @@ lambda_1 = 0.586
             },
         }
 
-        simulator = GraphSimulator(config=config, n_samples=10)
+        simulator = GraphSimulator(config=config)
         result = simulator()
-        assert result.shape[0] == 10  # noqa: PLR2004
+        assert result.shape[0] == 100  # noqa: PLR2004  # default n_samples
 
     def test_sampler_with_explicit_n_samples(self) -> None:
         """Test that sampler works with explicit n_samples in arguments."""
@@ -699,7 +712,7 @@ lambda_1 = 0.586
             },
         }
 
-        simulator = GraphSimulator(config=config, n_samples=100)  # Different default
+        simulator = GraphSimulator(config=config)
         result = simulator()
         assert result.shape[0] == 15  # Should use explicit value  # noqa: PLR2004
 
@@ -736,7 +749,7 @@ lambda_1 = 0.586
 
             return fake_transform
 
-        simulator = GraphSimulator(config=config, n_samples=10)
+        simulator = GraphSimulator(config=config)
         simulator._sampled_values["mass_1"] = jnp.array([1.0, 2.0, 3.0])
         monkeypatch.setattr(graph_module, "import_from_string", fake_import_from_string)
 
@@ -773,7 +786,7 @@ lambda_1 = 0.586
             },
         }
 
-        simulator = GraphSimulator(config=config, n_samples=20)
+        simulator = GraphSimulator(config=config)
 
         with pytest.raises(ValueError, match="Dependency 'mass_1' not available for transform"):
             simulator._execute_transform(
@@ -802,6 +815,7 @@ lambda_1 = 0.586
                         "taper_range": 4.32,
                         "lambda_0": 0.361,
                         "lambda_1": 0.586,
+                        "n_samples": 20,
                     },
                 },
             },
@@ -810,7 +824,6 @@ lambda_1 = 0.586
                     "function": "offset_values",
                     "arguments": {"values": "@mass_1"},
                 },
-                "intermediate": True,
             },
             "mass_2": {
                 "sampler": {
@@ -828,6 +841,7 @@ lambda_1 = 0.586
                         "taper_range": 4.32,
                         "lambda_0": 0.361,
                         "lambda_1": 0.586,
+                        "n_samples": 20,
                     },
                 },
             },
@@ -846,7 +860,7 @@ lambda_1 = 0.586
 
             return real_import_from_string(object_path=object_path, default_module=default_module)
 
-        simulator = GraphSimulator(config=config, n_samples=20)
+        simulator = GraphSimulator(config=config)
         monkeypatch.setattr(graph_module, "import_from_string", fake_import_from_string)
         monkeypatch.setattr(
             simulator,
@@ -855,7 +869,7 @@ lambda_1 = 0.586
         )
         result = simulator()
 
-        assert result.shape == (20, 3)
+        assert result.shape == (20, 3)  # mass_1, mass_1_transformed, mass_2
         assert jnp.allclose(result[:, 1], result[:, 0] + 1)
 
     def test_reset_without_rng_manager(self) -> None:
@@ -865,6 +879,7 @@ lambda_1 = 0.586
                 "sampler": {
                     "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
+                        "n_samples": 100,
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
                         "transition": 35.6,
@@ -882,7 +897,7 @@ lambda_1 = 0.586
             },
         }
 
-        simulator = GraphSimulator(config=config, n_samples=10)
+        simulator = GraphSimulator(config=config)
         _ = simulator()
 
         # Manually remove _rng_manager to test reset without it
