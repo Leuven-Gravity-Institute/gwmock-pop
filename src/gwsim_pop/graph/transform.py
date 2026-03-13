@@ -22,9 +22,9 @@ def extract_transform_dependencies(transform: str | dict[str, Any]) -> set[str]:
         args = transform.get("arguments", [])
 
         if isinstance(args, list):
-            dependencies = {arg[1:] for arg in args if isinstance(arg, str) and arg.startswith("@")}
+            dependencies = {arg[1:] for arg in args if isinstance(arg, str) and arg.startswith("@") and len(arg) > 1}
         elif isinstance(args, dict):
-            dependencies = {v[1:] for v in args.values() if isinstance(v, str) and v.startswith("@")}
+            dependencies = {v[1:] for v in args.values() if isinstance(v, str) and v.startswith("@") and len(v) > 1}
         else:
             dependencies = set()
 
