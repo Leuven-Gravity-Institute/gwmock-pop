@@ -8,6 +8,7 @@ from typing import Any
 
 import jax
 import jax.numpy as jnp
+import networkx as nx
 from jax import Array
 
 from gwsim_pop.graph.build import build_dependency_graph
@@ -98,7 +99,11 @@ class GraphSimulator(RandomMixin, Simulator):
         Returns:
             List of parameter names in sampling order.
         """
-        return list(self._graph.nodes())
+        ordered = list(nx.topological_sort(self._graph))
+        undefined = [name for name in ordered if name not in self._config]
+        if undefined:
+            raise ValueError(f"Undefined parameter dependencies: {undefined}")
+        return ordered
 
     def _execute_sampler(
         self,
