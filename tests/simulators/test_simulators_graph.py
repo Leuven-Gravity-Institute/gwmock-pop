@@ -77,7 +77,15 @@ class TestGraphSimulator:
             "mass_ratio": {
                 "sampler": {
                     "function": "gwsim_pop.samplers.planck_tapered_conditional_ratio_power_law",
-                    "arguments": {"denominator": "@mass_1"},
+                    "arguments": {
+                        "denominator": "@mass_1",
+                        "beta": 1.5,
+                        "numerator_minimum": 0.5,
+                        "taper_range": 0.5,
+                        "minimum": 0.1,
+                        "maximum": 1.0,
+                        "n_grids": 100,
+                    },
                 },
             },
         }
@@ -111,7 +119,15 @@ class TestGraphSimulator:
             "mass_ratio": {
                 "sampler": {
                     "function": "gwsim_pop.samplers.planck_tapered_conditional_ratio_power_law",
-                    "arguments": {"denominator": "@mass_1"},
+                    "arguments": {
+                        "denominator": "@mass_1",
+                        "beta": 1.5,
+                        "numerator_minimum": 0.5,
+                        "taper_range": 0.5,
+                        "minimum": 0.1,
+                        "maximum": 1.0,
+                        "n_grids": 100,
+                    },
                 },
             },
         }
@@ -357,7 +373,16 @@ lambda_1 = 0.586
             "mass_ratio": {
                 "sampler": {
                     "function": "gwsim_pop.samplers.planck_tapered_conditional_ratio_power_law",
-                    "arguments": {"denominator": "@mass_1", "n_samples": 20},
+                    "arguments": {
+                        "denominator": "@mass_1",
+                        "beta": 1.5,
+                        "numerator_minimum": 0.5,
+                        "taper_range": 0.5,
+                        "minimum": 0.1,
+                        "maximum": 1.0,
+                        "n_grids": 100,
+                        "n_samples": 20,
+                    },
                 },
             },
         }
@@ -492,7 +517,15 @@ lambda_1 = 0.586
             "mass_ratio": {
                 "sampler": {
                     "function": "gwsim_pop.samplers.planck_tapered_conditional_ratio_power_law",
-                    "arguments": {"denominator": "@mass_1"},
+                    "arguments": {
+                        "denominator": "@mass_1",
+                        "beta": 1.5,
+                        "numerator_minimum": 0.5,
+                        "taper_range": 0.5,
+                        "minimum": 0.1,
+                        "maximum": 1.0,
+                        "n_grids": 100,
+                    },
                 },
             },
             "redshift": {
@@ -621,7 +654,16 @@ lambda_1 = 0.586
             "mass_ratio": {
                 "sampler": {
                     "function": "gwsim_pop.samplers.planck_tapered_conditional_ratio_power_law",
-                    "arguments": {"denominator": "@mass_1", "n_samples": 30},
+                    "arguments": {
+                        "denominator": "@mass_1",
+                        "beta": 1.5,
+                        "numerator_minimum": 0.5,
+                        "taper_range": 0.5,
+                        "minimum": 0.1,
+                        "maximum": 1.0,
+                        "n_grids": 100,
+                        "n_samples": 30,
+                    },
                 },
             },
         }
@@ -648,13 +690,21 @@ lambda_1 = 0.586
             "mass_ratio": {
                 "sampler": {
                     "function": "gwsim_pop.samplers.planck_tapered_conditional_ratio_power_law",
-                    "arguments": {"denominator": "@mass_1"},  # mass_1 not defined
+                    "arguments": {
+                        "denominator": "@mass_1",  # mass_1 not defined
+                        "beta": 1.5,
+                        "numerator_minimum": 0.5,
+                        "taper_range": 0.5,
+                        "minimum": 0.1,
+                        "maximum": 1.0,
+                        "n_grids": 100,
+                    },
                 },
             },
         }
 
         simulator = GraphSimulator(config=config)
-        with pytest.raises(ValueError, match="Dependency 'mass_1' not sampled yet"):
+        with pytest.raises(ValueError, match="Undefined parameter dependencies"):
             _ = simulator()
 
     def test_sampler_with_explicit_key(self) -> None:

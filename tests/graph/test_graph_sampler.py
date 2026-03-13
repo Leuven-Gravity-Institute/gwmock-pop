@@ -86,8 +86,8 @@ class TestExtractSamplerDependencies:
             "arguments": ["@valid", "", "@"],
         }
         result = extract_sampler_dependencies(sampler_spec)
-        # Empty strings and '@' without name are captured
-        assert result == {"", "valid"}
+        # Empty strings and '@' without name are filtered out
+        assert result == {"valid"}
 
     def test_dict_arguments_with_empty_values(self) -> None:
         """Test dict arguments with empty values."""
