@@ -151,8 +151,15 @@ class GraphSimulator(RandomMixin, Simulator):
         Returns:
             Transformed array.
         """
+        if isinstance(transform_spec, str):
+            raise ValueError("String transform expressions are not supported by GraphSimulator yet.")
+
         function_name = transform_spec.get("function", "")
-        arguments = transform_spec.get("arguments", {})
+        arguments = transform_spec.get("arguments")
+        if arguments is None:
+            arguments = {}
+        elif not isinstance(arguments, dict):
+            raise ValueError("Only mapping-style transform arguments are currently supported.")
 
         # Resolve dependencies
         resolved_args: dict[str, Any] = {}
