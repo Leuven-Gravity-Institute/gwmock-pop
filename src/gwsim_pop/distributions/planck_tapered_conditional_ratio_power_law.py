@@ -29,7 +29,7 @@ def planck_tapered_conditional_ratio_power_law_unnormalized_logpdf(
     )
 
 
-def planck_tapered_conditional_ratio_power_law_unnormalized_cdf(  # noqa: PLR0913
+def planck_tapered_conditional_ratio_power_law_cdf(  # noqa: PLR0913
     denominator: Array,
     beta: float,
     numerator_minimum: float,

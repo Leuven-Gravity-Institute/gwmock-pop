@@ -8,7 +8,7 @@ import jax.numpy as jnp
 from jax import Array
 
 from gwsim_pop.distributions.planck_tapered_conditional_ratio_power_law import (
-    planck_tapered_conditional_ratio_power_law_unnormalized_cdf,
+    planck_tapered_conditional_ratio_power_law_cdf,
     planck_tapered_conditional_ratio_power_law_unnormalized_logpdf,
 )
 
@@ -178,7 +178,7 @@ class TestPlanckTaperedConditionalRatioPowerLawUnnormalizedLogpdf:
 
 
 class TestPlanckTaperedConditionalRatioPowerLawUnnormalizedCDF:
-    """Tests for planck_tapered_conditional_ratio_power_law_unnormalized_cdf."""
+    """Tests for planck_tapered_conditional_ratio_power_law_cdf."""
 
     def test_basic_functionality(self):
         """Test basic functionality of the CDF."""
@@ -190,7 +190,7 @@ class TestPlanckTaperedConditionalRatioPowerLawUnnormalizedCDF:
         maximum = 3.0
         n_grids = 100
 
-        x_grid, cdf = planck_tapered_conditional_ratio_power_law_unnormalized_cdf(
+        x_grid, cdf = planck_tapered_conditional_ratio_power_law_cdf(
             denominator=denominator,
             beta=beta,
             numerator_minimum=numerator_minimum,
@@ -215,7 +215,7 @@ class TestPlanckTaperedConditionalRatioPowerLawUnnormalizedCDF:
         maximum = 3.0
         n_grids = 100
 
-        _x_grid, cdf = planck_tapered_conditional_ratio_power_law_unnormalized_cdf(
+        _x_grid, cdf = planck_tapered_conditional_ratio_power_law_cdf(
             denominator=denominator,
             beta=beta,
             numerator_minimum=numerator_minimum,
@@ -242,7 +242,7 @@ class TestPlanckTaperedConditionalRatioPowerLawUnnormalizedCDF:
         maximum = 3.0
         n_grids = 100
 
-        x_grid, _ = planck_tapered_conditional_ratio_power_law_unnormalized_cdf(
+        x_grid, _ = planck_tapered_conditional_ratio_power_law_cdf(
             denominator=denominator,
             beta=beta,
             numerator_minimum=numerator_minimum,
@@ -266,7 +266,7 @@ class TestPlanckTaperedConditionalRatioPowerLawUnnormalizedCDF:
         maximum = 3.0
 
         for n_grids in [10, 50, 100, 200]:
-            x_grid, cdf = planck_tapered_conditional_ratio_power_law_unnormalized_cdf(
+            x_grid, cdf = planck_tapered_conditional_ratio_power_law_cdf(
                 denominator=denominator,
                 beta=beta,
                 numerator_minimum=numerator_minimum,
@@ -292,7 +292,7 @@ class TestPlanckTaperedConditionalRatioPowerLawUnnormalizedCDF:
         maximum = 3.0
         n_grids = 100
 
-        _, cdf = planck_tapered_conditional_ratio_power_law_unnormalized_cdf(
+        _, cdf = planck_tapered_conditional_ratio_power_law_cdf(
             denominator=denominator,
             beta=beta,
             numerator_minimum=numerator_minimum,
@@ -316,7 +316,7 @@ class TestPlanckTaperedConditionalRatioPowerLawUnnormalizedCDF:
         maximum = 3.0
         n_grids = 100
 
-        _, cdf = planck_tapered_conditional_ratio_power_law_unnormalized_cdf(
+        _, cdf = planck_tapered_conditional_ratio_power_law_cdf(
             denominator=denominator,
             beta=beta,
             numerator_minimum=numerator_minimum,
@@ -451,7 +451,7 @@ class TestEdgeCases:
         ]
 
         for params in param_combinations:
-            x_grid, cdf = planck_tapered_conditional_ratio_power_law_unnormalized_cdf(
+            x_grid, cdf = planck_tapered_conditional_ratio_power_law_cdf(
                 denominator=cast(Array, params["denominator"]),
                 beta=cast(float, params["beta"]),
                 numerator_minimum=1.0,
