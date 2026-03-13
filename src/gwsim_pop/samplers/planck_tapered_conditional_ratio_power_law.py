@@ -1,10 +1,4 @@
-"""Conditional ratio power law sampler with Planck tapering.
-
-This module provides placeholder implementations for conditional ratio sampling.
-The full implementation will follow the structure of broken power law distributions.
-
-TODO: Implement full conditional ratio sampling with Planck tapering.
-"""
+"""Conditional ratio power law sampler with Planck tapering."""
 
 from __future__ import annotations
 
