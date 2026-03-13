@@ -27,9 +27,11 @@ def extract_sampler_dependencies(sampler_spec: dict[str, Any]) -> set[str]:
             # Look for explicit "arguments" or "depends_on"
             args = sampler_spec.get("arguments", []) or sampler_spec.get("depends_on", [])
             if isinstance(args, list):
-                dependencies = {arg[1:] for arg in args if isinstance(arg, str) and arg.startswith("@")}
+                dependencies = {
+                    arg[1:] for arg in args if isinstance(arg, str) and arg.startswith("@") and len(arg) > 1
+                }
             elif isinstance(args, dict):
-                dependencies = {v[1:] for v in args.values() if isinstance(v, str) and v.startswith("@")}
+                dependencies = {v[1:] for v in args.values() if isinstance(v, str) and v.startswith("@") and len(v) > 1}
         else:
             dependencies = extract_dependencies_from_spec(sampler_spec)
     print("dependencies:", dependencies)
