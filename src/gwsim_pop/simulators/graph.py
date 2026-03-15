@@ -120,6 +120,10 @@ class GraphSimulator(RandomMixin, Simulator):
             Sampled array.
         """
         # Resolve dependencies in arguments
+        if arguments is None:
+            arguments = {}
+        elif not isinstance(arguments, dict):
+            raise ValueError("Sampler arguments must be a mapping (or null).")
         resolved_args: dict[str, Any] = {}
         for key, value in arguments.items():
             if isinstance(value, str) and value.startswith("@"):
