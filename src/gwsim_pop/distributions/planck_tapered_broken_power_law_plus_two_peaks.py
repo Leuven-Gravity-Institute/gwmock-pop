@@ -109,7 +109,7 @@ def planck_tapered_broken_power_law_plus_two_peaks_cdf(  # noqa: PLR0913
         x: Grid points to evaluate the CDF.
         cdf: Cumulative distribution function.
     """
-    # Create an array to evaluate the
+    # Create an array of grid points to evaluate the CDF
     x = jnp.linspace(start=minimum, stop=maximum, num=n_grids)
 
     # Compute the unnormalized logpdf
