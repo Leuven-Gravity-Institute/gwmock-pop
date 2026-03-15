@@ -233,7 +233,8 @@ class GraphSimulator(RandomMixin, Simulator):
         elif config_path.suffix == ".toml":
             import tomllib  # noqa: PLC0415
 
-            with open(config_path, "rb", encoding=encoding) as f:
+            # Binary mode does not require encoding
+            with open(config_path, "rb") as f:
                 config = tomllib.load(f)
         else:
             raise ValueError(
