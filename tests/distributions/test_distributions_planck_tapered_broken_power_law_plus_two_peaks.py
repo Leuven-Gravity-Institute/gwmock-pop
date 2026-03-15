@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import jax.numpy as jnp
+import pytest
 from jax import Array
 
 from gwsim_pop.distributions.planck_tapered_broken_power_law_plus_two_peaks import (
@@ -254,6 +255,105 @@ class TestPlanckTaperedBrokenPowerLawPlusTwoPeaksUnnormalizedLogpdf:
         lambda_2 = 1.0 - lambda_0 - lambda_1
 
         assert jnp.isclose(lambda_0 + lambda_1 + lambda_2, 1.0)
+
+    def test_negative_lambda_0_raises_error(self):
+        """Test that negative lambda_0 raises ValueError."""
+        x = jnp.array([2.0])
+        alpha_1 = 1.5
+        alpha_2 = 2.5
+        transition = 2.0
+        minimum = 1.0
+        maximum = 5.0
+        mean_1 = 2.0
+        sigma_1 = 0.5
+        mean_2 = 3.5
+        sigma_2 = 0.5
+        taper_range = 1.0
+        lambda_0 = -0.1  # Invalid: negative
+        lambda_1 = 0.3
+
+        with pytest.raises(ValueError, match=r"Invalid mixture weights: require lambda_0 >=0\."):
+            planck_tapered_broken_power_law_plus_two_peaks_unnormalized_logpdf(
+                x=x,
+                alpha_1=alpha_1,
+                alpha_2=alpha_2,
+                transition=transition,
+                minimum=minimum,
+                maximum=maximum,
+                mean_1=mean_1,
+                sigma_1=sigma_1,
+                mean_2=mean_2,
+                sigma_2=sigma_2,
+                taper_range=taper_range,
+                lambda_0=lambda_0,
+                lambda_1=lambda_1,
+            )
+
+    def test_negative_lambda_1_raises_error(self):
+        """Test that negative lambda_1 raises ValueError."""
+        x = jnp.array([2.0])
+        alpha_1 = 1.5
+        alpha_2 = 2.5
+        transition = 2.0
+        minimum = 1.0
+        maximum = 5.0
+        mean_1 = 2.0
+        sigma_1 = 0.5
+        mean_2 = 3.5
+        sigma_2 = 0.5
+        taper_range = 1.0
+        lambda_0 = 0.5
+        lambda_1 = -0.1  # Invalid: negative
+
+        with pytest.raises(ValueError, match=r"Invalid mixture weights: require lambda_1 >=0\."):
+            planck_tapered_broken_power_law_plus_two_peaks_unnormalized_logpdf(
+                x=x,
+                alpha_1=alpha_1,
+                alpha_2=alpha_2,
+                transition=transition,
+                minimum=minimum,
+                maximum=maximum,
+                mean_1=mean_1,
+                sigma_1=sigma_1,
+                mean_2=mean_2,
+                sigma_2=sigma_2,
+                taper_range=taper_range,
+                lambda_0=lambda_0,
+                lambda_1=lambda_1,
+            )
+
+    def test_weights_sum_greater_than_one_raises_error(self):
+        """Test that lambda_0 + lambda_1 > 1 raises ValueError."""
+        x = jnp.array([2.0])
+        alpha_1 = 1.5
+        alpha_2 = 2.5
+        transition = 2.0
+        minimum = 1.0
+        maximum = 5.0
+        mean_1 = 2.0
+        sigma_1 = 0.5
+        mean_2 = 3.5
+        sigma_2 = 0.5
+        taper_range = 1.0
+        lambda_0 = 0.7
+        lambda_1 = 0.4  # Invalid: sum > 1
+
+        with pytest.raises(ValueError, match=r"Invalid mixture weights: require lambda_0 \+ lambda_1 <= 1\."):
+            planck_tapered_broken_power_law_plus_two_peaks_unnormalized_logpdf(
+                x=x,
+                alpha_1=alpha_1,
+                alpha_2=alpha_2,
+                transition=transition,
+                minimum=minimum,
+                maximum=maximum,
+                mean_1=mean_1,
+                sigma_1=sigma_1,
+                mean_2=mean_2,
+                sigma_2=sigma_2,
+                taper_range=taper_range,
+                lambda_0=lambda_0,
+                lambda_1=lambda_1,
+            )
 
 
 class TestPlanckTaperedBrokenPowerLawPlusTwoPeaksCDF:

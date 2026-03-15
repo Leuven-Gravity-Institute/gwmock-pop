@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import jax.numpy as jnp
 from jax import Array
+from jax.experimental import checkify
 from jax.nn import logsumexp
 from jax.scipy.stats.norm import logpdf as norm_logpdf
 
@@ -60,6 +61,9 @@ def planck_tapered_broken_power_law_plus_two_peaks_unnormalized_logpdf(  # noqa:
     log_smoothing = log_planck_tapering_function(x=x, x_min=minimum, delta=taper_range)
 
     # Weights
+    checkify.check(lambda_0 >= 0.0, "Invalid mixture weights: require lambda_0 >=0.")
+    checkify.check(lambda_1 >= 0.0, "Invalid mixture weights: require lambda_1 >=0.")
+    checkify.check(lambda_0 + lambda_1 <= 1, "Invalid mixture weights: require lambda_0 + lambda_1 <= 1.")
     weights = jnp.array([lambda_0, lambda_1, 1.0 - lambda_0 - lambda_1])
 
     # Stacked logpdf of the components
