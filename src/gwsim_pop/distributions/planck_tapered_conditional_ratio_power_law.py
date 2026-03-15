@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import jax.numpy as jnp
 from jax import Array
+from jax.experimental import checkify
 
 from gwsim_pop.distributions.smoothing import log_planck_tapering_function
 from gwsim_pop.integrators.trapezoid import log_trapezoidal_cumsum
@@ -63,6 +64,11 @@ def planck_tapered_conditional_ratio_power_law_cdf(  # noqa: PLR0913
 
     # Compute the logcdf
     logcdf = log_trapezoidal_cumsum(log_y=unnormalized_logpdf, x=x)
+
+    # Validate the CDF.
+    checkify.check(
+        jnp.isfinite(logcdf[-1]), "Invalid support: CDF normalization is undefined for current parameters/range."
+    )
 
     # Compute the cdf
     return x, jnp.exp(logcdf - logcdf[-1])
