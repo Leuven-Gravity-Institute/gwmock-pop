@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import cast
 
 import jax.numpy as jnp
+import pytest
 from jax import Array
 
 from gwsim_pop.distributions.planck_tapered_conditional_ratio_power_law import (
@@ -35,7 +36,7 @@ class TestPlanckTaperedConditionalRatioPowerLawUnnormalizedLogpdf:
 
     def test_scalar_input(self):
         """Test with scalar input values."""
-        x = 1.0
+        x = jnp.array(1.0)
         denominator = jnp.array(2.0)
         beta = 1.5
         numerator_minimum = 1.0
@@ -50,7 +51,7 @@ class TestPlanckTaperedConditionalRatioPowerLawUnnormalizedLogpdf:
 
     def test_power_law_dependence_on_x(self):
         """Test that the function increases with beta * log(x) dependence."""
-        denominator = 2.0
+        denominator = jnp.array(2.0)
         beta = 2.0
         numerator_minimum = 1.0
         taper_range = 1.0
@@ -73,7 +74,7 @@ class TestPlanckTaperedConditionalRatioPowerLawUnnormalizedLogpdf:
 
     def test_array_output_shape(self):
         """Test that output shape matches input shape."""
-        denominator = 2.0
+        denominator = jnp.array(2.0)
         beta = 1.5
         numerator_minimum = 1.0
         taper_range = 0.5
@@ -89,7 +90,7 @@ class TestPlanckTaperedConditionalRatioPowerLawUnnormalizedLogpdf:
     def test_positive_beta(self):
         """Test with positive spectral index."""
         x = jnp.array([1.0, 2.0, 3.0])
-        denominator = 2.0
+        denominator = jnp.array(2.0)
         beta = 0.5
         numerator_minimum = 1.0
         taper_range = 0.5
@@ -104,7 +105,7 @@ class TestPlanckTaperedConditionalRatioPowerLawUnnormalizedLogpdf:
     def test_negative_beta(self):
         """Test with negative spectral index."""
         x = jnp.array([1.0, 2.0, 3.0])
-        denominator = 2.0
+        denominator = jnp.array(2.0)
         beta = -1.5
         numerator_minimum = 1.0
         taper_range = 0.5
@@ -158,7 +159,7 @@ class TestPlanckTaperedConditionalRatioPowerLawUnnormalizedLogpdf:
     def test_taper_effect(self):
         """Test the effect of the taper range on the result."""
         x = jnp.array([1.2])
-        denominator = 2.0
+        denominator = jnp.array(2.0)
         beta = 1.5
         numerator_minimum = 1.0
 
@@ -182,7 +183,7 @@ class TestPlanckTaperedConditionalRatioPowerLawUnnormalizedCDF:
 
     def test_basic_functionality(self):
         """Test basic functionality of the CDF."""
-        denominator = 2.0
+        denominator = jnp.array(2.0)
         beta = 1.5
         numerator_minimum = 1.0
         taper_range = 0.5
@@ -207,7 +208,7 @@ class TestPlanckTaperedConditionalRatioPowerLawUnnormalizedCDF:
 
     def test_cdf_properties(self):
         """Test that CDF has expected properties."""
-        denominator = 2.0
+        denominator = jnp.array(2.0)
         beta = 1.5
         numerator_minimum = 1.0
         taper_range = 0.5
@@ -258,7 +259,7 @@ class TestPlanckTaperedConditionalRatioPowerLawUnnormalizedCDF:
 
     def test_different_n_grids(self):
         """Test with different numbers of grid points."""
-        denominator = 2.0
+        denominator = jnp.array(2.0)
         beta = 1.5
         numerator_minimum = 1.0
         taper_range = 0.5
@@ -284,7 +285,7 @@ class TestPlanckTaperedConditionalRatioPowerLawUnnormalizedCDF:
 
     def test_cdf_continuity(self):
         """Test that CDF is continuous (no jumps)."""
-        denominator = 2.0
+        denominator = jnp.array(2.0)
         beta = 1.5
         numerator_minimum = 1.0
         taper_range = 0.5
@@ -372,7 +373,7 @@ class TestEdgeCases:
     def test_large_x_values(self):
         """Test with large x values."""
         x = jnp.array([10.0, 100.0, 1000.0])
-        denominator = 2.0
+        denominator = jnp.array(2.0)
         beta = 1.5
         numerator_minimum = 1.0
         taper_range = 0.5
@@ -465,3 +466,29 @@ class TestEdgeCases:
             assert cdf.shape == (n_grids,)
             assert cdf[-1] == 1.0
             assert jnp.all(jnp.diff(cdf) >= 0.0)
+
+    def test_cdf_with_invalid_range_raises_error(self):
+        """Test that CDF raises error when PDF is entirely -inf."""
+        # Set parameters such that the entire range produces -inf in logpdf
+        # When x < numerator_minimum / denominator, the tapering function returns -inf
+        # And if x values are all very small, log(x) is -inf
+        denominator = jnp.array(0.01)  # Very small denominator
+        beta = 1.5
+        numerator_minimum = 1.0
+        taper_range = 0.5
+        minimum = 0.001  # Very small minimum
+        maximum = 0.01  # Maximum still much smaller than numerator_minimum/denominator
+        n_grids = 100
+
+        with pytest.raises(
+            ValueError, match=r"Invalid support: CDF normalization is undefined for current parameters/range\."
+        ):
+            planck_tapered_conditional_ratio_power_law_cdf(
+                denominator=denominator,
+                beta=beta,
+                numerator_minimum=numerator_minimum,
+                taper_range=taper_range,
+                minimum=minimum,
+                maximum=maximum,
+                n_grids=n_grids,
+            )
