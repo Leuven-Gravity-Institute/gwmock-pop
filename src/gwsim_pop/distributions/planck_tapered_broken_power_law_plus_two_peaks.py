@@ -90,7 +90,6 @@ def planck_tapered_broken_power_law_plus_two_peaks_cdf(  # noqa: PLR0913
     """Compute the cdf of Planck tapered broken power law plus two peaks distribution.
 
     Args:
-        x: An array of values to evaluate the unnormalized pdf.
         alpha_1: Spectral index of the first power law.
         alpha_2: Spectral index of the second power law.
         transition: Transition point of the broken power law.
