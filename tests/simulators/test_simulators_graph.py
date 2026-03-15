@@ -460,7 +460,7 @@ lambda_1 = 0.586
         # Results should be identical after reset with same seed
         assert jnp.allclose(result1, result2)
 
-    def test_simulator_callable_with_args(self) -> None:
+    def test_simulator_callable_without_args(self) -> None:
         """Test that simulator can be called with positional arguments."""
         config = {
             "mass_1": {
