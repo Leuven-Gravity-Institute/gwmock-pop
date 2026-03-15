@@ -245,6 +245,9 @@ class GraphSimulator(RandomMixin, Simulator):
                 f"Suffix of config_path={config_path} is not supported. Only '.yaml', '.yml', and '.toml' are supported."
             )
 
+        if not isinstance(config, dict):
+            raise ValueError("Config file must contain a mapping at the root.")
+
         # Extract parameters section if present
         if "parameters" in config:
             config = config["parameters"]
