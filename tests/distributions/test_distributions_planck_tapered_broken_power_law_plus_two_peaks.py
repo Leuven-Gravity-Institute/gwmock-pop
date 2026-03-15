@@ -703,7 +703,7 @@ class TestEdgeCases:
 
         assert result.shape == x.shape
         # All results should be either finite or -inf (expected from tapering)
-        assert jnp.all(jnp.isfinite(result) | jnp.isinf(result))
+        assert jnp.all(~jnp.isnan(result))
 
     def test_zero_weight_on_peaks(self):
         """Test with all weight on power law component."""
