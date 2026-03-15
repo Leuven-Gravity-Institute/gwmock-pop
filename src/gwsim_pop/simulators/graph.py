@@ -212,11 +212,12 @@ class GraphSimulator(RandomMixin, Simulator):
         return output
 
     @classmethod
-    def from_config_file(cls, config_path: str | Path, **kwargs: Any) -> GraphSimulator:
+    def from_config_file(cls, config_path: str | Path, encoding: str = "utf-8", **kwargs: Any) -> GraphSimulator:
         """Create simulator from configuration file.
 
         Args:
             config_path: Path to YAML/TOML configuration file.
+            encoding: Encoding of the file.
             **kwargs: Additional arguments passed to __init__.
 
         Returns:
@@ -227,12 +228,12 @@ class GraphSimulator(RandomMixin, Simulator):
         if config_path.suffix in [".yaml", ".yml"]:
             import yaml  # noqa: PLC0415
 
-            with open(config_path) as f:
+            with open(config_path, encoding=encoding) as f:
                 config = yaml.safe_load(f)
         elif config_path.suffix == ".toml":
             import tomllib  # noqa: PLC0415
 
-            with open(config_path, "rb") as f:
+            with open(config_path, "rb", encoding=encoding) as f:
                 config = tomllib.load(f)
         else:
             raise ValueError(
