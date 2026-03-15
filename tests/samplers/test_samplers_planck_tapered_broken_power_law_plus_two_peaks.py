@@ -13,18 +13,18 @@ class TestPlanckTaperedBrokenPowerLawPlusTwoPeaksSampler:
         """Test that the sampler returns the correct shape."""
         key = jax.random.PRNGKey(42)
         n_samples = 1000
-        alpha_1 = jnp.array(2.0)
-        alpha_2 = jnp.array(1.5)
-        transition = jnp.array(1e9)
-        minimum = jnp.array(1e8)
-        maximum = jnp.array(1e10)
-        mean_1 = jnp.array(1e9)
-        sigma_1 = jnp.array(1e8)
-        mean_2 = jnp.array(5e9)
-        sigma_2 = jnp.array(1e9)
-        taper_range = jnp.array(1e9)
-        lambda_0 = jnp.array(0.3)
-        lambda_1 = jnp.array(0.4)
+        alpha_1 = 2.0
+        alpha_2 = 1.5
+        transition = 1e9
+        minimum = 1e8
+        maximum = 1e10
+        mean_1 = 1e9
+        sigma_1 = 1e8
+        mean_2 = 5e9
+        sigma_2 = 1e9
+        taper_range = 1e9
+        lambda_0 = 0.3
+        lambda_1 = 0.4
 
         samples = planck_tapered_broken_power_law_plus_two_peaks(
             key=key,
@@ -51,21 +51,20 @@ class TestPlanckTaperedBrokenPowerLawPlusTwoPeaksSampler:
         """Test that different random keys produce different samples."""
         key1 = jax.random.PRNGKey(42)
         key2 = jax.random.PRNGKey(43)
-        _key3 = jax.random.PRNGKey(42)
 
         n_samples = 1000
-        alpha_1 = jnp.array(2.0)
-        alpha_2 = jnp.array(1.5)
-        transition = jnp.array(1e9)
-        minimum = jnp.array(1e8)
-        maximum = jnp.array(1e10)
-        mean_1 = jnp.array(1e9)
-        sigma_1 = jnp.array(1e8)
-        mean_2 = jnp.array(5e9)
-        sigma_2 = jnp.array(1e9)
-        taper_range = jnp.array(1e9)
-        lambda_0 = jnp.array(0.3)
-        lambda_1 = jnp.array(0.4)
+        alpha_1 = 2.0
+        alpha_2 = 1.5
+        transition = 1e9
+        minimum = 1e8
+        maximum = 1e10
+        mean_1 = 1e9
+        sigma_1 = 1e8
+        mean_2 = 5e9
+        sigma_2 = 1e9
+        taper_range = 1e9
+        lambda_0 = 0.3
+        lambda_1 = 0.4
 
         samples1 = planck_tapered_broken_power_law_plus_two_peaks(
             key=key1,
@@ -113,18 +112,18 @@ class TestPlanckTaperedBrokenPowerLawPlusTwoPeaksSampler:
         key2 = jax.random.PRNGKey(42)
 
         n_samples = 1000
-        alpha_1 = jnp.array(2.0)
-        alpha_2 = jnp.array(1.5)
-        transition = jnp.array(1e9)
-        minimum = jnp.array(1e8)
-        maximum = jnp.array(1e10)
-        mean_1 = jnp.array(1e9)
-        sigma_1 = jnp.array(1e8)
-        mean_2 = jnp.array(5e9)
-        sigma_2 = jnp.array(1e9)
-        taper_range = jnp.array(1e9)
-        lambda_0 = jnp.array(0.3)
-        lambda_1 = jnp.array(0.4)
+        alpha_1 = 2.0
+        alpha_2 = 1.5
+        transition = 1e9
+        minimum = 1e8
+        maximum = 1e10
+        mean_1 = 1e9
+        sigma_1 = 1e8
+        mean_2 = 5e9
+        sigma_2 = 1e9
+        taper_range = 1e9
+        lambda_0 = 0.3
+        lambda_1 = 0.4
 
         samples1 = planck_tapered_broken_power_law_plus_two_peaks(
             key=key1,
@@ -165,18 +164,18 @@ class TestPlanckTaperedBrokenPowerLawPlusTwoPeaksSampler:
     def test_sampler_with_different_sample_sizes(self):
         """Test sampler with different sample sizes."""
         key = jax.random.PRNGKey(42)
-        alpha_1 = jnp.array(2.0)
-        alpha_2 = jnp.array(1.0)
-        transition = jnp.array(1e9)
-        minimum = jnp.array(1e8)
-        maximum = jnp.array(1e10)
-        mean_1 = jnp.array(1e9)
-        sigma_1 = jnp.array(1e8)
-        mean_2 = jnp.array(5e9)
-        sigma_2 = jnp.array(1e9)
-        taper_range = jnp.array(1e9)
-        lambda_0 = jnp.array(0.3)
-        lambda_1 = jnp.array(0.4)
+        alpha_1 = 2.0
+        alpha_2 = 1.0
+        transition = 1e9
+        minimum = 1e8
+        maximum = 1e10
+        mean_1 = 1e9
+        sigma_1 = 1e8
+        mean_2 = 5e9
+        sigma_2 = 1e9
+        taper_range = 1e9
+        lambda_0 = 0.3
+        lambda_1 = 0.4
 
         sample_sizes = [1, 10, 100, 1000]
         for size in sample_sizes:
