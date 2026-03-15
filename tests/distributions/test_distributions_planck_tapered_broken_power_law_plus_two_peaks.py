@@ -244,8 +244,6 @@ class TestPlanckTaperedBrokenPowerLawPlusTwoPeaksUnnormalizedLogpdf:
 
         # All values should be well-defined (no NaN)
         assert jnp.all(~jnp.isnan(result_peak1))
-        # Values should be finite (allow -inf from extreme tapering)
-        assert jnp.all(jnp.isfinite(result_peak1) | jnp.isinf(result_peak1))
 
     def test_weights_sum_to_one(self):
         """Test that weights correctly sum to 1."""
