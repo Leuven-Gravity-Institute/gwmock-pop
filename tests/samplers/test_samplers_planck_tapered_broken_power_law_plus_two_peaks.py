@@ -159,7 +159,7 @@ class TestPlanckTaperedBrokenPowerLawPlusTwoPeaksSampler:
             lambda_1=lambda_1,
         )
 
-        jnp.allclose(samples1, samples2)
+        assert jnp.allclose(samples1, samples2)
 
     def test_sampler_with_different_sample_sizes(self):
         """Test sampler with different sample sizes."""
