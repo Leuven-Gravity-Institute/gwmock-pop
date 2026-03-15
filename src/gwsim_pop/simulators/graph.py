@@ -252,4 +252,7 @@ class GraphSimulator(RandomMixin, Simulator):
         # Reset RNG by using a fresh key
         if hasattr(self, "_rng_manager"):
             seed = getattr(self._rng_manager, "_seed", None)
-            self._rng_manager.key = jax.random.key(seed or secrets.randbelow(2**63))
+            if seed is not None:
+                self._rng_manager.key = jax.random.key(seed)
+            else:
+                self._rng_manager.key = jax.random.key(secrets.randbelow(2**63))
