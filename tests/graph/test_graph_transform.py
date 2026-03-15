@@ -165,7 +165,7 @@ class TestExtractTransformDependencies:
     def test_non_dict_non_string_transform_returns_empty(self) -> None:
         """Test that non-dict, non-string transform returns empty set."""
         # Type annotations say str | dict[str, Any], but function handles other types
-        result = extract_transform_dependencies("42")  # type: ignore[arg-type]
+        result = extract_transform_dependencies(42)  # type: ignore[arg-type]
         assert result == set()
 
     def test_transform_dict_with_none_arguments(self) -> None:
