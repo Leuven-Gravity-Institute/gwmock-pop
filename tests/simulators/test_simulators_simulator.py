@@ -238,6 +238,31 @@ class TestSimulator:
         with pytest.raises(ValueError, match="Unsupported format: txt"):
             simulator.save(output_path)
 
+    def test_save_npz_with_metadata(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
+        """Test save method with npz format and metadata."""
+        data = jnp.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+        simulator._last_data = data
+        output_path = tmp_path / "test.npz"
+        metadata = {"key1": "value1", "key2": "value2"}
+
+        simulator.save(output_path, metadata=metadata)
+
+        assert output_path.exists()
+        loaded = simulator.load(output_path)
+        assert jnp.allclose(loaded, data)
+
+    def test_save_npz_with_compression(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
+        """Test save method with npz format and compression."""
+        data = jnp.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+        simulator._last_data = data
+        output_path = tmp_path / "test.npz"
+
+        simulator.save(output_path, compression="zlib")
+
+        assert output_path.exists()
+        loaded = simulator.load(output_path)
+        assert jnp.allclose(loaded, data)
+
     def test_load(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
         """Test load method with different formats."""
         original_data = jnp.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
