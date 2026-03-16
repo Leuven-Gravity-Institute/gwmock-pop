@@ -40,3 +40,6 @@ MD032: true
 
 MD046:
     style: fenced
+
+# Allow trailing punctuation in heading
+MD026: false
