@@ -153,7 +153,7 @@ parameters:
 Run the simulator:
 
 ```bash
-gwsim_pop simulate population.yaml
+gwsim-pop simulate population.yaml
 ```
 
 This writes `outputs/demo_population.csv`. For the MVP, the CLI only supports

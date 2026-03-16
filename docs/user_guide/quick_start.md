@@ -43,7 +43,7 @@ parameters:
 Then run:
 
 ```bash
-gwsim_pop simulate population.yaml
+gwsim-pop simulate population.yaml
 ```
 
 This writes `outputs/demo_population.csv`.
