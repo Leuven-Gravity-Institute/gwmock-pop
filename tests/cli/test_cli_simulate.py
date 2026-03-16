@@ -8,7 +8,6 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 import typer
-from pydantic import ValidationError
 from typer.testing import CliRunner
 
 from gwsim_pop.cli.main import app, setup_logging
@@ -341,5 +340,5 @@ run:
         config_path = tmp_path / "empty_config.yaml"
         config_path.write_text("", encoding="utf-8")
 
-        with pytest.raises((ValidationError, typer.Exit)):
+        with pytest.raises(typer.Exit):
             simulate_command(str(config_path))
