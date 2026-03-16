@@ -113,6 +113,52 @@ python -c "import gwsim_pop; print(gwsim_pop.__version__)"
 Full documentation to be available at
 [https://leuven-gravity-institute.github.io/gwsim_pop](https://leuven-gravity-institute.github.io/gwsim_pop).
 
+## Quick Start with the CLI
+
+The current MVP CLI supports fixed-size population generation through
+`GraphSimulator`.
+
+Create a configuration file such as `population.yaml`:
+
+```yaml
+run:
+    name: demo_population
+    mode: fixed_n_samples
+    n_samples: 100
+    seed: 42
+    output:
+        directory: outputs
+        format: csv
+        overwrite: true
+
+parameters:
+    mass_1:
+        sampler:
+            function: gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
+            arguments:
+                alpha_1: 1.72
+                alpha_2: 4.51
+                transition: 35.6
+                minimum: 5.06
+                maximum: 300.0
+                mean_1: 9.76
+                sigma_1: 0.649
+                mean_2: 32.8
+                sigma_2: 3.92
+                taper_range: 4.32
+                lambda_0: 0.361
+                lambda_1: 0.586
+```
+
+Run the simulator:
+
+```bash
+gwsim_pop simulate population.yaml
+```
+
+This writes `outputs/demo_population.csv`. For the MVP, the CLI only supports
+`run.mode: fixed_n_samples`.
+
 ## Contributing
 
 Contributions are welcome!
