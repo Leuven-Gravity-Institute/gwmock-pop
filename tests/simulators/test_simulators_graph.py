@@ -1309,3 +1309,169 @@ lambda_1 = 0.586
                 GraphSimulator.from_config_file(temp_path)
         finally:
             Path(temp_path).unlink()
+
+    def test_coerce_output_column_scalar_raises_error(self) -> None:
+        """Test that _coerce_output_column raises error for scalar output."""
+        config = {
+            "mass_1": {
+                "sampler": {
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "arguments": {
+                        "n_samples": 100,
+                        "alpha_1": 1.72,
+                        "alpha_2": 4.51,
+                        "transition": 35.6,
+                        "minimum": 5.06,
+                        "maximum": 300.0,
+                        "mean_1": 9.76,
+                        "sigma_1": 0.649,
+                        "mean_2": 32.8,
+                        "sigma_2": 3.92,
+                        "taper_range": 4.32,
+                        "lambda_0": 0.361,
+                        "lambda_1": 0.586,
+                    },
+                },
+            },
+        }
+
+        simulator = GraphSimulator(config=config)
+        # Test with scalar value - should raise ValueError
+        with pytest.raises(ValueError, match="produced a scalar output"):
+            simulator._coerce_output_column("mass_1", jnp.array(5.0), None)
+
+    def test_coerce_output_column_sample_count_mismatch(self) -> None:
+        """Test that _coerce_output_column raises error for sample count mismatch."""
+        config = {
+            "mass_1": {
+                "sampler": {
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "arguments": {
+                        "n_samples": 100,
+                        "alpha_1": 1.72,
+                        "alpha_2": 4.51,
+                        "transition": 35.6,
+                        "minimum": 5.06,
+                        "maximum": 300.0,
+                        "mean_1": 9.76,
+                        "sigma_1": 0.649,
+                        "mean_2": 32.8,
+                        "sigma_2": 3.92,
+                        "taper_range": 4.32,
+                        "lambda_0": 0.361,
+                        "lambda_1": 0.586,
+                    },
+                },
+            },
+        }
+
+        simulator = GraphSimulator(config=config)
+        # Test with wrong sample count - should raise ValueError
+        wrong_count_array = jnp.array([1.0, 2.0, 3.0])  # 3 samples instead of 100
+        with pytest.raises(ValueError, match="produced 3 samples, expected 100"):
+            simulator._coerce_output_column("mass_1", wrong_count_array, 100)
+
+    def test_simulate_with_transform_branch(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that transform branch is executed correctly in _simulate_impl."""
+
+        # Create a simple transform that accepts any kwargs
+        def dummy_transform(**kwargs: Any) -> jnp.ndarray:
+            return jnp.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0])
+
+        # Monkeypatch to use our dummy transform
+        monkeypatch.setattr(
+            graph_module,
+            "import_from_string",
+            lambda object_path, default_module=None: dummy_transform,
+        )
+
+        config = {
+            "mass_1": {
+                "sampler": {
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "arguments": {
+                        "n_samples": 10,
+                        "alpha_1": 1.72,
+                        "alpha_2": 4.51,
+                        "transition": 35.6,
+                        "minimum": 5.06,
+                        "maximum": 300.0,
+                        "mean_1": 9.76,
+                        "sigma_1": 0.649,
+                        "mean_2": 32.8,
+                        "sigma_2": 3.92,
+                        "taper_range": 4.32,
+                        "lambda_0": 0.361,
+                        "lambda_1": 0.586,
+                    },
+                },
+            },
+            "mass_1_transformed": {
+                "transform": {
+                    "function": "dummy_transform",
+                    "arguments": {"values": "@mass_1"},
+                },
+            },
+        }
+
+        simulator = GraphSimulator(config=config)
+        # Just verify that the transform branch is reachable
+        # The actual output is not important, we just want to ensure
+        # the transform branch in _simulate_impl is executed
+        result = simulator()
+
+        # Should have 2 parameters: mass_1 and mass_1_transformed
+        expected_n_parameters = 2
+        assert result.shape[1] == expected_n_parameters
+        assert "mass_1" in simulator.parameter_names
+        assert "mass_1_transformed" in simulator.parameter_names
+
+    def test_simulate_empty_parameter_names_raises_error(self) -> None:
+        """Test that _simulate_impl raises error when no output parameters defined."""
+        config = {
+            "intermediate_param": {
+                "sampler": {
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "arguments": {
+                        "n_samples": 100,
+                        "alpha_1": 1.72,
+                        "alpha_2": 4.51,
+                        "transition": 35.6,
+                        "minimum": 5.06,
+                        "maximum": 300.0,
+                        "mean_1": 9.76,
+                        "sigma_1": 0.649,
+                        "mean_2": 32.8,
+                        "sigma_2": 3.92,
+                        "taper_range": 4.32,
+                        "lambda_0": 0.361,
+                        "lambda_1": 0.586,
+                    },
+                },
+                "exclude": True,  # Exclude from output
+                "intermediate": True,  # Mark as intermediate
+            },
+        }
+
+        simulator = GraphSimulator(config=config)
+        # parameter_names will be empty because all params are excluded/intermediate
+        assert simulator.parameter_names == []
+
+        # Simulate should raise ValueError when no output parameters
+        with pytest.raises(ValueError, match="does not define any output parameters"):
+            simulator()
+
+    def test_from_config_file_with_unsupported_suffix_other_error(self) -> None:
+        """Test that from_config_file re-raises non-matching errors."""
+        # Create a file with unsupported suffix that triggers a different error
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            # Write content that will cause a different ValueError
+            f.write("invalid yaml content {{")
+            temp_path = f.name
+
+        try:
+            # This should raise a ValueError with unsupported suffix message
+            with pytest.raises(ValueError, match="Suffix of config_path"):
+                GraphSimulator.from_config_file(temp_path)
+        finally:
+            Path(temp_path).unlink()
