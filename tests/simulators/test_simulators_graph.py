@@ -138,8 +138,8 @@ class TestGraphSimulator:
         assert "mass_1" in graph_nodes
         assert "mass_ratio" in graph_nodes
 
-    def test_source_type(self) -> None:
-        """Test that source_type returns 'bbh'."""
+    def test_source_type_defaults_to_none(self) -> None:
+        """Test that source_type is optional."""
         config = {
             "mass_1": {
                 "sampler": {
@@ -164,7 +164,35 @@ class TestGraphSimulator:
         }
 
         simulator = GraphSimulator(config=config)
-        assert simulator.source_type == "bbh"
+        assert simulator.source_type is None
+
+    def test_source_type_can_be_configured(self) -> None:
+        """Test that source_type can be provided by the caller."""
+        config = {
+            "mass_1": {
+                "sampler": {
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "arguments": {
+                        "n_samples": 100,
+                        "alpha_1": 1.72,
+                        "alpha_2": 4.51,
+                        "transition": 35.6,
+                        "minimum": 5.06,
+                        "maximum": 300.0,
+                        "mean_1": 9.76,
+                        "sigma_1": 0.649,
+                        "mean_2": 32.8,
+                        "sigma_2": 3.92,
+                        "taper_range": 4.32,
+                        "lambda_0": 0.361,
+                        "lambda_1": 0.586,
+                    },
+                },
+            },
+        }
+
+        simulator = GraphSimulator(config=config, source_type="generic-source")
+        assert simulator.source_type == "generic-source"
 
     def test_reset(self) -> None:
         """Test that reset clears sampled values."""
@@ -347,6 +375,35 @@ lambda_1 = 0.586
         result = simulator()
         assert result.shape[0] == 50  # noqa: PLR2004
         assert result.shape[1] == len(simulator.parameter_names)
+
+    def test_simulate_injects_n_samples_when_not_in_sampler_arguments(self) -> None:
+        """Test that simulate(n_samples=...) injects the sample count into samplers."""
+        config = {
+            "mass_1": {
+                "sampler": {
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "arguments": {
+                        "alpha_1": 1.72,
+                        "alpha_2": 4.51,
+                        "transition": 35.6,
+                        "minimum": 5.06,
+                        "maximum": 300.0,
+                        "mean_1": 9.76,
+                        "sigma_1": 0.649,
+                        "mean_2": 32.8,
+                        "sigma_2": 3.92,
+                        "taper_range": 4.32,
+                        "lambda_0": 0.361,
+                        "lambda_1": 0.586,
+                    },
+                },
+            },
+        }
+
+        simulator = GraphSimulator(config=config)
+        result = simulator.simulate(n_samples=12)
+
+        assert result.shape == (12, 1)
 
     def test_simulate_with_multiple_parameters(self) -> None:
         """Test simulation with multiple parameters and dependencies."""
@@ -555,8 +612,60 @@ lambda_1 = 0.586
         assert set(simulator.parameter_names) == set(config.keys())
         assert len(simulator.parameter_names) == DEFAULT_N_PARAMETERS_MULTI
 
-    def test_source_type_is_constant(self) -> None:
-        """Test that source_type always returns 'bbh'."""
+    def test_excluded_parameters_are_not_returned(self) -> None:
+        """Test that parameters marked as excluded are omitted from the output."""
+        config = {
+            "mass_1": {
+                "sampler": {
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "arguments": {
+                        "n_samples": 10,
+                        "alpha_1": 1.72,
+                        "alpha_2": 4.51,
+                        "transition": 35.6,
+                        "minimum": 5.06,
+                        "maximum": 300.0,
+                        "mean_1": 9.76,
+                        "sigma_1": 0.649,
+                        "mean_2": 32.8,
+                        "sigma_2": 3.92,
+                        "taper_range": 4.32,
+                        "lambda_0": 0.361,
+                        "lambda_1": 0.586,
+                    },
+                },
+            },
+            "hidden_mass": {
+                "exclude": True,
+                "sampler": {
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "arguments": {
+                        "n_samples": 10,
+                        "alpha_1": 1.72,
+                        "alpha_2": 4.51,
+                        "transition": 35.6,
+                        "minimum": 5.06,
+                        "maximum": 300.0,
+                        "mean_1": 9.76,
+                        "sigma_1": 0.649,
+                        "mean_2": 32.8,
+                        "sigma_2": 3.92,
+                        "taper_range": 4.32,
+                        "lambda_0": 0.361,
+                        "lambda_1": 0.586,
+                    },
+                },
+            },
+        }
+
+        simulator = GraphSimulator(config=config)
+        result = simulator()
+
+        assert simulator.parameter_names == ["mass_1"]
+        assert result.shape == (10, 1)
+
+    def test_source_type_is_stable(self) -> None:
+        """Test that source_type remains stable across property access."""
         config = {
             "mass_1": {
                 "sampler": {
@@ -580,12 +689,12 @@ lambda_1 = 0.586
             },
         }
 
-        simulator = GraphSimulator(config=config)
-        assert simulator.source_type == "bbh"
+        simulator = GraphSimulator(config=config, source_type="population")
+        assert simulator.source_type == "population"
 
         # Test that it's consistent across multiple calls
-        assert simulator.source_type == "bbh"
-        assert simulator.source_type == "bbh"
+        assert simulator.source_type == "population"
+        assert simulator.source_type == "population"
 
     def test_graph_nodes_match_parameters(self) -> None:
         """Test that graph nodes match parameter names."""

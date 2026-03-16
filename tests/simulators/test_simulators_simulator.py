@@ -20,17 +20,11 @@ class ConcreteSimulator(Simulator):
         """Initialize the concrete simulator."""
         super().__init__(*args, **kwargs)
         self._parameter_names = ["mass", "spin", "redshift"]
-        self._source_type = "BBH"
 
     @property
     def parameter_names(self) -> list[str]:
         """Get the names of the parameters."""
         return self._parameter_names
-
-    @property
-    def source_type(self) -> str:
-        """Get the source type."""
-        return self._source_type
 
     def _simulate_impl(self, *args, **kwargs) -> Array:
         """Implement simulation for subclass."""
@@ -182,7 +176,7 @@ class TestSimulator:
         assert result.shape == (10, 3)
         assert jnp.all(result == 1.0)
 
-    @pytest.mark.parametrize("file_format", ["npy", "csv", "hdf5"])
+    @pytest.mark.parametrize("file_format", ["npy", "npz", "csv", "hdf5"])
     def test_save(self, simulator: ConcreteSimulator, tmp_path: Path, file_format: str) -> None:
         """Test save method with different formats."""
         data = jnp.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
@@ -195,6 +189,9 @@ class TestSimulator:
 
         if file_format == "npy":
             loaded = jnp.load(output_path)
+            assert jnp.allclose(loaded, data)
+        elif file_format == "npz":
+            loaded = simulator.load(output_path)
             assert jnp.allclose(loaded, data)
         elif file_format == "csv":
             loaded = np.loadtxt(output_path, delimiter=",")
@@ -245,11 +242,13 @@ class TestSimulator:
         """Test load method with different formats."""
         original_data = jnp.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
 
-        for file_format in ["npy", "csv", "hdf5"]:
+        for file_format in ["npy", "npz", "csv", "hdf5"]:
             output_path = tmp_path / f"test_load.{file_format}"
 
             if file_format == "npy":
                 jnp.save(output_path, original_data)
+            elif file_format == "npz":
+                np.savez(output_path, data=np.asarray(original_data))
             elif file_format == "csv":
                 np.savetxt(output_path, original_data, delimiter=",")
             elif file_format == "hdf5":
@@ -307,6 +306,17 @@ class TestSimulator:
 
         loaded = Simulator._load_hdf5(path)
         assert jnp.allclose(loaded, data)
+
+    def test_save_hdf5_with_metadata(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
+        """Test save stores metadata in HDF5 files."""
+        data = jnp.array([[1.0, 2.0, 3.0]])
+        output_path = tmp_path / "test_metadata.hdf5"
+
+        simulator.save(output_path, data=data, metadata={"parameter_names": ["mass", "spin", "redshift"]})
+
+        with h5py.File(output_path, "r") as file_handle:
+            assert "metadata" in file_handle
+            assert "parameter_names" in file_handle["metadata"].attrs
 
     def test_load_hdf5_invalid_dataset(self, tmp_path: Path) -> None:
         """Test _load_hdf5 raises error for non-dataset object."""

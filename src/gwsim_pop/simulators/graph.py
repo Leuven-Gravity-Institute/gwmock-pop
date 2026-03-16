@@ -15,6 +15,7 @@ from gwsim_pop.graph.build import build_dependency_graph
 from gwsim_pop.mixins.random import RandomMixin
 from gwsim_pop.simulators.simulator import Simulator
 from gwsim_pop.utils.import_utils import import_from_string
+from gwsim_pop.utils.yaml import read_data_file
 
 
 class GraphSimulator(RandomMixin, Simulator):
@@ -56,18 +57,21 @@ class GraphSimulator(RandomMixin, Simulator):
     def __init__(
         self,
         config: dict[str, Any],
+        source_type: str | None = None,
         **kwargs: Any,
     ) -> None:
-        """Initialize the graph-based BBH simulator.
+        """Initialize the graph-based simulator.
 
         Args:
             config: Configuration dictionary with parameter definitions.
+            source_type: Optional logical source identifier for higher-level orchestration.
             **kwargs: Additional arguments passed to parent class.
         """
         super().__init__(**kwargs)
         self._config = config
-        self._sampled_values: dict[str, Array] = {}
-        self._parameter_names = [name for name, spec in config.items() if not spec.get("intermediate", False)]
+        self._source_type = source_type
+        self._sampled_values: dict[str, Any] = {}
+        self._parameter_names = [name for name, spec in config.items() if self._include_in_output(spec)]
         self._build_graph()
 
     @property
@@ -80,13 +84,18 @@ class GraphSimulator(RandomMixin, Simulator):
         return self._parameter_names
 
     @property
-    def source_type(self) -> str:
-        """Get the source type.
+    def source_type(self) -> str | None:
+        """Get the optional logical source type.
 
         Returns:
-            Source type string.
+            Source type string, when configured.
         """
-        return "bbh"
+        return self._source_type
+
+    @staticmethod
+    def _include_in_output(spec: dict[str, Any]) -> bool:
+        """Determine whether a parameter should be included in the final output."""
+        return not bool(spec.get("exclude", False) or spec.get("intermediate", False))
 
     def _build_graph(self) -> None:
         """Build the dependency graph from the configuration."""
@@ -109,12 +118,14 @@ class GraphSimulator(RandomMixin, Simulator):
         self,
         sampler_name: str,
         arguments: dict[str, Any],
+        n_samples: int | None = None,
     ) -> Array:
         """Execute a sampler with given arguments.
 
         Args:
             sampler_name: Name of the sampler function.
             arguments: Arguments for the sampler.
+            n_samples: Number of samples to inject when the sampler arguments omit it.
 
         Returns:
             Sampled array.
@@ -134,6 +145,9 @@ class GraphSimulator(RandomMixin, Simulator):
                     raise ValueError(f"Dependency '{dep_name}' not sampled yet")
             else:
                 resolved_args[key] = value
+
+        if n_samples is not None and "n_samples" not in resolved_args:
+            resolved_args["n_samples"] = n_samples
 
         # Add random key if needed
         if "key" not in resolved_args:
@@ -181,16 +195,38 @@ class GraphSimulator(RandomMixin, Simulator):
         transform_func = import_from_string(object_path=function_name, default_module="gwsim_pop.transforms")
         return transform_func(**resolved_args)
 
-    def _simulate_impl(self, *args: Any, **kwargs: Any) -> Array:
+    def _coerce_output_column(
+        self,
+        parameter_name: str,
+        value: Any,
+        expected_n_samples: int | None,
+    ) -> tuple[Array, int]:
+        """Convert a sampled value into a validated output column."""
+        array = jnp.asarray(value)
+        if array.ndim == 0:
+            raise ValueError(f"Parameter '{parameter_name}' produced a scalar output, expected an array of samples.")
+
+        current_n_samples = int(array.shape[0])
+        if expected_n_samples is not None and current_n_samples != expected_n_samples:
+            raise ValueError(
+                f"Parameter '{parameter_name}' produced {current_n_samples} samples, expected {expected_n_samples}."
+            )
+        return array, current_n_samples
+
+    def _simulate_impl(self, n_samples: int | None = None, **kwargs: Any) -> Array:
         """Implement simulation using graph traversal.
 
         Args:
-            *args: Positional arguments.
+            n_samples: Number of samples to inject into samplers when not explicitly configured.
             **kwargs: Keyword arguments.
 
         Returns:
             2D array of shape (n_samples, n_parameters).
         """
+        del kwargs
+
+        self._sampled_values = {}
+
         # Get ordered parameters
         ordered_params = self._get_ordered_parameters()
 
@@ -202,7 +238,7 @@ class GraphSimulator(RandomMixin, Simulator):
                 sampler_spec = spec["sampler"]
                 sampler_name = sampler_spec.get("function", "")
                 sampler_args = sampler_spec.get("arguments", {})
-                samples = self._execute_sampler(sampler_name, sampler_args)
+                samples = self._execute_sampler(sampler_name, sampler_args, n_samples=n_samples)
                 self._sampled_values[param_name] = samples
 
             elif "transform" in spec:
@@ -210,9 +246,21 @@ class GraphSimulator(RandomMixin, Simulator):
                 transformed = self._execute_transform(transform_spec)
                 self._sampled_values[param_name] = transformed
 
+        if not self.parameter_names:
+            raise ValueError("GraphSimulator configuration does not define any output parameters.")
+
+        expected_n_samples = n_samples
+        output_columns: list[Array] = []
+        for parameter_name in self.parameter_names:
+            output_column, expected_n_samples = self._coerce_output_column(
+                parameter_name=parameter_name,
+                value=self._sampled_values[parameter_name],
+                expected_n_samples=expected_n_samples,
+            )
+            output_columns.append(output_column)
+
         # Build output array in parameter order
-        # Include parameters that don't have intermediate=False (i.e., default to True)
-        output = jnp.column_stack([self._sampled_values[name] for name in self.parameter_names])
+        output = jnp.column_stack(output_columns)
         return output
 
     @classmethod
@@ -228,25 +276,17 @@ class GraphSimulator(RandomMixin, Simulator):
             Configured simulator instance.
         """
         config_path = Path(config_path)
-
-        if config_path.suffix in [".yaml", ".yml"]:
-            import yaml  # noqa: PLC0415
-
-            with open(config_path, encoding=encoding) as f:
-                config = yaml.safe_load(f)
-        elif config_path.suffix == ".toml":
-            import tomllib  # noqa: PLC0415
-
-            # Binary mode does not require encoding
-            with open(config_path, "rb") as f:
-                config = tomllib.load(f)
-        else:
-            raise ValueError(
-                f"Suffix of config_path={config_path} is not supported. Only '.yaml', '.yml', and '.toml' are supported."
-            )
-
-        if not isinstance(config, dict):
-            raise ValueError("Config file must contain a mapping at the root.")
+        try:
+            config = read_data_file(config_path, encoding=encoding)
+        except ValueError as error:
+            message = str(error)
+            if "Suffix of filename=" in message:
+                raise ValueError(
+                    f"Suffix of config_path={config_path} is not supported. Only '.yaml', '.yml', and '.toml' are supported."
+                ) from error
+            if "mapping at the top level" in message:
+                raise ValueError("Config file must contain a mapping at the root.") from error
+            raise
 
         # Extract parameters section if present
         if "parameters" in config:

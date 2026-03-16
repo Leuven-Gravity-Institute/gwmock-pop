@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import json
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from functools import wraps
 from pathlib import Path
+from typing import Any
 
 import h5py
 import jax.numpy as jnp
@@ -15,9 +17,9 @@ from jax import Array
 
 
 class Simulator(ABC):
-    """A simulator base class for generating gravitational wave source populations."""
+    """Abstract base class for generating simulated populations."""
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: object, **kwargs: object) -> None:
         """Initialize the instance.
 
         Args:
@@ -36,16 +38,6 @@ class Simulator(ABC):
 
         Returns:
             List of parameter names.
-
-        """
-
-    @property
-    @abstractmethod
-    def source_type(self) -> str:
-        """Get the source type.
-
-        Returns:
-            Source type string.
 
         """
 
@@ -81,7 +73,7 @@ class Simulator(ABC):
             self.register_node(node_name, func, depends_on)
 
             @wraps(func)
-            def wrapper(*args, **kwargs):
+            def wrapper(*args: object, **kwargs: object):
                 return func(*args, **kwargs)
 
             return wrapper
@@ -89,7 +81,7 @@ class Simulator(ABC):
         return decorator
 
     @abstractmethod
-    def _simulate_impl(self, *args, **kwargs) -> Array:
+    def _simulate_impl(self, *args: object, **kwargs: object) -> Array:
         """Implement simulation for subclass.
 
         Args:
@@ -101,7 +93,7 @@ class Simulator(ABC):
 
         """
 
-    def simulate(self, *args, **kwargs) -> Array:
+    def simulate(self, *args: object, **kwargs: object) -> Array:
         """Simulate a population of sources.
 
         Args:
@@ -117,7 +109,7 @@ class Simulator(ABC):
         self._last_data = result
         return result
 
-    def __call__(self, *args, **kwargs) -> Array:
+    def __call__(self, *args: object, **kwargs: object) -> Array:
         """Call simulate() with n_samples.
 
         Args:
@@ -135,13 +127,17 @@ class Simulator(ABC):
         output_path: str | Path,
         file_format: str | None = None,
         data: Array | None = None,
+        compression: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Save the simulated data to a file.
 
         Args:
             output_path: Path to save the file.
-            file_format: File format (npy, csv, hdf5). If None, infers from extension.
+            file_format: File format (npy, npz, csv, hdf5). If None, infers from extension.
             data: Data to save. If None, uses last simulated data.
+            compression: Optional compression setting for supported formats.
+            metadata: Optional metadata to store alongside the samples.
 
         """
         output_path = Path(output_path)
@@ -156,10 +152,19 @@ class Simulator(ABC):
 
         if file_format == "npy":
             jnp.save(output_path, data)
+        elif file_format == "npz":
+            if metadata:
+                payload = {"data": np.asarray(data), "__metadata__": np.array(json.dumps(metadata))}
+            else:
+                payload = {"data": np.asarray(data)}
+            if compression is None:
+                np.savez(output_path, **payload)
+            else:
+                np.savez_compressed(output_path, **payload)
         elif file_format == "csv":
             np.savetxt(output_path, data, delimiter=",")
         elif file_format == "hdf5":
-            self._save_hdf5(output_path, data)
+            self._save_hdf5(output_path, data, compression=compression, metadata=metadata)
         else:
             raise ValueError(f"Unsupported format: {file_format}")
 
@@ -179,6 +184,9 @@ class Simulator(ABC):
 
         if suffix == "npy":
             return jnp.load(input_path)
+        elif suffix == "npz":
+            with np.load(input_path) as loaded:
+                return jnp.array(loaded["data"])
         elif suffix == "csv":
             return jnp.array(np.loadtxt(input_path, delimiter=","))
         elif suffix == "hdf5":
@@ -187,16 +195,24 @@ class Simulator(ABC):
             raise ValueError(f"Unsupported format: {suffix}")
 
     @staticmethod
-    def _save_hdf5(path: Path, data: Array) -> None:
+    def _save_hdf5(
+        path: Path, data: Array, compression: str | None = None, metadata: dict[str, Any] | None = None
+    ) -> None:
         """Save data to HDF5 format.
 
         Args:
             path: Path to save the file.
             data: Data to save.
+            compression: Optional HDF5 compression filter.
+            metadata: Optional metadata to store in the file.
 
         """
         with h5py.File(path, "w") as f:
-            f.create_dataset("data", data=data)
+            f.create_dataset("data", data=data, compression=compression)
+            if metadata:
+                metadata_group = f.create_group("metadata")
+                for key, value in metadata.items():
+                    metadata_group.attrs[key] = json.dumps(value)
 
     @staticmethod
     def _load_hdf5(path: Path) -> Array:
