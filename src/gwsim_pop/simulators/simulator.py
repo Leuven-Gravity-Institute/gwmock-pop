@@ -137,6 +137,8 @@ class Simulator(ABC):
             file_format: File format (npy, npz, csv, hdf5). If None, infers from extension.
             data: Data to save. If None, uses last simulated data.
             compression: Optional compression setting for supported formats.
+                For HDF5, this specifies the compression filter (e.g., "gzip").
+                For NPZ, any non-None value enables default zlib compression.
             metadata: Optional metadata to store alongside the samples.
 
         """
