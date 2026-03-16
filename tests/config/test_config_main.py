@@ -27,6 +27,7 @@ class TestMainConfiguration:
         assert hasattr(config, "selection")
         assert hasattr(config, "post_processing")
         assert hasattr(config, "advanced")
+        assert config.parameters == {}
 
     def test_initialization_with_values(self):
         """Test that MainConfiguration can be initialized with specific values."""
@@ -41,6 +42,10 @@ class TestMainConfiguration:
 config_version: "1.0.0"
 run:
   name: test_run
+parameters:
+  mass:
+    sampler:
+      function: sampler_name
 """)
             temp_file = f.name
 
@@ -48,6 +53,29 @@ run:
             config = MainConfiguration.from_file(temp_file)
             assert config.config_version == "1.0.0"
             assert config.run.name == "test_run"
+            assert "mass" in config.parameters
+        finally:
+            Path(temp_file).unlink()
+
+    def test_from_toml_file_method(self):
+        """Test that from_file supports TOML configuration files."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".toml", delete=False) as f:
+            f.write("""
+config_version = "1.0.0"
+
+[run]
+name = "test_run"
+
+[parameters.mass.sampler]
+function = "sampler_name"
+""")
+            temp_file = f.name
+
+        try:
+            config = MainConfiguration.from_file(temp_file)
+            assert config.config_version == "1.0.0"
+            assert config.run.name == "test_run"
+            assert "mass" in config.parameters
         finally:
             Path(temp_file).unlink()
 

@@ -16,7 +16,7 @@ class TestRunConfiguration:
         config = RunConfiguration()
         assert config.name == "simulation"
         assert config.seed == 42  # noqa: PLR2004
-        assert config.mode == "duration"
+        assert config.mode == "fixed_n_samples"
         assert config.n_samples == 1_000_000  # noqa: PLR2004
         assert config.duration == 1.0
 

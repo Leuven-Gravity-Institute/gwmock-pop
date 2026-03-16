@@ -20,18 +20,22 @@ class RunConfiguration(BaseModel):
     """Global RNG seed (overridable via CLI)."""
 
     mode: Literal["fixed_n_samples", "duration"] = Field(
-        default="duration", description="Mode of simulation. Supported: 'fixed_n_samples', 'duration'."
+        default="fixed_n_samples",
+        description="Mode of simulation. Supported: 'fixed_n_samples', 'duration'.",
     )
     """Mode of simulation. Supported: 'fixed_n_samples', 'duration'."""
 
     n_samples: int = Field(
         default=1_000_000,
+        gt=0,
         description="Number of samples. Only used when 'mode' is 'fixed_n_samples'.",
     )
     """Number of samples. Only used when 'mode' is 'fixed_n_samples'."""
 
     duration: float = Field(
-        default=1.0, description="Duration in year (365 days). This is used when 'mode' is 'duration'."
+        default=1.0,
+        gt=0.0,
+        description="Duration in year (365 days). This is used when 'mode' is 'duration'.",
     )
     """Duration in year (365 days). This is used when 'mode' is 'duration'."""
 

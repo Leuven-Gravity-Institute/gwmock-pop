@@ -1,4 +1,4 @@
-"""Utility functions for handling YAML files."""
+"""Utility functions for handling YAML and TOML configuration files."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
+import tomllib
 import yaml
 from ruyaml import YAML
 
@@ -45,13 +46,44 @@ def read_yaml(filename: str | Path, encoding: str = "utf-8") -> dict[str, Any]:
     return data
 
 
+def read_data_file(filename: str | Path, encoding: str = "utf-8") -> dict[str, Any]:
+    """Read a YAML or TOML mapping from disk.
+
+    Args:
+        filename: File name.
+        encoding: File encoding for text-based formats.
+
+    Returns:
+        A dictionary of data.
+
+    Raises:
+        ValueError: If the suffix is unsupported or the top-level object is not a mapping.
+    """
+    path = Path(filename)
+    suffix = path.suffix.lower()
+
+    if suffix in {".yaml", ".yml"}:
+        return read_yaml(path, encoding=encoding)
+
+    if suffix == ".toml":
+        with path.open("rb") as file_handle:
+            data = tomllib.load(file_handle)
+        if not isinstance(data, dict):
+            raise ValueError(f"Expected a TOML mapping at the top level of '{filename}', got {type(data).__name__!r}.")
+        return data
+
+    raise ValueError(
+        f"Suffix of filename={filename} is not supported. Only '.yaml', '.yml', and '.toml' are supported."
+    )
+
+
 def write_yaml(
     filename: str | Path,
     data: dict[str, Any],
     encoding: str = "utf-8",
     round_trip: bool = False,
-    **kwargs,
-):
+    **kwargs: Any,
+) -> None:
     """Write to file.
 
     Args:

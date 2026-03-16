@@ -3,7 +3,7 @@ requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
-name = "gwsim_pop"
+name = "gwsim-pop"
 authors = [{ name = "Isaac C. F. Wong" }]
 description = "A python package for simulating populations of gravitational-wave sources."
 readme = "README.md"
@@ -38,12 +38,12 @@ test = [
   "pytest>=9.0.2",
 ]
 ci = ["pytest-github-actions-annotate-failures>=0.4.0"]
-dev = ["pre-commit>=4.5.1", "gwsim_pop[test,docs]"]
+dev = ["pre-commit>=4.5.1", "gwsim-pop[test,docs]"]
 docs = ["zensical>=0.0.26", "mkdocstrings-python>=2.0.3"]
 build = ["hatch>=1.16.5"]
 
 [project.scripts]
-gwsim_pop = "gwsim_pop.cli.main:app"
+gwsim-pop = "gwsim_pop.cli.main:app"
 
 [project.urls]
 Documentation = "https://leuven-gravity-institute.github.io/gwsim_pop/"

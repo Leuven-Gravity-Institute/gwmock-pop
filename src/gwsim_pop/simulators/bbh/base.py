@@ -9,7 +9,7 @@ from gwsim_pop.simulators.simulator import Simulator
 class BBHSimulator(RandomMixin, Simulator):
     """Base class for binary black hole population simulator."""
 
-    def __init__(self, *args, seed: int | None = None, **kwargs) -> None:
+    def __init__(self, *args: object, seed: int | None = None, **kwargs: object) -> None:
         """Initialize the instance.
 
         Args:

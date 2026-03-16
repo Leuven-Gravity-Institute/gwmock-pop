@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -11,7 +12,7 @@ from gwsim_pop.config.cosmology import CosmologyConfiguration
 from gwsim_pop.config.post_processing import PostProcessingConfiguration
 from gwsim_pop.config.run import RunConfiguration
 from gwsim_pop.config.selection import SelectionConfiguration
-from gwsim_pop.utils.yaml import read_yaml, write_yaml
+from gwsim_pop.utils.yaml import read_data_file, write_yaml
 
 
 class MainConfiguration(BaseModel):
@@ -46,6 +47,12 @@ class MainConfiguration(BaseModel):
     )
     """Configuration for the advanced features."""
 
+    parameters: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Parameter graph configuration consumed by GraphSimulator.",
+    )
+    """Parameter graph configuration consumed by GraphSimulator."""
+
     @classmethod
     def from_file(cls, filename: str | Path, encoding: str = "utf-8") -> MainConfiguration:
         """Read from file.
@@ -58,7 +65,7 @@ class MainConfiguration(BaseModel):
             Configuration.
 
         """
-        data = read_yaml(filename=filename, encoding=encoding)
+        data = read_data_file(filename=filename, encoding=encoding)
         return cls(**data)
 
     def to_file(
@@ -68,7 +75,7 @@ class MainConfiguration(BaseModel):
         exclude_none: bool = True,
         exclude_defaults: bool = False,
         round_trip: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Write to file.
 
