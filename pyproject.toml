@@ -39,15 +39,7 @@ test = [
 ]
 ci = ["pytest-github-actions-annotate-failures>=0.4.0"]
 dev = ["pre-commit>=4.5.1", "gwsim_pop[test,docs]"]
-docs = [
-  "mkdocs>=1.6.1",
-  "mkdocs-material>=9.7.5",
-  "mkdocstrings[python]>=1.0.3",
-  "mkdocs-gen-files>=0.6.0",
-  "mkdocs-literate-nav>=0.6.2",
-  "mkdocs-section-index>=0.3.10",
-  "mike>=2.1.4",
-]
+docs = ["zensical>=0.0.26", "mkdocstrings-python>=2.0.3"]
 build = ["hatch>=1.16.5"]
 
 [project.scripts]
