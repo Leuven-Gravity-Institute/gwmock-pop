@@ -31,7 +31,7 @@ jobs:
             - name: Install dependencies
               run: uv sync --extra docs --frozen
 
-            - run: uv run --frozen mkdocs build --site-dir site
+            - run: uv run --frozen zensical build -f zensical.toml
             - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
               with:
                   path: site
