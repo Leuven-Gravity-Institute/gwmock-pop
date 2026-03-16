@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
+from typing import Any
 
 import jax
 import jax.numpy as jnp
@@ -957,3 +958,245 @@ lambda_1 = 0.586
         # Reset should not raise error
         simulator.reset()
         assert len(simulator._sampled_values) == 0
+
+    def test_execute_sampler_with_none_arguments(self) -> None:
+        """Test that _execute_sampler handles None arguments correctly."""
+        config = {
+            "mass_1": {
+                "sampler": {
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "arguments": {
+                        "alpha_1": 1.72,
+                        "alpha_2": 4.51,
+                        "transition": 35.6,
+                        "minimum": 5.06,
+                        "maximum": 300.0,
+                        "mean_1": 9.76,
+                        "sigma_1": 0.649,
+                        "mean_2": 32.8,
+                        "sigma_2": 3.92,
+                        "taper_range": 4.32,
+                        "lambda_0": 0.361,
+                        "lambda_1": 0.586,
+                    },
+                },
+            },
+        }
+
+        simulator = GraphSimulator(config=config)
+
+        # Test with None arguments - should be converted to empty dict
+        # This tests the code path where arguments is None and gets converted to {}
+        # We use a minimal sampler that doesn't require arguments
+        def minimal_sampler(**kwargs: Any) -> jnp.ndarray:
+            return jnp.array([1.0, 2.0, 3.0])
+
+        # Monkeypatch import_from_string to return our minimal sampler
+        monkeypatch = pytest.MonkeyPatch()
+        monkeypatch.setattr(graph_module, "import_from_string", lambda *args, **kwargs: minimal_sampler)
+
+        result = simulator._execute_sampler(
+            "minimal_sampler",
+            None,  # type: ignore[arg-type]
+        )
+        assert result is not None
+        assert isinstance(result, jnp.ndarray)
+        monkeypatch.undo()
+
+    def test_execute_sampler_with_invalid_arguments_type(self) -> None:
+        """Test that _execute_sampler raises error for invalid arguments type."""
+        config = {
+            "mass_1": {
+                "sampler": {
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "arguments": {
+                        "alpha_1": 1.72,
+                        "alpha_2": 4.51,
+                        "transition": 35.6,
+                        "minimum": 5.06,
+                        "maximum": 300.0,
+                        "mean_1": 9.76,
+                        "sigma_1": 0.649,
+                        "mean_2": 32.8,
+                        "sigma_2": 3.92,
+                        "taper_range": 4.32,
+                        "lambda_0": 0.361,
+                        "lambda_1": 0.586,
+                    },
+                },
+            },
+        }
+
+        simulator = GraphSimulator(config=config)
+        # Test with string arguments - should raise ValueError
+        with pytest.raises(ValueError, match="Sampler arguments must be a mapping"):
+            simulator._execute_sampler(
+                "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                "invalid_arguments",  # type: ignore[arg-type]
+            )
+
+    def test_execute_sampler_with_unresolved_dependency(self) -> None:
+        """Test that _execute_sampler raises error for unresolved dependency."""
+        config = {
+            "mass_1": {
+                "sampler": {
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "arguments": {
+                        "alpha_1": 1.72,
+                        "alpha_2": 4.51,
+                        "transition": 35.6,
+                        "minimum": 5.06,
+                        "maximum": 300.0,
+                        "mean_1": 9.76,
+                        "sigma_1": 0.649,
+                        "mean_2": 32.8,
+                        "sigma_2": 3.92,
+                        "taper_range": 4.32,
+                        "lambda_0": 0.361,
+                        "lambda_1": 0.586,
+                    },
+                },
+            },
+        }
+
+        simulator = GraphSimulator(config=config)
+        # Test with dependency that hasn't been sampled
+        with pytest.raises(ValueError, match="Dependency 'nonexistent' not sampled yet"):
+            simulator._execute_sampler(
+                "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                {"alpha_1": "@nonexistent"},
+            )
+
+    def test_execute_transform_with_string_expression(self) -> None:
+        """Test that _execute_transform raises error for string transform."""
+        config = {
+            "mass_1": {
+                "sampler": {
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "arguments": {
+                        "alpha_1": 1.72,
+                        "alpha_2": 4.51,
+                        "transition": 35.6,
+                        "minimum": 5.06,
+                        "maximum": 300.0,
+                        "mean_1": 9.76,
+                        "sigma_1": 0.649,
+                        "mean_2": 32.8,
+                        "sigma_2": 3.92,
+                        "taper_range": 4.32,
+                        "lambda_0": 0.361,
+                        "lambda_1": 0.586,
+                    },
+                },
+            },
+        }
+
+        simulator = GraphSimulator(config=config)
+        # Test with string transform - should raise ValueError
+        with pytest.raises(ValueError, match="String transform expressions are not supported"):
+            simulator._execute_transform("@mass_1 * 2")  # type: ignore[arg-type]
+
+    def test_execute_transform_with_none_arguments(self) -> None:
+        """Test that _execute_transform handles None arguments correctly."""
+        config = {
+            "mass_1": {
+                "sampler": {
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "arguments": {
+                        "alpha_1": 1.72,
+                        "alpha_2": 4.51,
+                        "transition": 35.6,
+                        "minimum": 5.06,
+                        "maximum": 300.0,
+                        "mean_1": 9.76,
+                        "sigma_1": 0.649,
+                        "mean_2": 32.8,
+                        "sigma_2": 3.92,
+                        "taper_range": 4.32,
+                        "lambda_0": 0.361,
+                        "lambda_1": 0.586,
+                    },
+                },
+            },
+        }
+
+        simulator = GraphSimulator(config=config)
+
+        # Mock transform that expects arguments
+        def fake_transform(**kwargs: Any) -> jnp.ndarray:
+            return jnp.array([1.0, 2.0, 3.0])
+
+        # Monkeypatch import_from_string to return our fake transform
+        monkeypatch = pytest.MonkeyPatch()
+        monkeypatch.setattr(graph_module, "import_from_string", lambda *args, **kwargs: fake_transform)
+
+        # Test with None arguments - should be converted to empty dict
+        result = simulator._execute_transform(
+            {
+                "function": "fake_transform",
+                "arguments": None,
+            }
+        )
+        assert result is not None
+        assert isinstance(result, jnp.ndarray)
+        monkeypatch.undo()
+
+    def test_execute_transform_with_invalid_arguments_type(self) -> None:
+        """Test that _execute_transform raises error for invalid arguments type."""
+        config = {
+            "mass_1": {
+                "sampler": {
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "arguments": {
+                        "alpha_1": 1.72,
+                        "alpha_2": 4.51,
+                        "transition": 35.6,
+                        "minimum": 5.06,
+                        "maximum": 300.0,
+                        "mean_1": 9.76,
+                        "sigma_1": 0.649,
+                        "mean_2": 32.8,
+                        "sigma_2": 3.92,
+                        "taper_range": 4.32,
+                        "lambda_0": 0.361,
+                        "lambda_1": 0.586,
+                    },
+                },
+            },
+        }
+
+        simulator = GraphSimulator(config=config)
+        # Test with string arguments - should raise ValueError
+        with pytest.raises(ValueError, match="Only mapping-style transform arguments are currently supported"):
+            simulator._execute_transform(
+                {
+                    "function": "some_transform",
+                    "arguments": "invalid_arguments",
+                }
+            )
+
+    def test_from_config_file_with_invalid_root(self) -> None:
+        """Test that config file with non-dict root raises ValueError."""
+        # Create a YAML file with a list at root
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+            f.write("- item1\n- item2\n")
+            temp_path = f.name
+
+        try:
+            with pytest.raises(ValueError, match="Config file must contain a mapping"):
+                GraphSimulator.from_config_file(temp_path)
+        finally:
+            Path(temp_path).unlink()
+
+    def test_from_config_file_with_list_root(self) -> None:
+        """Test that config file with list root raises ValueError."""
+        # Create a YAML file with a list at root (TOML cannot have list at root)
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+            f.write("- 1\n- 2\n- 3\n")
+            temp_path = f.name
+
+        try:
+            with pytest.raises(ValueError, match="Config file must contain a mapping"):
+                GraphSimulator.from_config_file(temp_path)
+        finally:
+            Path(temp_path).unlink()
