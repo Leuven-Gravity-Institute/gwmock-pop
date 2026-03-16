@@ -128,11 +128,10 @@ run:
 
         mock_logger.error.assert_called_once_with("No parameter graph configuration found under 'parameters'.")
 
-    @patch("logging.getLogger")
-    def test_simulate_command_with_metadata(self, mock_get_logger: MagicMock, tmp_path: Path) -> None:
+    @patch("gwsim_pop.cli.simulate._build_output_metadata")
+    def test_simulate_command_with_metadata(self, mock_build_metadata: MagicMock, tmp_path: Path) -> None:
         """Test that simulate_command builds and saves metadata when requested."""
-        mock_logger = MagicMock()
-        mock_get_logger.return_value = mock_logger
+        mock_build_metadata.return_value = {"run_name": "cli_test_metadata"}
 
         output_dir = tmp_path / "outputs"
         config_path = tmp_path / "config.yaml"
@@ -171,6 +170,7 @@ parameters:
         )
 
         simulate_command(str(config_path))
+        mock_build_metadata.assert_called_once()
 
         output_path = output_dir / "cli_test_metadata.csv"
         assert output_path.exists()
