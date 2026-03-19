@@ -1,7 +1,7 @@
 # Quick Start
 
-Welcome to **gwmock_pop**! This is a Python package for simulating populations of
-gravitational-wave sources.
+Welcome to **gwmock_pop**! This is a Python package for simulating populations
+of gravitational-wave sources.
 
 ## Generate a Population with the CLI
 
