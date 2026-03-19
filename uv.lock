@@ -456,7 +456,7 @@ wheels = [
 
 [[package]]
 name = "gwsim-pop"
-version = "0.3.1"
+version = "0.3.2"
 source = { editable = "." }
 dependencies = [
     { name = "gwmock-pop" },
