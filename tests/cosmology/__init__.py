@@ -1,1 +1,1 @@
-"""Unit tests for gwsim_pop.cosmology."""
+"""Unit tests for gwmock_pop.cosmology."""

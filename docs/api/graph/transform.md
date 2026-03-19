@@ -3,4 +3,4 @@ title: Transform Dependencies
 description: API reference for transform dependency inspection.
 ---
 
-::: gwsim_pop.graph.transform
+::: gwmock_pop.graph.transform

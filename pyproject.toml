@@ -3,7 +3,7 @@ requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
-name = "gwsim-pop"
+name = "gwmock-pop"
 authors = [{ name = "Isaac C. F. Wong" }]
 description = "A python package for simulating populations of gravitational-wave sources."
 readme = "README.md"
@@ -38,25 +38,25 @@ test = [
   "pytest>=9.0.2",
 ]
 ci = ["pytest-github-actions-annotate-failures>=0.4.0"]
-dev = ["pre-commit>=4.5.1", "gwsim-pop[test,docs]"]
+dev = ["pre-commit>=4.5.1", "gwmock-pop[test,docs]"]
 docs = ["zensical>=0.0.27", "mkdocstrings-python>=2.0.3"]
 build = ["hatch>=1.16.5"]
 
 [project.scripts]
-gwsim-pop = "gwsim_pop.cli.main:app"
+gwmock-pop = "gwmock_pop.cli.main:app"
 
 [project.urls]
-Documentation = "https://leuven-gravity-institute.github.io/gwsim_pop/"
-Source = "https://github.com/Leuven-Gravity-Institute/gwsim_pop"
-Tracker = "https://github.com/Leuven-Gravity-Institute/gwsim_pop/issues"
-Home = "https://github.com/Leuven-Gravity-Institute/gwsim_pop"
-"Release Notes" = "https://github.com/Leuven-Gravity-Institute/gwsim_pop/releases"
+Documentation = "https://leuven-gravity-institute.github.io/gwmock-pop/"
+Source = "https://github.com/Leuven-Gravity-Institute/gwmock-pop"
+Tracker = "https://github.com/Leuven-Gravity-Institute/gwmock-pop/issues"
+Home = "https://github.com/Leuven-Gravity-Institute/gwmock-pop"
+"Release Notes" = "https://github.com/Leuven-Gravity-Institute/gwmock-pop/releases"
 
 [tool.hatch.version]
 source = "vcs"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/gwsim_pop"]
+packages = ["src/gwmock-pop"]
 
 [tool.bandit]
 exclude_dirs = ["build", "dist", "tests", "scripts"]

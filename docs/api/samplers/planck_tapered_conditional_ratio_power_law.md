@@ -3,4 +3,4 @@ title: Planck-Tapered Conditional Ratio Power Law
 description: API reference for the corresponding sampler implementation.
 ---
 
-::: gwsim_pop.samplers.planck_tapered_conditional_ratio_power_law
+::: gwmock_pop.samplers.planck_tapered_conditional_ratio_power_law

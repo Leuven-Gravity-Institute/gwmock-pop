@@ -3,4 +3,4 @@ title: Cosmology Models
 description: API reference for cosmology model helpers.
 ---
 
-::: gwsim_pop.cosmology
+::: gwmock_pop.cosmology

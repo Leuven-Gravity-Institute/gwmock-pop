@@ -1,1 +1,1 @@
-"""Unit tests for gwsim_pop.constants."""
+"""Unit tests for gwmock_pop.constants."""

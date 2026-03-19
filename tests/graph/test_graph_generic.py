@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from gwsim_pop.graph.generic import extract_dependencies_from_spec, extract_references
+from gwmock_pop.graph.generic import extract_dependencies_from_spec, extract_references
 
 
 class TestExtractReferences:

@@ -1,6 +1,6 @@
-# Contributing to gwsim_pop
+# Contributing to gwmock-pop
 
-🎉 Thank you for your interest in contributing to `gwsim_pop`! Your ideas,
+🎉 Thank you for your interest in contributing to `gwmock-pop`! Your ideas,
 fixes, and improvements are welcome and appreciated.
 
 Whether you’re fixing a typo, reporting a bug, suggesting a feature, or
@@ -13,20 +13,20 @@ submitting a pull request—this guide will help you get started.
 1. Open an Issue
 
     - Have a question, bug report, or feature suggestion?
-    [Open an issue](https://github.com/Leuven-Gravity-Institute/gwsim_pop/issues/new/choose)
+    [Open an issue](https://github.com/Leuven-Gravity-Institute/gwmock-pop/issues/new/choose)
     and describe your idea clearly.
     - Check for existing issues before opening a new one.
 
 2. Fork and Clone the Repository
 
     ```shell
-    git clone git@github.com:Leuven-Gravity-Institute/gwsim_pop.git
-    cd gwsim_pop
+    git clone git@github.com:Leuven-Gravity-Institute/gwmock-pop.git
+    cd gwmock-pop
     ```
 
 3. Set Up Your Environment
 
-    We recommend using uv to manage virtual environments for installing `gwsim_pop`.
+    We recommend using uv to manage virtual environments for installing `gwmock-pop`.
     If you don't have uv installed, you can install it with pip. See the project pages for more details:
 
     - Install via pip: `pip install --upgrade pip && pip install uv`
@@ -173,6 +173,6 @@ project’s MIT License.
 
 ---
 
-Thanks again for being part of the `gwsim_pop` community!
+Thanks again for being part of the `gwmock-pop` community!
 
 ---

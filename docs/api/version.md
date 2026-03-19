@@ -1,6 +1,6 @@
 ---
 title: Version
-description: Version metadata for gwsim_pop.
+description: Version metadata for gwmock_pop.
 ---
 
-::: gwsim_pop.version
+::: gwmock_pop.version

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from gwsim_pop.graph.sampler import extract_sampler_dependencies
+from gwmock_pop.graph.sampler import extract_sampler_dependencies
 
 
 class TestExtractSamplerDependencies:
@@ -125,7 +125,7 @@ class TestExtractSamplerDependencies:
     def test_complex_sampler_spec(self) -> None:
         """Test complex sampler spec with multiple features."""
         sampler_spec = {
-            "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+            "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
             "arguments": {
                 "alpha_1": "@alpha1_value",
                 "alpha_2": 4.51,

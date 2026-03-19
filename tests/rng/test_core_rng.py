@@ -8,7 +8,7 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-from gwsim_pop.rng import RNGManager
+from gwmock_pop.rng import RNGManager
 
 
 class TestRNGManager:

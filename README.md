@@ -1,11 +1,11 @@
-# gwsim_pop
+# gwmock-pop
 
-[![Python CI](https://github.com/Leuven-Gravity-Institute/gwsim_pop/actions/workflows/CI.yml/badge.svg)](https://github.com/Leuven-Gravity-Institute/gwsim_pop/actions/workflows/CI.yml)
-[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/Leuven-Gravity-Institute/gwsim_pop/main.svg)](https://results.pre-commit.ci/latest/github/Leuven-Gravity-Institute/gwsim_pop/main)
-[![Documentation Status](https://github.com/Leuven-Gravity-Institute/gwsim_pop/actions/workflows/documentation.yml/badge.svg)](https://leuven-gravity-institute.github.io/gwsim_pop/)
-[![codecov](https://codecov.io/gh/leuven-gravity-institute/gwsim_pop/graph/badge.svg?token=Vwf7NYTHCm)](https://codecov.io/gh/leuven-gravity-institute/gwsim_pop)
-[![PyPI Version](https://img.shields.io/pypi/v/gwsim_pop)](https://pypi.org/project/gwsim_pop/)
-[![Python Versions](https://img.shields.io/pypi/pyversions/gwsim_pop)](https://pypi.org/project/gwsim_pop/)
+[![Python CI](https://github.com/Leuven-Gravity-Institute/gwmock-pop/actions/workflows/CI.yml/badge.svg)](https://github.com/Leuven-Gravity-Institute/gwmock-pop/actions/workflows/CI.yml)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/Leuven-Gravity-Institute/gwmock-pop/main.svg)](https://results.pre-commit.ci/latest/github/Leuven-Gravity-Institute/gwmock-pop/main)
+[![Documentation Status](https://github.com/Leuven-Gravity-Institute/gwmock-pop/actions/workflows/documentation.yml/badge.svg)](https://leuven-gravity-institute.github.io/gwmock-pop/)
+[![codecov](https://codecov.io/gh/leuven-gravity-institute/gwmock-pop/graph/badge.svg?token=Vwf7NYTHCm)](https://codecov.io/gh/leuven-gravity-institute/gwmock-pop)
+[![PyPI Version](https://img.shields.io/pypi/v/gwmock-pop)](https://pypi.org/project/gwmock-pop/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/gwmock-pop)](https://pypi.org/project/gwmock-pop/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://github.com/PyCQA/bandit)
 [![DOI](https://zenodo.org/badge/1147941311.svg)](https://doi.org/10.5281/zenodo.18574076)
@@ -15,7 +15,7 @@ A Python package for simulating populations of gravitational-wave sources.
 ## Installation
 
 We recommend using `uv` to manage virtual environments for installing
-`gwsim_pop`.
+`gwmock-pop`.
 
 If you don't have `uv` installed, you can install it with pip. See the project
 pages for more details:
@@ -38,13 +38,13 @@ Python versions.
 
 ### Install from PyPI
 
-The recommended way to install `gwsim_pop` is from PyPI:
+The recommended way to install `gwmock-pop` is from PyPI:
 
 ```bash
 # Create a virtual environment (recommended with uv)
 uv venv --python 3.10
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-uv pip install gwsim_pop
+uv pip install gwmock-pop
 ```
 
 #### Optional Dependencies
@@ -53,13 +53,13 @@ For development or specific features:
 
 ```bash
 # Development dependencies (testing, linting, etc.)
-uv pip install gwsim_pop[dev]
+uv pip install gwmock-pop[dev]
 
 # Documentation dependencies
-uv pip install gwsim_pop[docs]
+uv pip install gwmock-pop[docs]
 
 # All dependencies
-uv pip install gwsim_pop[dev,docs]
+uv pip install gwmock-pop[dev,docs]
 ```
 
 ### Install from Source
@@ -67,8 +67,8 @@ uv pip install gwsim_pop[dev,docs]
 For the latest development version:
 
 ```bash
-git clone git@github.com:Leuven-Gravity-Institute/gwsim_pop.git
-cd gwsim_pop
+git clone git@github.com:Leuven-Gravity-Institute/gwmock-pop.git
+cd gwmock-pop
 # Create a virtual environment (recommended with uv)
 uv venv --python 3.10
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
@@ -80,8 +80,8 @@ uv pip install .
 To set up for development:
 
 ```bash
-git clone git@github.com:Leuven-Gravity-Institute/gwsim_pop.git
-cd gwsim_pop
+git clone git@github.com:Leuven-Gravity-Institute/gwmock-pop.git
+cd gwmock-pop
 
 # Create a virtual environment (recommended with uv)
 uv venv --python 3.10
@@ -98,20 +98,20 @@ pre-commit install --hook-type commit-msg
 
 ### Verify Installation
 
-Check that `gwsim_pop` is installed correctly:
+Check that `gwmock-pop` is installed correctly:
 
 ```bash
-gwsim_pop --help
+gwmock-pop --help
 ```
 
 ```bash
-python -c "import gwsim_pop; print(gwsim_pop.__version__)"
+python -c "import gwmock-pop; print(gwmock-pop.__version__)"
 ```
 
 ## Documentation
 
 Full documentation to be available at
-[https://leuven-gravity-institute.github.io/gwsim_pop](https://leuven-gravity-institute.github.io/gwsim_pop).
+[https://leuven-gravity-institute.github.io/gwmock-pop](https://leuven-gravity-institute.github.io/gwmock-pop).
 
 ## Quick Start with the CLI
 
@@ -134,7 +134,7 @@ run:
 parameters:
     mass_1:
         sampler:
-            function: gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
+            function: gwmock-pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
             arguments:
                 alpha_1: 1.72
                 alpha_2: 4.51
@@ -153,7 +153,7 @@ parameters:
 Run the simulator:
 
 ```bash
-gwsim-pop simulate population.yaml
+gwmock-pop simulate population.yaml
 ```
 
 This writes `outputs/demo_population.csv`. For the MVP, the CLI only supports
@@ -174,7 +174,7 @@ Contributions are welcome!
 Releases follow a fixed schedule: every Tuesday at 00:00 UTC, unless an emergent
 bugfix is required. This ensures predictable updates while allowing flexibility
 for critical issues. Users can view upcoming changes in the draft release on the
-[GitHub Releases page](https://github.com/Leuven-Gravity-Institute/gwsim_pop/releases).
+[GitHub Releases page](https://github.com/Leuven-Gravity-Institute/gwmock-pop/releases).
 
 ## Testing
 
@@ -192,5 +192,5 @@ for details.
 ## Support
 
 For questions or issues, please open an issue on
-[GitHub](https://github.com/Leuven-Gravity-Institute/gwsim_pop/issues/new) or
+[GitHub](https://github.com/Leuven-Gravity-Institute/gwmock-pop/issues/new) or
 contact the maintainers.

@@ -3,4 +3,4 @@ title: Simulate
 description: API reference for the simulate CLI command.
 ---
 
-::: gwsim_pop.cli.simulate
+::: gwmock_pop.cli.simulate

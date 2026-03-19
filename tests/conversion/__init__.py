@@ -1,1 +1,1 @@
-"""Unit tests for gwsim_pop.conversion."""
+"""Unit tests for gwmock_pop.conversion."""

@@ -1,1 +1,1 @@
-"""Unit tests for gwsim_pop.rng."""
+"""Unit tests for gwmock_pop.rng."""

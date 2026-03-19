@@ -3,4 +3,4 @@ title: Cosmology
 description: API reference for cosmology configuration.
 ---
 
-::: gwsim_pop.config.cosmology
+::: gwmock_pop.config.cosmology

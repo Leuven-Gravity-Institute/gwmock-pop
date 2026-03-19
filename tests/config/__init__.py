@@ -1,1 +1,1 @@
-"""Unit tests for gwsim_pop.config."""
+"""Unit tests for gwmock_pop.config."""

@@ -437,7 +437,7 @@ wheels = [
 ]
 
 [[package]]
-name = "gwsim-pop"
+name = "gwmock-pop"
 source = { editable = "." }
 dependencies = [
     { name = "h5py" },

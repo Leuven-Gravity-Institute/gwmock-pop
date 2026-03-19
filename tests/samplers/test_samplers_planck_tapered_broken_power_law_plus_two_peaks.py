@@ -3,7 +3,7 @@
 import jax
 import jax.numpy as jnp
 
-from gwsim_pop.samplers import planck_tapered_broken_power_law_plus_two_peaks
+from gwmock_pop.samplers import planck_tapered_broken_power_law_plus_two_peaks
 
 
 class TestPlanckTaperedBrokenPowerLawPlusTwoPeaksSampler:
