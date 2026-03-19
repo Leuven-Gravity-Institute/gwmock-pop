@@ -5,8 +5,8 @@ from __future__ import annotations
 import jax.numpy as jnp
 from jax import Array
 
-from gwsim_pop.constants import SPEED_OF_LIGHT
-from gwsim_pop.cosmology.flat_lambda_cdm import (
+from gwmock_pop.constants import SPEED_OF_LIGHT
+from gwmock_pop.cosmology.flat_lambda_cdm import (
     compute_comoving_distance,
     compute_differential_comoving_volume,
     compute_hubble_parameter,

@@ -1,6 +1,6 @@
-"""Unit tests for gwsim_pop.constants."""
+"""Unit tests for gwmock_pop.constants."""
 
-from gwsim_pop.constants import SPEED_OF_LIGHT
+from gwmock_pop.constants import SPEED_OF_LIGHT
 
 SPEED_OF_LIGHT_REFERENCE = 299792458.0
 

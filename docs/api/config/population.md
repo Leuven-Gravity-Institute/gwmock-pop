@@ -3,4 +3,4 @@ title: Population
 description: API reference for population configuration.
 ---
 
-::: gwsim_pop.config.population
+::: gwmock_pop.config.population

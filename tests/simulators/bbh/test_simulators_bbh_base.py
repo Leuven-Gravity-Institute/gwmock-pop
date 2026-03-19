@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import jax.numpy as jnp
 
-from gwsim_pop.simulators.bbh.base import BBHSimulator
+from gwmock_pop.simulators.bbh.base import BBHSimulator
 
 
 class ConcreteBBHSimulator(BBHSimulator):

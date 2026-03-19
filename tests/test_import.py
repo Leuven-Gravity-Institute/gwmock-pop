@@ -1,4 +1,4 @@
-"""Test importing the gwsim_pop package and its modules."""
+"""Test importing the gwmock_pop package and its modules."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import pkgutil
 
 import pytest
 
-import gwsim_pop
+import gwmock_pop
 
 
 def get_all_submodules(package):
@@ -23,12 +23,12 @@ def get_all_submodules(package):
 
 
 def test_import_main_package():
-    """Test that the main gwsim_pop package can be imported."""
-    assert hasattr(gwsim_pop, "__version__")
-    assert gwsim_pop.__version__ is not None
+    """Test that the main gwmock_pop package can be imported."""
+    assert hasattr(gwmock_pop, "__version__")
+    assert gwmock_pop.__version__ is not None
 
 
-@pytest.mark.parametrize("module_name", get_all_submodules(gwsim_pop))
+@pytest.mark.parametrize("module_name", get_all_submodules(gwmock_pop))
 def test_import_submodule(module_name):
     """Test that all submodules can be imported."""
     __import__(module_name)

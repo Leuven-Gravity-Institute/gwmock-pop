@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from gwsim_pop.config.post_processing import HookArguments, HookConfiguration, PostProcessingConfiguration
+from gwmock_pop.config.post_processing import HookArguments, HookConfiguration, PostProcessingConfiguration
 
 
 class TestHookArguments:

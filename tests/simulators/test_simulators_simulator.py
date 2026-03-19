@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 from jax import Array
 
-from gwsim_pop.simulators.simulator import Simulator
+from gwmock_pop.simulators.simulator import Simulator
 
 
 class ConcreteSimulator(Simulator):
