@@ -56,7 +56,7 @@ Home = "https://github.com/Leuven-Gravity-Institute/gwmock-pop"
 source = "vcs"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/gwmock-pop"]
+packages = ["src/gwmock_pop"]
 
 [tool.bandit]
 exclude_dirs = ["build", "dist", "tests", "scripts"]
