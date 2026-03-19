@@ -25,7 +25,7 @@ envlist
 envpython
 getrecursionlimit
 glightbox
-gwmock
+gwsim
 GWTC
 hotfixes
 htmlcov
@@ -98,3 +98,4 @@ jscipy
 CODATA
 CDM
 funcs
+gwmock

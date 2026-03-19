@@ -3,4 +3,4 @@ title: Main
 description: API reference for the main configuration model.
 ---
 
-::: gwmock_pop.config.main
+::: gwsim_pop.config.main

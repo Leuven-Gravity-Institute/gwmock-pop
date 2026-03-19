@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from gwmock_pop.utils.yaml import read_yaml, write_yaml
+from gwsim_pop.utils.yaml import read_yaml, write_yaml
 
 
 class Color(Enum):

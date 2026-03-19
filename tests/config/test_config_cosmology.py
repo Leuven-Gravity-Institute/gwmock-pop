@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from gwmock_pop.config.cosmology import CosmologicalArguments, CosmologyConfiguration
+from gwsim_pop.config.cosmology import CosmologicalArguments, CosmologyConfiguration
 
 
 class TestCosmologicalArguments:

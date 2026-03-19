@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from gwmock_pop.config.population import PopulationArguments, PopulationConfiguration
+from gwsim_pop.config.population import PopulationArguments, PopulationConfiguration
 
 
 class TestPopulationArguments:

@@ -3,4 +3,4 @@ title: Build
 description: API reference for dependency graph construction.
 ---
 
-::: gwmock_pop.graph.build
+::: gwsim_pop.graph.build

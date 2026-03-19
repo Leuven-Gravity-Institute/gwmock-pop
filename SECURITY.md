@@ -1,6 +1,6 @@
 # Security Policy
 
-We will support the latest stable release of `gwmock_pop`. Please ensure you are
+We will support the latest stable release of `gwsim_pop`. Please ensure you are
 using the most recent version before reporting a security issue.
 
 | Version | Supported |
@@ -16,12 +16,12 @@ using the most recent version before reporting a security issue.
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in `gwmock_pop`, please report it using
+If you discover a security vulnerability in `gwsim_pop`, please report it using
 **GitHub's private vulnerability reporting feature**:
 
 <!-- prettier-ignore-start -->
 
-1. Go to the [Security](https://github.com/Leuven-Gravity-Institute/gwmock_pop/security) tab of this repository
+1. Go to the [Security](https://github.com/Leuven-Gravity-Institute/gwsim_pop/security) tab of this repository
 2. Click **"Report a vulnerability"**
 3. Fill out the vulnerability report form with:
     - A description of the vulnerability
@@ -50,4 +50,4 @@ We aim to:
 ## Thanks
 
 We value the security of our users and appreciate responsible disclosures. Thank
-you for helping make `gwmock_pop` better and safer!
+you for helping make `gwsim_pop` better and safer!

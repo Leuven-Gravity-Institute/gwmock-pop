@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 title:
-    'gwmock-pop: A Python package for simulating populations of gravitational
+    'gwsim-pop: A Python package for simulating populations of gravitational
     wave sources'
 license: 'MIT'
 type: software

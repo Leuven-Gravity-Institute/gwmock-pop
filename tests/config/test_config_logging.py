@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from gwmock_pop.config.logging import LoggingConfiguration
-from gwmock_pop.utils.log import LoggingLevel
+from gwsim_pop.config.logging import LoggingConfiguration
+from gwsim_pop.utils.log import LoggingLevel
 
 
 class TestLoggingConfiguration:

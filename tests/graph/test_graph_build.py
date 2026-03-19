@@ -6,7 +6,7 @@ import networkx as nx
 import pytest
 from networkx import DiGraph
 
-from gwmock_pop.graph.build import add_dependencies_to_graph, build_dependency_graph
+from gwsim_pop.graph.build import add_dependencies_to_graph, build_dependency_graph
 
 
 class TestAddDependenciesToGraph:
@@ -465,7 +465,7 @@ class TestBuildDependencyGraph:
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "alpha_1": "@alpha1",
                         "alpha_2": 4.51,

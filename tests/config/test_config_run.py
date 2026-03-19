@@ -1,6 +1,6 @@
 """Tests for run configuration."""
 
-from gwmock_pop.config.run import RunConfiguration
+from gwsim_pop.config.run import RunConfiguration
 
 
 class TestRunConfiguration:

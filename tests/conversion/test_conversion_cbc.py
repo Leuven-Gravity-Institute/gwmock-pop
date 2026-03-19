@@ -3,7 +3,7 @@
 import jax.numpy as jnp
 import pytest
 
-from gwmock_pop.conversion.cbc import (
+from gwsim_pop.conversion.cbc import (
     compute_chirp_mass_from_mass_1_mass_2,
     compute_mass_ratio_from_mass_1_mass_2,
     compute_source_frame_mass_from_detector_frame_mass,

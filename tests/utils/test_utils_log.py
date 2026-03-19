@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from gwmock_pop.utils.log import LoggingLevel, get_version_information, setup_logger
+from gwsim_pop.utils.log import LoggingLevel, get_version_information, setup_logger
 
 
 @contextmanager
@@ -48,7 +48,7 @@ def temp_log_file(tmp_path: Path):
 @pytest.fixture(autouse=True)
 def cleanup_logger() -> None:
     """Clean up logger state before and after each test."""
-    logger = logging.getLogger("gwmock_pop")
+    logger = logging.getLogger("gwsim_pop")
     logger.handlers.clear()
     logger.setLevel(logging.NOTSET)
 
@@ -87,25 +87,25 @@ class TestSetupLogger:
     def test_default_parameters(self) -> None:
         """Test setup_logger with default parameters."""
         setup_logger()
-        logger = logging.getLogger("gwmock_pop")
+        logger = logging.getLogger("gwsim_pop")
         assert logger.level == logging.INFO
 
     def test_custom_log_level_enum(self) -> None:
         """Test setup_logger with LoggingLevel enum."""
         setup_logger(log_level=LoggingLevel.DEBUG)
-        logger = logging.getLogger("gwmock_pop")
+        logger = logging.getLogger("gwsim_pop")
         assert logger.level == logging.DEBUG
 
     def test_custom_log_level_string(self) -> None:
         """Test setup_logger with log level as string."""
         setup_logger(log_level="WARNING")
-        logger = logging.getLogger("gwmock_pop")
+        logger = logging.getLogger("gwsim_pop")
         assert logger.level == logging.WARNING
 
     def test_custom_log_level_integer(self) -> None:
         """Test setup_logger with log level as integer."""
         setup_logger(log_level=logging.ERROR)
-        logger = logging.getLogger("gwmock_pop")
+        logger = logging.getLogger("gwsim_pop")
         assert logger.level == logging.ERROR
 
     def test_invalid_log_level_string(self) -> None:
@@ -116,14 +116,14 @@ class TestSetupLogger:
     def test_no_file_handler_without_filename(self) -> None:
         """Test that no file handler is created without filename."""
         setup_logger(filename=None)
-        logger = logging.getLogger("gwmock_pop")
+        logger = logging.getLogger("gwsim_pop")
         file_handlers = [h for h in logger.handlers if isinstance(h, logging.FileHandler)]
         assert len(file_handlers) == 0
 
     def test_file_handler_with_filename(self, temp_log_file) -> None:
         """Test that file handler is created with filename."""
         setup_logger(outdir=temp_log_file.parent, filename=temp_log_file.name)
-        logger = logging.getLogger("gwmock_pop")
+        logger = logging.getLogger("gwsim_pop")
         file_handlers = [h for h in logger.handlers if isinstance(h, logging.FileHandler)]
         assert len(file_handlers) == 1
         assert temp_log_file.exists()
@@ -133,7 +133,7 @@ class TestSetupLogger:
         with tempfile.TemporaryDirectory() as tmpdir:
             new_dir = Path(tmpdir) / "new_subdir"
             setup_logger(outdir=str(new_dir), filename="test.log")
-            logger = logging.getLogger("gwmock_pop")
+            logger = logging.getLogger("gwsim_pop")
             file_handlers = [h for h in logger.handlers if isinstance(h, logging.FileHandler)]
             assert len(file_handlers) == 1
             assert new_dir.exists()
@@ -147,7 +147,7 @@ class TestSetupLogger:
     def test_stream_handler_added(self) -> None:
         """Test that stream handler is added."""
         setup_logger()
-        logger = logging.getLogger("gwmock_pop")
+        logger = logging.getLogger("gwsim_pop")
         stream_handlers = [
             h
             for h in logger.handlers
@@ -159,7 +159,7 @@ class TestSetupLogger:
         """Test that duplicate stream handlers are not added."""
         setup_logger()
         setup_logger()
-        logger = logging.getLogger("gwmock_pop")
+        logger = logging.getLogger("gwsim_pop")
         stream_handlers = [
             h
             for h in logger.handlers
@@ -171,21 +171,21 @@ class TestSetupLogger:
         """Test that duplicate file handlers are not added."""
         setup_logger(outdir=temp_log_file.parent, filename=temp_log_file.name)
         setup_logger(outdir=temp_log_file.parent, filename=temp_log_file.name)
-        logger = logging.getLogger("gwmock_pop")
+        logger = logging.getLogger("gwsim_pop")
         file_handlers = [h for h in logger.handlers if isinstance(h, logging.FileHandler)]
         assert len(file_handlers) == 1
 
     def test_print_version(self, temp_log_file) -> None:
         """Test that version is printed when print_version=True."""
         setup_logger(outdir=temp_log_file.parent, filename=temp_log_file.name, print_version=True)
-        _logger = logging.getLogger("gwmock_pop")
+        _logger = logging.getLogger("gwsim_pop")
         content = temp_log_file.read_text()
-        assert "Running gwmock_pop version:" in content
+        assert "Running gwsim_pop version:" in content
 
     def test_log_message_format(self, temp_log_file) -> None:
         """Test that log messages have correct format."""
         setup_logger(outdir=temp_log_file.parent, filename=temp_log_file.name, log_level=logging.INFO)
-        logger = logging.getLogger("gwmock_pop")
+        logger = logging.getLogger("gwsim_pop")
         logger.info("Test message")
         content = temp_log_file.read_text()
         assert "Test message" in content

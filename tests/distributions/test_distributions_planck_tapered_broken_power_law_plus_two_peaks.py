@@ -6,7 +6,7 @@ import jax.numpy as jnp
 import pytest
 from jax import Array
 
-from gwmock_pop.distributions.planck_tapered_broken_power_law_plus_two_peaks import (
+from gwsim_pop.distributions.planck_tapered_broken_power_law_plus_two_peaks import (
     planck_tapered_broken_power_law_plus_two_peaks_cdf,
     planck_tapered_broken_power_law_plus_two_peaks_unnormalized_logpdf,
 )

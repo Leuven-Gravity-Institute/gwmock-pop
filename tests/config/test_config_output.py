@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from gwmock_pop.config.output import OutputConfiguration
+from gwsim_pop.config.output import OutputConfiguration
 
 
 class TestOutputConfiguration:

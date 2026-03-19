@@ -5,7 +5,7 @@ from __future__ import annotations
 import jax.numpy as jnp
 from jax import Array
 
-from gwmock_pop.integrators.trapezoid import (
+from gwsim_pop.integrators.trapezoid import (
     log_trapezoidal_cumsum,
     log_trapezoidal_integrand_dx,
     log_trapezoidal_integrate,

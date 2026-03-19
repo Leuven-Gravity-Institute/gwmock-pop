@@ -1,6 +1,6 @@
 ---
 title: Package
-description: API reference for the top-level gwmock_pop package.
+description: API reference for the top-level gwsim_pop package.
 ---
 
-::: gwmock_pop
+::: gwsim_pop

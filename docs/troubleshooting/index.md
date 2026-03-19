@@ -364,7 +364,7 @@ If you encounter issues not listed here:
 2. **Review logs carefully**: Error messages usually point to the root cause
 3. **Search documentation**: Many issues are covered in specific tool docs
 4. **Try minimal reproduction**: Isolate the problem to a single file/command
-5. **Ask for help**: Open an [issue](https://github.com/Leuven-Gravity-Institute/gwmock_pop/issues/new/choose) with:
+5. **Ask for help**: Open an [issue](https://github.com/Leuven-Gravity-Institute/gwsim_pop/issues/new/choose) with:
     - Your environment (Python version, OS)
     - Steps to reproduce
     - Full error message/logs

@@ -3,4 +3,4 @@ title: Output
 description: API reference for output configuration.
 ---
 
-::: gwmock_pop.config.output
+::: gwsim_pop.config.output

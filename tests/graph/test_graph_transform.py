@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from gwmock_pop.graph.transform import extract_transform_dependencies
+from gwsim_pop.graph.transform import extract_transform_dependencies
 
 
 class TestExtractTransformDependencies:
@@ -122,7 +122,7 @@ class TestExtractTransformDependencies:
     def test_complex_transform_example(self) -> None:
         """Test complex transform example."""
         transform = {
-            "function": "gwmock_pop.transforms.offset_values",
+            "function": "gwsim_pop.transforms.offset_values",
             "arguments": {
                 "values": "@mass_1",
                 "offset": "@offset_value",

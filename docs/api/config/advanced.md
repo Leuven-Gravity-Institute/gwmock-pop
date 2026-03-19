@@ -3,4 +3,4 @@ title: Advanced
 description: API reference for advanced configuration.
 ---
 
-::: gwmock_pop.config.advanced
+::: gwsim_pop.config.advanced

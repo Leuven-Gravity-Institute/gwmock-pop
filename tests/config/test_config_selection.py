@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from gwmock_pop.config.selection import SelectionConfiguration
+from gwsim_pop.config.selection import SelectionConfiguration
 
 
 class TestSelectionConfiguration:

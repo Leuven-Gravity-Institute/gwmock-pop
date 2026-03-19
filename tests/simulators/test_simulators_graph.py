@@ -11,8 +11,8 @@ import jax.numpy as jnp
 import pytest
 import yaml
 
-import gwmock_pop.simulators.graph as graph_module
-from gwmock_pop.simulators.graph import GraphSimulator
+import gwsim_pop.simulators.graph as graph_module
+from gwsim_pop.simulators.graph import GraphSimulator
 
 # Constants for test data
 DEFAULT_N_SAMPLES = 100
@@ -28,7 +28,7 @@ class TestGraphSimulator:
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "n_samples": 100,
                         "alpha_1": 1.72,
@@ -57,7 +57,7 @@ class TestGraphSimulator:
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "n_samples": 100,
                         "alpha_1": 1.72,
@@ -77,7 +77,7 @@ class TestGraphSimulator:
             },
             "mass_ratio": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_conditional_ratio_power_law",
+                    "function": "gwsim_pop.samplers.planck_tapered_conditional_ratio_power_law",
                     "arguments": {
                         "denominator": "@mass_1",
                         "beta": 1.5,
@@ -99,7 +99,7 @@ class TestGraphSimulator:
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "n_samples": 100,
                         "alpha_1": 1.72,
@@ -119,7 +119,7 @@ class TestGraphSimulator:
             },
             "mass_ratio": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_conditional_ratio_power_law",
+                    "function": "gwsim_pop.samplers.planck_tapered_conditional_ratio_power_law",
                     "arguments": {
                         "denominator": "@mass_1",
                         "beta": 1.5,
@@ -143,7 +143,7 @@ class TestGraphSimulator:
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "n_samples": 100,
                         "alpha_1": 1.72,
@@ -171,7 +171,7 @@ class TestGraphSimulator:
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "n_samples": 100,
                         "alpha_1": 1.72,
@@ -199,7 +199,7 @@ class TestGraphSimulator:
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "n_samples": 100,
                         "alpha_1": 1.72,
@@ -233,7 +233,7 @@ class TestGraphSimulator:
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
@@ -267,7 +267,7 @@ class TestGraphSimulator:
         """Test loading config from TOML file."""
         config = """
 [parameters.mass_1.sampler]
-function = "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks"
+function = "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks"
 
 [parameters.mass_1.sampler.arguments]
 alpha_1 = 1.72
@@ -313,7 +313,7 @@ lambda_1 = 0.586
             "parameters": {
                 "mass_1": {
                     "sampler": {
-                        "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                        "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                         "arguments": {
                             "alpha_1": 1.72,
                             "alpha_2": 4.51,
@@ -349,7 +349,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
@@ -381,7 +381,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
@@ -410,7 +410,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
@@ -430,7 +430,7 @@ lambda_1 = 0.586
             },
             "mass_ratio": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_conditional_ratio_power_law",
+                    "function": "gwsim_pop.samplers.planck_tapered_conditional_ratio_power_law",
                     "arguments": {
                         "denominator": "@mass_1",
                         "beta": 1.5,
@@ -458,7 +458,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
@@ -490,7 +490,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "n_samples": 100,
                         "alpha_1": 1.72,
@@ -523,7 +523,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "n_samples": 100,
                         "alpha_1": 1.72,
@@ -554,7 +554,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "n_samples": 100,
                         "alpha_1": 1.72,
@@ -574,7 +574,7 @@ lambda_1 = 0.586
             },
             "mass_ratio": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_conditional_ratio_power_law",
+                    "function": "gwsim_pop.samplers.planck_tapered_conditional_ratio_power_law",
                     "arguments": {
                         "denominator": "@mass_1",
                         "beta": 1.5,
@@ -588,7 +588,7 @@ lambda_1 = 0.586
             },
             "redshift": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "n_samples": 100,
                         "alpha_1": 1.0,
@@ -617,7 +617,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "n_samples": 10,
                         "alpha_1": 1.72,
@@ -638,7 +638,7 @@ lambda_1 = 0.586
             "hidden_mass": {
                 "exclude": True,
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "n_samples": 10,
                         "alpha_1": 1.72,
@@ -669,7 +669,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "n_samples": 100,
                         "alpha_1": 1.72,
@@ -701,7 +701,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "n_samples": 100,
                         "alpha_1": 1.72,
@@ -721,7 +721,7 @@ lambda_1 = 0.586
             },
             "mass_ratio": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_conditional_ratio_power_law",
+                    "function": "gwsim_pop.samplers.planck_tapered_conditional_ratio_power_law",
                     "arguments": {"denominator": "@mass_1"},
                 },
             },
@@ -743,7 +743,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
@@ -763,7 +763,7 @@ lambda_1 = 0.586
             },
             "mass_ratio": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_conditional_ratio_power_law",
+                    "function": "gwsim_pop.samplers.planck_tapered_conditional_ratio_power_law",
                     "arguments": {
                         "denominator": "@mass_1",
                         "beta": 1.5,
@@ -799,7 +799,7 @@ lambda_1 = 0.586
         config = {
             "mass_ratio": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_conditional_ratio_power_law",
+                    "function": "gwsim_pop.samplers.planck_tapered_conditional_ratio_power_law",
                     "arguments": {
                         "denominator": "@mass_1",  # mass_1 not defined
                         "beta": 1.5,
@@ -822,7 +822,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "n_samples": 100,
                         "alpha_1": 1.72,
@@ -852,7 +852,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
@@ -881,7 +881,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
@@ -902,7 +902,7 @@ lambda_1 = 0.586
 
         def fake_import_from_string(object_path: str, default_module: str | None = None):
             assert object_path == "double_values"
-            assert default_module == "gwmock_pop.transforms"
+            assert default_module == "gwsim_pop.transforms"
 
             def fake_transform(*, values: jnp.ndarray, scale: int) -> jnp.ndarray:
                 return values * scale
@@ -927,7 +927,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
@@ -961,7 +961,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
@@ -987,7 +987,7 @@ lambda_1 = 0.586
             },
             "mass_2": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
@@ -1011,7 +1011,7 @@ lambda_1 = 0.586
 
         def fake_import_from_string(object_path: str, default_module: str | None = None):
             if object_path == "offset_values":
-                assert default_module == "gwmock_pop.transforms"
+                assert default_module == "gwsim_pop.transforms"
 
                 def fake_transform(*, values: jnp.ndarray) -> jnp.ndarray:
                     return values + 1
@@ -1037,7 +1037,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "n_samples": 100,
                         "alpha_1": 1.72,
@@ -1073,7 +1073,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
@@ -1117,7 +1117,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
@@ -1140,7 +1140,7 @@ lambda_1 = 0.586
         # Test with string arguments - should raise ValueError
         with pytest.raises(ValueError, match="Sampler arguments must be a mapping"):
             simulator._execute_sampler(
-                "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                 "invalid_arguments",  # type: ignore[arg-type]
             )
 
@@ -1149,7 +1149,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
@@ -1172,7 +1172,7 @@ lambda_1 = 0.586
         # Test with dependency that hasn't been sampled
         with pytest.raises(ValueError, match="Dependency 'nonexistent' not sampled yet"):
             simulator._execute_sampler(
-                "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                 {"alpha_1": "@nonexistent"},
             )
 
@@ -1181,7 +1181,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
@@ -1210,7 +1210,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
@@ -1255,7 +1255,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "alpha_1": 1.72,
                         "alpha_2": 4.51,
@@ -1315,7 +1315,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "n_samples": 100,
                         "alpha_1": 1.72,
@@ -1345,7 +1345,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "n_samples": 100,
                         "alpha_1": 1.72,
@@ -1388,7 +1388,7 @@ lambda_1 = 0.586
         config = {
             "mass_1": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "n_samples": 10,
                         "alpha_1": 1.72,
@@ -1431,7 +1431,7 @@ lambda_1 = 0.586
         config = {
             "intermediate_param": {
                 "sampler": {
-                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "function": "gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
                     "arguments": {
                         "n_samples": 100,
                         "alpha_1": 1.72,

@@ -3,4 +3,4 @@ title: Broken Power Law
 description: API reference for broken power law distributions.
 ---
 
-::: gwmock_pop.distributions.broken_power_law
+::: gwsim_pop.distributions.broken_power_law

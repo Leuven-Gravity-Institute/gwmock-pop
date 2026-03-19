@@ -1,1 +1,1 @@
-"""Unit tests for gwmock_pop.simulators.bbh.base."""
+"""Unit tests for gwsim_pop.simulators.bbh.base."""

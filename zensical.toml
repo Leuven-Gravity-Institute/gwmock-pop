@@ -11,7 +11,7 @@
 # The site_name is shown in the page header and the browser window title
 #
 # Read more: https://zensical.org/docs/setup/basics/#site_name
-site_name = "gwmock_pop Documentation"
+site_name = "gwsim_pop Documentation"
 
 # The site_description is included in the HTML head and should contain a
 # meaningful description of the site content for use by search engines.
@@ -27,11 +27,11 @@ site_author = "Isaac C. F. Wong"
 # The site_url is the canonical URL for your site. When building online
 # documentation you should set this.
 # Read more: https://zensical.org/docs/setup/basics/#site_url
-site_url = "https://leuven-gravity-institute.github.io/gwmock_pop/"
+site_url = "https://leuven-gravity-institute.github.io/gwsim_pop/"
 
 # Configure the source repository so readers can jump between docs and code.
-repo_url = "https://github.com/Leuven-Gravity-Institute/gwmock_pop"
-repo_name = "Leuven-Gravity-Institute/gwmock_pop"
+repo_url = "https://github.com/Leuven-Gravity-Institute/gwsim_pop"
+repo_name = "Leuven-Gravity-Institute/gwsim_pop"
 edit_uri = "edit/main/docs/"
 
 # The copyright notice appears in the page footer and can contain an HTML

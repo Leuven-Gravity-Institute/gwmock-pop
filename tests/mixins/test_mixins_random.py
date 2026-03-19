@@ -5,8 +5,8 @@ from __future__ import annotations
 import jax
 import jax.numpy as jnp
 
-from gwmock_pop.mixins.random import RandomMixin
-from gwmock_pop.rng import RNGManager
+from gwsim_pop.mixins.random import RandomMixin
+from gwsim_pop.rng import RNGManager
 
 
 class TestRandomMixin:

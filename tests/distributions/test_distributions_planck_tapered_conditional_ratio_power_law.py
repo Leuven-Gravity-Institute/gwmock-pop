@@ -8,7 +8,7 @@ import jax.numpy as jnp
 import pytest
 from jax import Array
 
-from gwmock_pop.distributions.planck_tapered_conditional_ratio_power_law import (
+from gwsim_pop.distributions.planck_tapered_conditional_ratio_power_law import (
     planck_tapered_conditional_ratio_power_law_cdf,
     planck_tapered_conditional_ratio_power_law_unnormalized_logpdf,
 )

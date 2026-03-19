@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from gwmock_pop.config.main import MainConfiguration
+from gwsim_pop.config.main import MainConfiguration
 
 
 class TestMainConfiguration:

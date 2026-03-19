@@ -1,4 +1,4 @@
-# gwmock_pop
+# gwsim_pop
 
 A Python package for simulating populations of gravitational wave sources.
 

@@ -3,4 +3,4 @@ title: Run
 description: API reference for run configuration.
 ---
 
-::: gwmock_pop.config.run
+::: gwsim_pop.config.run

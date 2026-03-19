@@ -10,11 +10,11 @@ import pytest
 import typer
 from typer.testing import CliRunner
 
-from gwmock_pop.cli.main import app, setup_logging
-from gwmock_pop.cli.simulate import _build_output_metadata, simulate_command
-from gwmock_pop.config.main import MainConfiguration
-from gwmock_pop.simulators.graph import GraphSimulator
-from gwmock_pop.utils.log import LoggingLevel
+from gwsim_pop.cli.main import app, setup_logging
+from gwsim_pop.cli.simulate import _build_output_metadata, simulate_command
+from gwsim_pop.config.main import MainConfiguration
+from gwsim_pop.simulators.graph import GraphSimulator
+from gwsim_pop.utils.log import LoggingLevel
 
 
 class TestSimulateCommand:
@@ -44,7 +44,7 @@ run:
 parameters:
   mass_1:
     sampler:
-      function: gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
+      function: gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
       arguments:
         alpha_1: 1.72
         alpha_2: 4.51
@@ -83,7 +83,7 @@ run:
 parameters:
   mass_1:
     sampler:
-      function: gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
+      function: gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
       arguments:
         alpha_1: 1.72
         alpha_2: 4.51
@@ -127,7 +127,7 @@ run:
 
         mock_logger.error.assert_called_once_with("No parameter graph configuration found under 'parameters'.")
 
-    @patch("gwmock_pop.cli.simulate._build_output_metadata")
+    @patch("gwsim_pop.cli.simulate._build_output_metadata")
     def test_simulate_command_with_metadata(self, mock_build_metadata: MagicMock, tmp_path: Path) -> None:
         """Test that simulate_command builds and saves metadata when requested."""
         mock_build_metadata.return_value = {"run_name": "cli_test_metadata"}
@@ -150,7 +150,7 @@ run:
 parameters:
   mass_1:
     sampler:
-      function: gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
+      function: gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
       arguments:
         alpha_1: 1.72
         alpha_2: 4.51
@@ -193,7 +193,7 @@ run:
 parameters:
   mass_1:
     sampler:
-      function: gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
+      function: gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
       arguments:
         alpha_1: 1.72
         alpha_2: 4.51
@@ -246,7 +246,7 @@ run:
 parameters:
   mass_1:
     sampler:
-      function: gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
+      function: gwsim_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
       arguments:
         alpha_1: 1.72
         alpha_2: 4.51
@@ -302,9 +302,9 @@ class TestVersionCallback:
         assert result.exit_code == 0
         # Version output goes to stderr via logging
         assert (
-            "gwmock_pop version:" in result.stdout
-            or "gwmock_pop version:" in result.stderr
-            or "gwmock_pop version:" in str(result)
+            "gwsim_pop version:" in result.stdout
+            or "gwsim_pop version:" in result.stderr
+            or "gwsim_pop version:" in str(result)
         )
 
 

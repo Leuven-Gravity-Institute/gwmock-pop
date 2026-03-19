@@ -438,8 +438,28 @@ wheels = [
 
 [[package]]
 name = "gwmock-pop"
+version = "0.3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "h5py" },
+    { name = "jax" },
+    { name = "networkx" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+    { name = "ruyaml" },
+    { name = "typer" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d4/45/209cb4025cc6f272a59d2859a26e203740500de855cef9e645ac49342fc9/gwmock_pop-0.3.1.tar.gz", hash = "sha256:e8f2567110687929a0ef41c47eb6e634600e1bb307a83555640651768df666e2", size = 198884, upload-time = "2026-03-19T07:05:45.29Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/60/01/c3c336cd29ee103a27df768f000f46d4f8a1328b900b9e739262dda3477c/gwmock_pop-0.3.1-py3-none-any.whl", hash = "sha256:3f3d4030641bb4985d4be6d72efd384e6907175544ab6e01687cfd0fe1f37ebe", size = 4470, upload-time = "2026-03-19T07:05:43.808Z" },
+]
+
+[[package]]
+name = "gwsim-pop"
+version = "0.3.1"
 source = { editable = "." }
 dependencies = [
+    { name = "gwmock-pop" },
     { name = "h5py" },
     { name = "jax" },
     { name = "networkx" },
@@ -479,31 +499,27 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bandit", extras = ["toml"], marker = "extra == 'dev'", specifier = ">=1.9.4" },
     { name = "bandit", extras = ["toml"], marker = "extra == 'test'", specifier = ">=1.9.4" },
+    { name = "gwmock-pop" },
+    { name = "gwsim-pop", extras = ["test", "docs"], marker = "extra == 'dev'" },
     { name = "h5py", specifier = ">=3.16.0" },
     { name = "hatch", marker = "extra == 'build'", specifier = ">=1.16.5" },
     { name = "jax", specifier = ">=0.9.1" },
-    { name = "mkdocstrings-python", marker = "extra == 'dev'", specifier = ">=2.0.3" },
     { name = "mkdocstrings-python", marker = "extra == 'docs'", specifier = ">=2.0.3" },
     { name = "networkx", specifier = ">=3.6.1" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.5.1" },
     { name = "pre-commit", marker = "extra == 'test'", specifier = ">=4.5.1" },
     { name = "pydantic", specifier = ">=2.12.5" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.2" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=9.0.2" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=7.0.0" },
     { name = "pytest-github-actions-annotate-failures", marker = "extra == 'ci'", specifier = ">=0.4.0" },
-    { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.15.1" },
     { name = "pytest-mock", marker = "extra == 'test'", specifier = ">=3.15.1" },
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "ruyaml", specifier = ">=0.91.0" },
     { name = "typer", specifier = ">=0.24.1" },
-    { name = "zensical", marker = "extra == 'dev'", specifier = ">=0.0.27" },
     { name = "zensical", marker = "extra == 'docs'", specifier = ">=0.0.27" },
 ]
-provides-extras = ["build", "ci", "dev", "docs", "test"]
+provides-extras = ["test", "ci", "dev", "docs", "build"]
 
 [[package]]
 name = "h11"
