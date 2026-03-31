@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from abc import ABC, abstractmethod
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from functools import wraps
 from pathlib import Path
 from typing import Any
@@ -27,7 +27,7 @@ class Simulator(ABC):
             **kwargs: Keyword arguments.
         """
         self.graph = nx.DiGraph()
-        self._last_data: Array | None = None
+        self._last_data: Mapping[str, Array] | Array | None = None
         self._node_funcs: dict[str, Callable] = {}
         self._node_depends: dict[str, list[str]] = {}
 
@@ -81,7 +81,7 @@ class Simulator(ABC):
         return decorator
 
     @abstractmethod
-    def _simulate_impl(self, *args: object, **kwargs: object) -> Array:
+    def _simulate_impl(self, *args: object, **kwargs: object) -> Mapping[str, Array]:
         """Implement simulation for subclass.
 
         Args:
@@ -89,11 +89,11 @@ class Simulator(ABC):
             **kwargs: Keyword arguments.
 
         Returns:
-            2D array of shape (n_samples, n_parameters).
+            Mapping from parameter names to 1D arrays of length n_samples.
 
         """
 
-    def simulate(self, *args: object, **kwargs: object) -> Array:
+    def simulate(self, *args: object, **kwargs: object) -> Mapping[str, Array]:
         """Simulate a population of sources.
 
         Args:
@@ -101,7 +101,7 @@ class Simulator(ABC):
             **kwargs: Keyword arguments.
 
         Returns:
-            2D array of shape (n_samples, n_parameters).
+            Mapping from parameter names to 1D arrays of length n_samples.
 
         """
         result = self._simulate_impl(*args, **kwargs)
@@ -109,7 +109,7 @@ class Simulator(ABC):
         self._last_data = result
         return result
 
-    def __call__(self, *args: object, **kwargs: object) -> Array:
+    def __call__(self, *args: object, **kwargs: object) -> Mapping[str, Array]:
         """Call simulate() with n_samples.
 
         Args:
@@ -117,7 +117,7 @@ class Simulator(ABC):
             **kwargs: Keyword arguments.
 
         Returns:
-            2D array of shape (n_samples, n_parameters).
+            Mapping from parameter names to 1D arrays of length n_samples.
 
         """
         return self.simulate(*args, **kwargs)
@@ -126,7 +126,7 @@ class Simulator(ABC):
         self,
         output_path: str | Path,
         file_format: str | None = None,
-        data: Array | None = None,
+        data: Mapping[str, Array] | Array | None = None,
         compression: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
@@ -135,7 +135,9 @@ class Simulator(ABC):
         Args:
             output_path: Path to save the file.
             file_format: File format (npy, npz, csv, hdf5). If None, infers from extension.
-            data: Data to save. If None, uses last simulated data.
+            data: Data to save. If None, uses last simulated data. Mapping inputs
+                are converted to a 2D array with columns ordered by
+                ``parameter_names``.
             compression: Optional compression setting for supported formats.
                 For HDF5, this specifies the compression filter (e.g., "gzip").
                 For NPZ, any non-None value enables default zlib compression.
@@ -152,21 +154,23 @@ class Simulator(ABC):
                 raise ValueError("No data provided and no last simulated data available.")
             data = self._last_data
 
+        data_array = self._to_array_for_persistence(data)
+
         if file_format == "npy":
-            jnp.save(output_path, data)
+            jnp.save(output_path, data_array)
         elif file_format == "npz":
             if metadata:
-                payload = {"data": np.asarray(data), "__metadata__": np.array(json.dumps(metadata))}
+                payload = {"data": np.asarray(data_array), "__metadata__": np.array(json.dumps(metadata))}
             else:
-                payload = {"data": np.asarray(data)}
+                payload = {"data": np.asarray(data_array)}
             if compression is None:
                 np.savez(output_path, **payload)
             else:
                 np.savez_compressed(output_path, **payload)
         elif file_format == "csv":
-            np.savetxt(output_path, data, delimiter=",")
+            np.savetxt(output_path, data_array, delimiter=",")
         elif file_format == "hdf5":
-            self._save_hdf5(output_path, data, compression=compression, metadata=metadata)
+            self._save_hdf5(output_path, data_array, compression=compression, metadata=metadata)
         else:
             raise ValueError(f"Unsupported format: {file_format}")
 
@@ -233,20 +237,41 @@ class Simulator(ABC):
                 raise TypeError('f["data"] is not a h5py.Dataset instance.')
             return jnp.array(data_obj[()])
 
-    def _validate_output(self, array: Array) -> None:
+    def _validate_output(self, result: Mapping[str, Array]) -> None:
         """Validate the output of simulate().
 
         Args:
-            array: Array to validate.
+            result: Mapping to validate.
 
         Raises:
-            ValueError: If array shape is invalid.
+            ValueError: If output is invalid.
 
         """
-        expected_ndim = 2
-        if array.ndim != expected_ndim:
-            raise ValueError(f"Expected 2D array, got {array.ndim}D array")
+        expected_keys = list(self.parameter_names)
+        actual_keys = list(result.keys())
+        if set(actual_keys) != set(expected_keys):
+            raise ValueError(f"Expected keys {expected_keys}, got {actual_keys}.")
 
-        expected_n_parameters = len(self.parameter_names)
-        if array.shape[1] != expected_n_parameters:
-            raise ValueError(f"Expected {expected_n_parameters} parameters, got {array.shape[1]}")
+        n_samples: int | None = None
+        for parameter_name in expected_keys:
+            if parameter_name not in result:
+                raise ValueError(f"Missing parameter '{parameter_name}' in simulator output.")
+
+            array = jnp.asarray(result[parameter_name])
+            if array.ndim != 1:
+                raise ValueError(f"Expected 1D array for parameter '{parameter_name}', got {array.ndim}D array.")
+
+            parameter_n_samples = int(array.shape[0])
+            if n_samples is None:
+                n_samples = parameter_n_samples
+            elif parameter_n_samples != n_samples:
+                raise ValueError(
+                    f"Parameter '{parameter_name}' has {parameter_n_samples} samples, expected {n_samples}."
+                )
+
+    def _to_array_for_persistence(self, data: Mapping[str, Array] | Array) -> Array:
+        """Convert mapping outputs to a deterministic 2D array for saving."""
+        if isinstance(data, Mapping):
+            ordered_columns = [jnp.asarray(data[name]) for name in self.parameter_names]
+            return jnp.column_stack(ordered_columns)
+        return jnp.asarray(data)

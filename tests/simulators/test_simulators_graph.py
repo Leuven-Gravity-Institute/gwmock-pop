@@ -20,6 +20,11 @@ DEFAULT_N_PARAMETERS = 2
 DEFAULT_N_PARAMETERS_MULTI = 3
 
 
+def _result_n_samples(result: dict[str, jnp.ndarray]) -> int:
+    """Return sample count from mapping output."""
+    return len(next(iter(result.values()))) if result else 0
+
+
 class TestGraphSimulator:
     """Test suite for GraphSimulator class."""
 
@@ -138,8 +143,8 @@ class TestGraphSimulator:
         assert "mass_1" in graph_nodes
         assert "mass_ratio" in graph_nodes
 
-    def test_source_type_defaults_to_none(self) -> None:
-        """Test that source_type is optional."""
+    def test_source_type_defaults_to_population(self) -> None:
+        """Test that source_type has a non-empty default."""
         config = {
             "mass_1": {
                 "sampler": {
@@ -164,7 +169,7 @@ class TestGraphSimulator:
         }
 
         simulator = GraphSimulator(config=config)
-        assert simulator.source_type is None
+        assert simulator.source_type == "population"
 
     def test_source_type_can_be_configured(self) -> None:
         """Test that source_type can be provided by the caller."""
@@ -193,6 +198,34 @@ class TestGraphSimulator:
 
         simulator = GraphSimulator(config=config, source_type="generic-source")
         assert simulator.source_type == "generic-source"
+
+    def test_source_type_rejects_empty_value(self) -> None:
+        """Test that source_type rejects empty values."""
+        config = {
+            "mass_1": {
+                "sampler": {
+                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "arguments": {
+                        "n_samples": 100,
+                        "alpha_1": 1.72,
+                        "alpha_2": 4.51,
+                        "transition": 35.6,
+                        "minimum": 5.06,
+                        "maximum": 300.0,
+                        "mean_1": 9.76,
+                        "sigma_1": 0.649,
+                        "mean_2": 32.8,
+                        "sigma_2": 3.92,
+                        "taper_range": 4.32,
+                        "lambda_0": 0.361,
+                        "lambda_1": 0.586,
+                    },
+                },
+            },
+        }
+
+        with pytest.raises(ValueError, match="source_type must be a non-empty string"):
+            GraphSimulator(config=config, source_type=" ")
 
     def test_reset(self) -> None:
         """Test that reset clears sampled values."""
@@ -373,8 +406,8 @@ lambda_1 = 0.586
         assert simulator is not None
 
         result = simulator()
-        assert result.shape[0] == 50  # noqa: PLR2004
-        assert result.shape[1] == len(simulator.parameter_names)
+        assert _result_n_samples(result) == 50
+        assert set(result.keys()) == set(simulator.parameter_names)
 
     def test_simulate_injects_n_samples_when_not_in_sampler_arguments(self) -> None:
         """Test that simulate(n_samples=...) injects the sample count into samplers."""
@@ -403,7 +436,8 @@ lambda_1 = 0.586
         simulator = GraphSimulator(config=config)
         result = simulator.simulate(n_samples=12)
 
-        assert result.shape == (12, 1)
+        assert _result_n_samples(result) == 12
+        assert set(result.keys()) == {"mass_1"}
 
     def test_simulate_with_multiple_parameters(self) -> None:
         """Test simulation with multiple parameters and dependencies."""
@@ -448,8 +482,8 @@ lambda_1 = 0.586
         simulator = GraphSimulator(config=config)
         result = simulator()
 
-        assert result.shape[0] == 20  # noqa: PLR2004  # n_samples
-        assert result.shape[1] == DEFAULT_N_PARAMETERS  # mass_1 and mass_ratio
+        assert _result_n_samples(result) == 20  # n_samples
+        assert len(result) == DEFAULT_N_PARAMETERS  # mass_1 and mass_ratio
         assert "mass_1" in simulator.parameter_names
         assert "mass_ratio" in simulator.parameter_names
 
@@ -481,9 +515,9 @@ lambda_1 = 0.586
         simulator = GraphSimulator(config=config)
         result = simulator()
 
-        assert result.ndim == 2  # noqa: PLR2004
-        assert result.shape[0] == 75  # noqa: PLR2004
-        assert result.shape[1] == len(simulator.parameter_names)
+        assert set(result.keys()) == set(simulator.parameter_names)
+        assert all(value.ndim == 1 for value in result.values())
+        assert _result_n_samples(result) == 75
 
     def test_reset_with_custom_seed(self) -> None:
         """Test that reset preserves custom seed behavior."""
@@ -516,7 +550,8 @@ lambda_1 = 0.586
         result2 = simulator()
 
         # Results should be identical after reset with same seed
-        assert jnp.allclose(result1, result2)
+        for name in simulator.parameter_names:
+            assert jnp.allclose(result1[name], result2[name])
 
     def test_simulator_callable_without_args(self) -> None:
         """Test that simulator can be called with positional arguments."""
@@ -547,7 +582,7 @@ lambda_1 = 0.586
         # simulator() should work without arguments
         result = simulator()
         assert result is not None
-        assert result.shape[0] == DEFAULT_N_SAMPLES  # Default n_samples
+        assert _result_n_samples(result) == DEFAULT_N_SAMPLES  # Default n_samples
 
     def test_parameter_names_from_config(self) -> None:
         """Test that parameter_names matches config keys."""
@@ -662,7 +697,8 @@ lambda_1 = 0.586
         result = simulator()
 
         assert simulator.parameter_names == ["mass_1"]
-        assert result.shape == (10, 1)
+        assert _result_n_samples(result) == 10
+        assert set(result.keys()) == {"mass_1"}
 
     def test_source_type_is_stable(self) -> None:
         """Test that source_type remains stable across property access."""
@@ -782,7 +818,7 @@ lambda_1 = 0.586
         _ = simulator()
 
         # Check that sampled_values is populated
-        assert len(simulator._sampled_values) == 2  # noqa: PLR2004
+        assert len(simulator._sampled_values) == 2
         assert "mass_1" in simulator._sampled_values
         assert "mass_ratio" in simulator._sampled_values
 
@@ -791,8 +827,8 @@ lambda_1 = 0.586
         assert hasattr(simulator._sampled_values["mass_ratio"], "shape")
 
         # Check shapes
-        assert simulator._sampled_values["mass_1"].shape[0] == 30  # noqa: PLR2004
-        assert simulator._sampled_values["mass_ratio"].shape[0] == 30  # noqa: PLR2004
+        assert simulator._sampled_values["mass_1"].shape[0] == 30
+        assert simulator._sampled_values["mass_ratio"].shape[0] == 30
 
     def test_dependency_not_sampled_raises_error(self) -> None:
         """Test that missing dependency raises ValueError."""
@@ -845,7 +881,7 @@ lambda_1 = 0.586
 
         simulator = GraphSimulator(config=config)
         result = simulator()
-        assert result.shape[0] == 100  # noqa: PLR2004  # default n_samples
+        assert _result_n_samples(result) == 100  # default n_samples
 
     def test_sampler_with_explicit_n_samples(self) -> None:
         """Test that sampler works with explicit n_samples in arguments."""
@@ -874,7 +910,7 @@ lambda_1 = 0.586
 
         simulator = GraphSimulator(config=config)
         result = simulator()
-        assert result.shape[0] == 15  # Should use explicit value  # noqa: PLR2004
+        assert _result_n_samples(result) == 15  # Should use explicit value
 
     def test_transform_execution(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test that transforms resolve dependencies and execute correctly."""
@@ -1029,8 +1065,9 @@ lambda_1 = 0.586
         )
         result = simulator()
 
-        assert result.shape == (20, 3)  # mass_1, mass_1_transformed, mass_2
-        assert jnp.allclose(result[:, 1], result[:, 0] + 1)
+        assert _result_n_samples(result) == 20
+        assert set(result.keys()) == {"mass_1", "mass_1_transformed", "mass_2"}
+        assert jnp.allclose(result["mass_1_transformed"], result["mass_1"] + 1)
 
     def test_reset_without_rng_manager(self) -> None:
         """Test that reset works even without _rng_manager attribute."""
@@ -1422,7 +1459,7 @@ lambda_1 = 0.586
 
         # Should have 2 parameters: mass_1 and mass_1_transformed
         expected_n_parameters = 2
-        assert result.shape[1] == expected_n_parameters
+        assert len(result) == expected_n_parameters
         assert "mass_1" in simulator.parameter_names
         assert "mass_1_transformed" in simulator.parameter_names
 

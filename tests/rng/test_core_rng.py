@@ -17,7 +17,7 @@ class TestRNGManager:
     def test_init_with_seed(self) -> None:
         """Test initialization with a fixed seed."""
         rng = RNGManager(seed=42)
-        assert rng._seed == 42  # noqa: PLR2004
+        assert rng._seed == 42
         assert isinstance(rng.key, jax.Array)
 
     def test_init_without_seed(self) -> None:
@@ -143,7 +143,7 @@ class TestRNGManager:
             key, subkey = jax.random.split(key)
             values.append(jax.random.uniform(subkey))
 
-        assert len(values) == 5  # noqa: PLR2004
+        assert len(values) == 5
         assert all(0 <= v < 1 for v in values)
 
     def test_key_can_produce_integers(self) -> None:
@@ -154,7 +154,7 @@ class TestRNGManager:
         val = jax.random.randint(subkey, shape=(), minval=0, maxval=100)
 
         assert isinstance(val, jax.Array)
-        assert 0 <= val < 100  # noqa: PLR2004
+        assert 0 <= val < 100
 
     def test_key_can_produce_normal_distribution(self) -> None:
         """Test that RNG can generate normal distribution."""
@@ -163,7 +163,7 @@ class TestRNGManager:
         _, subkey = jax.random.split(rng.key)
         values = jax.random.normal(subkey, shape=(100,))
 
-        assert len(values) == 100  # noqa: PLR2004
+        assert len(values) == 100
         assert isinstance(values, jax.Array)
 
     def test_repr_with_seed(self) -> None:

@@ -78,4 +78,5 @@ def simulate_command(filename: Annotated[str, typer.Argument(help="File name of 
         compression=config.run.output.compression,
         metadata=metadata,
     )
-    logger.info("Saved %s samples to %s", population.shape[0], output_path)
+    sample_count = len(next(iter(population.values()))) if population else 0
+    logger.info("Saved %s samples to %s", sample_count, output_path)

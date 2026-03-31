@@ -44,7 +44,7 @@ class TestAddDependenciesToGraph:
             dependencies={"dep1", "dep2", "dep3"},
             parameter_name="param1",
         )
-        assert len(graph.edges()) == 3  # noqa: PLR2004
+        assert len(graph.edges()) == 3
         assert ("dep1", "param1") in graph.edges()
         assert ("dep2", "param1") in graph.edges()
         assert ("dep3", "param1") in graph.edges()
@@ -61,7 +61,7 @@ class TestAddDependenciesToGraph:
             dependencies={"dep2"},
             parameter_name="param1",
         )
-        assert len(graph.edges()) == 2  # noqa: PLR2004
+        assert len(graph.edges()) == 2
         assert ("dep1", "param1") in graph.edges()
         assert ("dep2", "param1") in graph.edges()
 
@@ -128,7 +128,7 @@ class TestAddDependenciesToGraph:
         )
         # Check that all edges exist
         edges = list(graph.edges())
-        assert len(edges) == 3  # noqa: PLR2004
+        assert len(edges) == 3
         for dep in ["dep1", "dep2", "dep3"]:
             assert (dep, "param1") in edges
 
@@ -164,7 +164,7 @@ class TestAddDependenciesToGraph:
             dependencies={"dep2"},
             parameter_name="param2",
         )
-        assert len(graph.edges()) == 2  # noqa: PLR2004
+        assert len(graph.edges()) == 2
         assert ("dep1", "param1") in graph.edges()
         assert ("dep2", "param2") in graph.edges()
 
@@ -439,8 +439,8 @@ class TestBuildDependencyGraph:
         }
         graph = build_dependency_graph(config)
         # Check DAG structure
-        assert len(graph.nodes()) == 3  # noqa: PLR2004
-        assert len(graph.edges()) == 2  # noqa: PLR2004
+        assert len(graph.nodes()) == 3
+        assert len(graph.edges()) == 2
         # Check topological order is possible
         try:
             list(nx.topological_sort(graph))
