@@ -12,6 +12,7 @@ import pytest
 import yaml
 
 import gwmock_pop.simulators.graph as graph_module
+from gwmock_pop.protocols import GWPopSimulator
 from gwmock_pop.simulators.graph import GraphSimulator
 
 # Constants for test data
@@ -1512,3 +1513,74 @@ lambda_1 = 0.586
                 GraphSimulator.from_config_file(temp_path)
         finally:
             Path(temp_path).unlink()
+
+
+# ---------------------------------------------------------------------------
+# GWTC-4 BBH mass model parameters (BrokenPowerLawTwoPeaks from GWTC-4.0)
+# ---------------------------------------------------------------------------
+_GWTC4_MASS1_CONFIG: dict[str, Any] = {
+    "mass_1": {
+        "sampler": {
+            "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+            "arguments": {
+                "alpha_1": 1.72,
+                "alpha_2": 4.51,
+                "transition": 35.6,
+                "minimum": 5.06,
+                "maximum": 300.0,
+                "mean_1": 9.76,
+                "sigma_1": 0.649,
+                "mean_2": 32.8,
+                "sigma_2": 3.92,
+                "taper_range": 4.32,
+                "lambda_0": 0.361,
+                "lambda_1": 0.586,
+                "key": jax.random.key(42),
+            },
+        },
+    },
+}
+
+
+class TestGraphSimulatorProtocolConformance:
+    """Protocol conformance and regression tests for GraphSimulator."""
+
+    def test_isinstance_gwpopsimulator(self) -> None:
+        """GraphSimulator satisfies the GWPopSimulator runtime-checkable protocol."""
+        sim = GraphSimulator(config=_GWTC4_MASS1_CONFIG, source_type="bbh")
+        assert isinstance(sim, GWPopSimulator)
+
+    def test_simulate_returns_mapping_with_correct_keys(self) -> None:
+        """simulate() returns a Mapping whose keys equal parameter_names."""
+        sim = GraphSimulator(config=_GWTC4_MASS1_CONFIG, source_type="bbh")
+        result = sim.simulate(n_samples=50)
+        assert set(result.keys()) == set(sim.parameter_names)
+
+    def test_simulate_returns_1d_arrays(self) -> None:
+        """Each value in the simulate() result is a 1-D array."""
+        sim = GraphSimulator(config=_GWTC4_MASS1_CONFIG, source_type="bbh")
+        result = sim.simulate(n_samples=50)
+        assert all(v.ndim == 1 for v in result.values())
+
+    def test_simulate_respects_n_samples(self) -> None:
+        """Each array in the result has the requested number of samples."""
+        n = 75
+        sim = GraphSimulator(config=_GWTC4_MASS1_CONFIG, source_type="bbh")
+        result = sim.simulate(n_samples=n)
+        assert all(v.shape[0] == n for v in result.values())
+
+    def test_gwtc4_mass1_mean_regression(self) -> None:
+        """Mass-1 mean from GWTC-4 config matches golden value to 3 significant figures.
+
+        Golden values computed with key=jax.random.key(42) and n_samples=1000:
+            mean ≈ 18.14, std ≈ 11.28
+        """
+        sim = GraphSimulator(config=_GWTC4_MASS1_CONFIG, source_type="bbh")
+        result = sim.simulate(n_samples=1000)
+        mass_1 = result["mass_1"]
+        assert abs(float(jnp.mean(mass_1)) - 18.141) / 18.141 < 5e-3, (
+            f"mass_1 mean regression failed: got {float(jnp.mean(mass_1)):.4f}, expected ~18.141"
+        )
+        assert abs(float(jnp.std(mass_1)) - 11.284) / 11.284 < 5e-3, (
+            f"mass_1 std regression failed: got {float(jnp.std(mass_1)):.4f}, expected ~11.284"
+        )

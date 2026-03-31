@@ -15,8 +15,8 @@ class ConcreteBBHSimulator(BBHSimulator):
         super().__init__(*args, **kwargs)
 
     def _simulate_impl(self, *args, **kwargs):
-        """Implement simulation (returns dummy data)."""
-        return jnp.ones((1, len(self.parameter_names)))
+        """Implement simulation (returns one sample per parameter)."""
+        return {name: jnp.ones((1,)) for name in self.parameter_names}
 
 
 class TestBBHSimulator:
