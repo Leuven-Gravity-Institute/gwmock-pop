@@ -23,6 +23,8 @@ defaults without requiring an environment variable.
 
 from __future__ import annotations
 
+import os
+
 from hypothesis import HealthCheck, Phase, settings
 
 settings.register_profile(
@@ -45,4 +47,4 @@ settings.register_profile(
     phases=[p for p in Phase if p is not Phase.target],
 )
 
-settings.load_profile("default")
+settings.load_profile(os.getenv("HYPOTHESIS_PROFILE", "default"))
