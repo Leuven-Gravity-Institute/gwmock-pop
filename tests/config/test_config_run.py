@@ -15,19 +15,19 @@ class TestRunConfiguration:
         """Test that default values are set correctly."""
         config = RunConfiguration()
         assert config.name == "simulation"
-        assert config.seed == 42  # noqa: PLR2004
+        assert config.seed == 42
         assert config.mode == "fixed_n_samples"
-        assert config.n_samples == 1_000_000  # noqa: PLR2004
+        assert config.n_samples == 1_000_000
         assert config.duration == 1.0
 
     def test_initialization_with_values(self):
         """Test that RunConfiguration can be initialized with specific values."""
         config = RunConfiguration(name="test_run", seed=123, mode="fixed_n_samples", n_samples=500000, duration=2.0)
         assert config.name == "test_run"
-        assert config.seed == 123  # noqa: PLR2004
+        assert config.seed == 123
         assert config.mode == "fixed_n_samples"
-        assert config.n_samples == 500000  # noqa: PLR2004
-        assert config.duration == 2.0  # noqa: PLR2004
+        assert config.n_samples == 500000
+        assert config.duration == 2.0
 
     def test_mode_validation(self):
         """Test that mode validation works correctly."""

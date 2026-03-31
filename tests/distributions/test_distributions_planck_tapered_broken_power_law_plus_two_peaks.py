@@ -541,7 +541,7 @@ class TestPlanckTaperedBrokenPowerLawPlusTwoPeaksCDF:
 
         # Check that differences are not excessively large
         diff = jnp.diff(cdf)
-        assert jnp.max(diff) < 0.1  # No large jumps  # noqa: PLR2004
+        assert jnp.max(diff) < 0.1  # No large jumps
 
     def test_monotonic_increase(self):
         """Test that CDF is strictly monotonically increasing."""

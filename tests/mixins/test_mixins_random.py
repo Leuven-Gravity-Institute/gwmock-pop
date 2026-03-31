@@ -16,7 +16,7 @@ class TestRandomMixin:
         """Test initialization with a fixed seed."""
         mixin = RandomMixin(seed=42)
 
-        assert mixin._rng_manager._seed == 42  # noqa: PLR2004
+        assert mixin._rng_manager._seed == 42
         assert isinstance(mixin.rng_manager, RNGManager)
         assert isinstance(mixin.rng_manager.key, jax.Array)
 
@@ -93,8 +93,8 @@ class TestRandomMixin:
 
         obj = TestClass(value=42, seed=100)
 
-        assert obj.value == 42  # noqa: PLR2004
-        assert obj._rng_manager._seed == 100  # noqa: PLR2004
+        assert obj.value == 42
+        assert obj._rng_manager._seed == 100
 
     def test_instantiation_with_kwargs(self) -> None:
         """Test that RandomMixin can be instantiated with kwargs."""
@@ -107,7 +107,7 @@ class TestRandomMixin:
         obj = TestClass(config={"key": "value"}, seed=200)
 
         assert obj.config == {"key": "value"}
-        assert obj._rng_manager._seed == 200  # noqa: PLR2004
+        assert obj._rng_manager._seed == 200
 
     def test_rng_key_can_generate_various_distributions(self) -> None:
         """Test that RNG from mixin can generate various distributions."""

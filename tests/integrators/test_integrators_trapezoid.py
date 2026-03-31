@@ -275,7 +275,7 @@ class TestLogTrapezoidalCumsum:
 
         finite_result = result[1:]  # Skip first -inf
         diffs = jnp.diff(finite_result)
-        assert jnp.all(diffs >= -1e-6)  # Allow small numerical errors  # noqa: PLR2004
+        assert jnp.all(diffs >= -1e-6)  # Allow small numerical errors
 
     def test_constant_function(self) -> None:
         """Test with constant function."""
@@ -392,7 +392,7 @@ class TestLogTrapezoidalCumsum:
 
         assert result[0] == -jnp.inf
         assert jnp.all(jnp.isfinite(result[1:]))
-        assert jnp.all(jnp.diff(result[1:]) >= -1e-6)  # noqa: PLR2004
+        assert jnp.all(jnp.diff(result[1:]) >= -1e-6)
 
 
 class TestIntegratorConsistency:
