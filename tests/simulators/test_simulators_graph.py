@@ -144,8 +144,8 @@ class TestGraphSimulator:
         assert "mass_1" in graph_nodes
         assert "mass_ratio" in graph_nodes
 
-    def test_source_type_defaults_to_population(self) -> None:
-        """Test that source_type has a non-empty default."""
+    def test_graph_simulator_simulate_raises_without_source_type(self) -> None:
+        """Test that simulate() raises ValueError when source_type was not set."""
         config = {
             "mass_1": {
                 "sampler": {
@@ -170,7 +170,8 @@ class TestGraphSimulator:
         }
 
         simulator = GraphSimulator(config=config)
-        assert simulator.source_type == "population"
+        with pytest.raises(ValueError, match="source_type must be set before calling simulate"):
+            simulator.simulate(10)
 
     def test_source_type_can_be_configured(self) -> None:
         """Test that source_type can be provided by the caller."""
@@ -253,7 +254,7 @@ class TestGraphSimulator:
             },
         }
 
-        simulator = GraphSimulator(config=config)
+        simulator = GraphSimulator(config=config, source_type="population")
         _ = simulator()
 
         assert len(simulator._sampled_values) > 0
@@ -403,7 +404,7 @@ lambda_1 = 0.586
             },
         }
 
-        simulator = GraphSimulator(config=config)
+        simulator = GraphSimulator(config=config, source_type="population")
         assert simulator is not None
 
         result = simulator()
@@ -434,7 +435,7 @@ lambda_1 = 0.586
             },
         }
 
-        simulator = GraphSimulator(config=config)
+        simulator = GraphSimulator(config=config, source_type="population")
         result = simulator.simulate(n_samples=12)
 
         assert _result_n_samples(result) == 12
@@ -480,7 +481,7 @@ lambda_1 = 0.586
             },
         }
 
-        simulator = GraphSimulator(config=config)
+        simulator = GraphSimulator(config=config, source_type="population")
         result = simulator()
 
         assert _result_n_samples(result) == 20  # n_samples
@@ -513,7 +514,7 @@ lambda_1 = 0.586
             },
         }
 
-        simulator = GraphSimulator(config=config)
+        simulator = GraphSimulator(config=config, source_type="population")
         result = simulator()
 
         assert set(result.keys()) == set(simulator.parameter_names)
@@ -545,7 +546,7 @@ lambda_1 = 0.586
             },
         }
 
-        simulator = GraphSimulator(config=config, seed=123)
+        simulator = GraphSimulator(config=config, seed=123, source_type="population")
         result1 = simulator()
         simulator.reset()
         result2 = simulator()
@@ -579,7 +580,7 @@ lambda_1 = 0.586
             },
         }
 
-        simulator = GraphSimulator(config=config)
+        simulator = GraphSimulator(config=config, source_type="population")
         # simulator() should work without arguments
         result = simulator()
         assert result is not None
@@ -694,7 +695,7 @@ lambda_1 = 0.586
             },
         }
 
-        simulator = GraphSimulator(config=config)
+        simulator = GraphSimulator(config=config, source_type="population")
         result = simulator()
 
         assert simulator.parameter_names == ["mass_1"]
@@ -815,7 +816,7 @@ lambda_1 = 0.586
             },
         }
 
-        simulator = GraphSimulator(config=config)
+        simulator = GraphSimulator(config=config, source_type="population")
         _ = simulator()
 
         # Check that sampled_values is populated
@@ -850,7 +851,7 @@ lambda_1 = 0.586
             },
         }
 
-        simulator = GraphSimulator(config=config)
+        simulator = GraphSimulator(config=config, source_type="population")
         with pytest.raises(ValueError, match="Undefined parameter dependencies"):
             _ = simulator()
 
@@ -880,7 +881,7 @@ lambda_1 = 0.586
             },
         }
 
-        simulator = GraphSimulator(config=config)
+        simulator = GraphSimulator(config=config, source_type="population")
         result = simulator()
         assert _result_n_samples(result) == 100  # default n_samples
 
@@ -909,7 +910,7 @@ lambda_1 = 0.586
             },
         }
 
-        simulator = GraphSimulator(config=config)
+        simulator = GraphSimulator(config=config, source_type="population")
         result = simulator()
         assert _result_n_samples(result) == 15  # Should use explicit value
 
@@ -1057,7 +1058,7 @@ lambda_1 = 0.586
 
             return real_import_from_string(object_path=object_path, default_module=default_module)
 
-        simulator = GraphSimulator(config=config)
+        simulator = GraphSimulator(config=config, source_type="population")
         monkeypatch.setattr(graph_module, "import_from_string", fake_import_from_string)
         monkeypatch.setattr(
             simulator,
@@ -1095,7 +1096,7 @@ lambda_1 = 0.586
             },
         }
 
-        simulator = GraphSimulator(config=config)
+        simulator = GraphSimulator(config=config, source_type="population")
         _ = simulator()
 
         # Manually remove _rng_manager to test reset without it
@@ -1452,7 +1453,7 @@ lambda_1 = 0.586
             },
         }
 
-        simulator = GraphSimulator(config=config)
+        simulator = GraphSimulator(config=config, source_type="population")
         # Just verify that the transform branch is reachable
         # The actual output is not important, we just want to ensure
         # the transform branch in _simulate_impl is executed
@@ -1491,7 +1492,7 @@ lambda_1 = 0.586
             },
         }
 
-        simulator = GraphSimulator(config=config)
+        simulator = GraphSimulator(config=config, source_type="population")
         # parameter_names will be empty because all params are excluded/intermediate
         assert simulator.parameter_names == []
 

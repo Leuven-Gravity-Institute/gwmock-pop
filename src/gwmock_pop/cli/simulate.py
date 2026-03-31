@@ -64,7 +64,7 @@ def simulate_command(filename: Annotated[str, typer.Argument(help="File name of 
         )
         raise typer.Exit(1)
 
-    simulator = GraphSimulator(config=config.parameters, seed=config.run.seed)
+    simulator = GraphSimulator(config=config.parameters, seed=config.run.seed, source_type="population")
     population = simulator.simulate(n_samples=config.run.n_samples)
 
     metadata = None
