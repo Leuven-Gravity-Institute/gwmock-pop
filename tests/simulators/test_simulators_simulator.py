@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import h5py
 import jax.numpy as jnp
@@ -26,11 +27,10 @@ class ConcreteSimulator(Simulator):
         """Get the names of the parameters."""
         return self._parameter_names
 
-    def _simulate_impl(self, *args, **kwargs) -> Array:
+    def _simulate_impl(self, *args: Any, **kwargs: Any) -> dict[str, Array]:
         """Implement simulation for subclass."""
-        # Create dummy data: (n_samples, n_parameters)
-        data = jnp.ones((10, 3))
-        return data
+        # Create dummy data with 1D per-parameter arrays.
+        return {name: jnp.ones((10,)) for name in self.parameter_names}
 
 
 class TestSimulator:
@@ -165,16 +165,18 @@ class TestSimulator:
         """Test simulate method."""
         result = simulator.simulate()
 
-        assert result.shape == (10, 3)
-        assert jnp.all(result == 1.0)
+        assert set(result.keys()) == set(simulator.parameter_names)
+        assert all(value.shape == (10,) for value in result.values())
+        assert all(jnp.all(value == 1.0) for value in result.values())
         assert simulator._last_data is result
 
     def test_call(self, simulator: ConcreteSimulator) -> None:
         """Test __call__ method."""
         result = simulator()
 
-        assert result.shape == (10, 3)
-        assert jnp.all(result == 1.0)
+        assert set(result.keys()) == set(simulator.parameter_names)
+        assert all(value.shape == (10,) for value in result.values())
+        assert all(jnp.all(value == 1.0) for value in result.values())
 
     @pytest.mark.parametrize("file_format", ["npy", "npz", "csv", "hdf5"])
     def test_save(self, simulator: ConcreteSimulator, tmp_path: Path, file_format: str) -> None:
@@ -292,22 +294,29 @@ class TestSimulator:
             simulator.load(output_path)
 
     def test_validate_output_valid(self, simulator: ConcreteSimulator) -> None:
-        """Test _validate_output with valid 2D array."""
-        valid_data = jnp.ones((10, 3))
+        """Test _validate_output with valid mapping output."""
+        valid_data = {name: jnp.ones((10,)) for name in simulator.parameter_names}
         simulator._validate_output(valid_data)
 
     def test_validate_output_wrong_ndim(self, simulator: ConcreteSimulator) -> None:
-        """Test _validate_output raises error for wrong number of dimensions."""
-        invalid_data = jnp.ones((10,))
+        """Test _validate_output raises error for non-1D parameter arrays."""
+        invalid_data = {
+            "mass": jnp.ones((10, 1)),
+            "spin": jnp.ones((10,)),
+            "redshift": jnp.ones((10,)),
+        }
 
-        with pytest.raises(ValueError, match="Expected 2D array, got 1D array"):
+        with pytest.raises(ValueError, match="Expected 1D array for parameter 'mass', got 2D array"):
             simulator._validate_output(invalid_data)
 
     def test_validate_output_wrong_n_parameters(self, simulator: ConcreteSimulator) -> None:
-        """Test _validate_output raises error for wrong number of parameters."""
-        invalid_data = jnp.ones((10, 2))
+        """Test _validate_output raises error for wrong parameter keys."""
+        invalid_data = {
+            "mass": jnp.ones((10,)),
+            "spin": jnp.ones((10,)),
+        }
 
-        with pytest.raises(ValueError, match="Expected 3 parameters, got 2"):
+        with pytest.raises(ValueError, match="Expected keys"):
             simulator._validate_output(invalid_data)
 
     def test_save_hdf5_static(self, tmp_path: Path) -> None:

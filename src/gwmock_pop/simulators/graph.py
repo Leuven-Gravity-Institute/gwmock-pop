@@ -57,17 +57,19 @@ class GraphSimulator(RandomMixin, Simulator):
     def __init__(
         self,
         config: dict[str, Any],
-        source_type: str | None = None,
+        source_type: str = "population",
         **kwargs: Any,
     ) -> None:
         """Initialize the graph-based simulator.
 
         Args:
             config: Configuration dictionary with parameter definitions.
-            source_type: Optional logical source identifier for higher-level orchestration.
+            source_type: Logical source identifier for higher-level orchestration.
             **kwargs: Additional arguments passed to parent class.
         """
         super().__init__(**kwargs)
+        if not source_type.strip():
+            raise ValueError("source_type must be a non-empty string.")
         self._config = config
         self._source_type = source_type
         self._sampled_values: dict[str, Any] = {}
@@ -84,11 +86,11 @@ class GraphSimulator(RandomMixin, Simulator):
         return self._parameter_names
 
     @property
-    def source_type(self) -> str | None:
-        """Get the optional logical source type.
+    def source_type(self) -> str:
+        """Get the logical source type.
 
         Returns:
-            Source type string, when configured.
+            Source type string.
         """
         return self._source_type
 
@@ -205,6 +207,8 @@ class GraphSimulator(RandomMixin, Simulator):
         array = jnp.asarray(value)
         if array.ndim == 0:
             raise ValueError(f"Parameter '{parameter_name}' produced a scalar output, expected an array of samples.")
+        if array.ndim > 1:
+            array = array.reshape(-1)
 
         current_n_samples = int(array.shape[0])
         if expected_n_samples is not None and current_n_samples != expected_n_samples:
@@ -213,7 +217,7 @@ class GraphSimulator(RandomMixin, Simulator):
             )
         return array, current_n_samples
 
-    def _simulate_impl(self, n_samples: int | None = None, **kwargs: Any) -> Array:
+    def _simulate_impl(self, n_samples: int | None = None, **kwargs: Any) -> dict[str, Array]:
         """Implement simulation using graph traversal.
 
         Args:
@@ -221,7 +225,7 @@ class GraphSimulator(RandomMixin, Simulator):
             **kwargs: Keyword arguments.
 
         Returns:
-            2D array of shape (n_samples, n_parameters).
+            Mapping from parameter names to 1D arrays of shape ``(n_samples,)``.
         """
         del kwargs
 
@@ -250,18 +254,16 @@ class GraphSimulator(RandomMixin, Simulator):
             raise ValueError("GraphSimulator configuration does not define any output parameters.")
 
         expected_n_samples = n_samples
-        output_columns: list[Array] = []
+        output_mapping: dict[str, Array] = {}
         for parameter_name in self.parameter_names:
             output_column, expected_n_samples = self._coerce_output_column(
                 parameter_name=parameter_name,
                 value=self._sampled_values[parameter_name],
                 expected_n_samples=expected_n_samples,
             )
-            output_columns.append(output_column)
+            output_mapping[parameter_name] = output_column
 
-        # Build output array in parameter order
-        output = jnp.column_stack(output_columns)
-        return output
+        return output_mapping
 
     @classmethod
     def from_config_file(cls, config_path: str | Path, encoding: str = "utf-8", **kwargs: Any) -> GraphSimulator:

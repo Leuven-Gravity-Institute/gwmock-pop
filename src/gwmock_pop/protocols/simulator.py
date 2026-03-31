@@ -91,7 +91,8 @@ class GWPopSimulator(Protocol):
 
         The returned mapping must satisfy two invariants:
 
-        1. **Key completeness**: ``set(result.keys()) == set(self.parameter_names)``.
+        1. **Key completeness and order**:
+            ``list(result.keys()) == list(self.parameter_names)``.
         2. **Shape contract**: every value is a ``jax.Array`` with leading
            dimension ``n_samples``, i.e. ``result[k].shape[0] == n_samples``
            for all ``k``.
