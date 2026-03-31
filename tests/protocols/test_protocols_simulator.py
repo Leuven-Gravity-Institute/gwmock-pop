@@ -135,7 +135,7 @@ class TestGWPopSimulatorContracts:
     def test_simulate_keys_match_parameter_names(self, simulator: GWPopSimulator, n_samples: int) -> None:
         """Test that simulate() returns exactly the keys in parameter_names."""
         result = simulator.simulate(n_samples)
-        assert set(result.keys()) == set(simulator.parameter_names)
+        assert list(result.keys()) == list(simulator.parameter_names)
 
     @pytest.mark.parametrize("simulator", _SIMULATORS, ids=["bbh", "stochastic"])
     @settings(max_examples=25)
