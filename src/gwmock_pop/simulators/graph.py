@@ -99,6 +99,10 @@ class GraphSimulator(RandomMixin, Simulator):
         Returns:
             Source type string.
         """
+        if self._source_type is None:
+            raise RuntimeError(
+                "GraphSimulator.source_type is not configured; expected a non-empty string to satisfy GWPopSimulator."
+            )
         return self._source_type
 
     @staticmethod
