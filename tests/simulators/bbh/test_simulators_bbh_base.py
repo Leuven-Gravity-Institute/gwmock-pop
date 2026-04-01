@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import jax.numpy as jnp
 
+from gwmock_pop.protocols import GWPopSimulator
 from gwmock_pop.simulators.bbh.base import BBHSimulator
 
 
@@ -198,3 +199,8 @@ class TestBBHSimulator:
         """Test that ConcreteBBHSimulator can be instantiated with kwargs."""
         simulator = ConcreteBBHSimulator(test_kwargs="input")
         assert simulator is not None
+
+    def test_bbhsimulator_satisfies_gwpopsimulator_protocol(self) -> None:
+        """Test that ConcreteBBHSimulator satisfies the GWPopSimulator protocol."""
+        simulator = ConcreteBBHSimulator()
+        assert isinstance(simulator, GWPopSimulator)

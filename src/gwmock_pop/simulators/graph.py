@@ -29,6 +29,13 @@ class GraphSimulator(RandomMixin, Simulator):
         config: Configuration dictionary defining parameters and their sampling/transform rules.
         **kwargs: Additional arguments passed to parent class.
 
+    Note:
+        ``source_type`` must be set before calling ``simulate()``. Construction
+        without ``source_type`` is allowed (e.g. for builder patterns), but
+        ``simulate()`` raises :exc:`ValueError` if ``source_type`` is ``None``
+        at call time. Pass ``source_type=<str>`` to the constructor to avoid
+        this.
+
     Example:
         >>> config = {
         ...     "mass_1": {
@@ -57,7 +64,7 @@ class GraphSimulator(RandomMixin, Simulator):
     def __init__(
         self,
         config: dict[str, Any],
-        source_type: str = "population",
+        source_type: str | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the graph-based simulator.
@@ -68,10 +75,10 @@ class GraphSimulator(RandomMixin, Simulator):
             **kwargs: Additional arguments passed to parent class.
         """
         super().__init__(**kwargs)
-        if not source_type.strip():
+        if source_type is not None and not source_type.strip():
             raise ValueError("source_type must be a non-empty string.")
         self._config = config
-        self._source_type = source_type
+        self._source_type: str | None = source_type
         self._sampled_values: dict[str, Any] = {}
         self._parameter_names = [name for name, spec in config.items() if self._include_in_output(spec)]
         self._build_graph()
@@ -92,6 +99,10 @@ class GraphSimulator(RandomMixin, Simulator):
         Returns:
             Source type string.
         """
+        if self._source_type is None:
+            raise RuntimeError(
+                "GraphSimulator.source_type is not configured; expected a non-empty string to satisfy GWPopSimulator."
+            )
         return self._source_type
 
     @staticmethod
@@ -227,6 +238,13 @@ class GraphSimulator(RandomMixin, Simulator):
         Returns:
             Mapping from parameter names to 1D arrays of shape ``(n_samples,)``.
         """
+        if self._source_type is None:
+            raise ValueError(
+                "source_type must be set before calling simulate(). "
+                "Pass source_type=<str> to the constructor or set it "
+                "via the builder API."
+            )
+
         del kwargs
 
         self._sampled_values = {}
