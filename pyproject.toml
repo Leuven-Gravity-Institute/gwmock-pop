@@ -21,10 +21,10 @@ requires-python = ">=3.11"
 dynamic = ["version"]
 dependencies = [
   "typer>=0.24.1",
-  "jax>=0.9.2",
+  "jax>=0.10.0",
   "PyYAML>=6.0.3",
   "ruyaml>=0.91.0",
-  "pydantic>=2.13.0",
+  "pydantic>=2.13.2",
   "h5py>=3.16.0",
   "networkx>=3.6.1",
 ]
