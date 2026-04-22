@@ -164,7 +164,11 @@ class TestExternalPopulationLoaderContracts:
     @pytest.mark.parametrize("loader", _LOADERS, ids=["hdf5", "csv"])
     def test_parameter_names_is_stable(self, loader: ExternalPopulationLoader) -> None:
         """Test that parameter_names returns the same sequence on repeated access."""
-        assert list(loader.parameter_names) == list(loader.parameter_names)
+        first = list(loader.parameter_names)
+        loader.simulate(1)
+        second = list(loader.parameter_names)
+        third = list(loader.parameter_names)
+        assert first == second == third
 
     @pytest.mark.parametrize("loader", _LOADERS, ids=["hdf5", "csv"])
     @settings(max_examples=20)
