@@ -77,7 +77,7 @@ pythonpath = ["src"]
 testpaths = "tests"
 junit_family = "xunit2"
 markers = [
-  "integration: marks as integration test",
+  "integration: end-to-end tests excluded from the default run",
   "notebooks: marks as notebook test",
   "gpu: marks as gpu test",
   "spark: marks tests which need Spark",
