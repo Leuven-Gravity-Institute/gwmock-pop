@@ -114,6 +114,31 @@ def test_simulate_exceeds_catalogue_raises(tmp_path: Path) -> None:
         loader.simulate(21)
 
 
+def test_simulate_negative_n_samples_raises(tmp_path: Path) -> None:
+    """Reject negative sample counts."""
+    path = tmp_path / "catalogue.csv"
+    columns = _catalogue_columns(n_rows=20)
+    _write_csv_catalogue(path, columns)
+
+    loader = FilePopulationLoader("bbh", path)
+
+    with pytest.raises(ValueError, match=r"n_samples must be >= 0"):
+        loader.simulate(-1)
+
+
+def test_simulate_accepts_backend_agnostic_kwargs(tmp_path: Path) -> None:
+    """Accept alternative random-state kwargs without rejecting the call."""
+    path = tmp_path / "catalogue.csv"
+    columns = _catalogue_columns()
+    _write_csv_catalogue(path, columns)
+
+    loader = FilePopulationLoader("bbh", path)
+    result = loader.simulate(10, rng=42, unknown_backend_kwarg=True)
+
+    assert list(result.keys()) == loader.parameter_names
+    assert all(array.shape == (10,) for array in result.values())
+
+
 def test_unsupported_format_raises(tmp_path: Path) -> None:
     """Reject unsupported file extensions at construction time."""
     path = tmp_path / "catalogue.fits"

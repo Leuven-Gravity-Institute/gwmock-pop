@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
 import h5py
 import jax
@@ -82,27 +83,30 @@ class FilePopulationLoader:
         """
         return self._source_type
 
-    def simulate(self, n_samples: int, *, seed: int | None = None) -> Mapping[str, Array]:
+    def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array]:
         """Sample catalogue rows without replacement.
 
         Args:
             n_samples: Number of catalogue rows to draw.
-            seed: Optional integer seed for the JAX PRNG. If omitted, a
-                deterministic default seed of ``0`` is used.
+            **kwargs: Optional backend-agnostic random-state hints. Supported
+                keys include ``seed``, ``key``, and ``rng`` (in that priority).
 
         Returns:
             Mapping from parameter name to a 1-D ``jax.Array`` of sampled
             values.
 
         Raises:
-            ValueError: If ``n_samples`` exceeds the number of rows in the
-                loaded catalogue.
+            ValueError: If ``n_samples`` is negative or exceeds the number of
+                rows in the loaded catalogue.
         """
         catalogue_size = len(next(iter(self._catalogue.values())))
+        if n_samples < 0:
+            raise ValueError(f"n_samples must be >= 0, got {n_samples}.")
         if n_samples > catalogue_size:
             raise ValueError(f"Requested {n_samples} samples from a catalogue with only {catalogue_size} rows.")
 
-        key = jax.random.PRNGKey(0 if seed is None else seed)
+        seed = kwargs.get("seed", kwargs.get("key", kwargs.get("rng")))
+        key = jax.random.PRNGKey(0 if seed is None else int(seed))
         indices = jax.random.choice(key, catalogue_size, shape=(n_samples,), replace=False)
         return {name: self._catalogue[name][indices] for name in self._parameter_names}
 
