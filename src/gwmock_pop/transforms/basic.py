@@ -14,7 +14,7 @@ def constant_like(reference: Array, value: float) -> Array:
         value: Scalar value to broadcast across the output.
 
     Returns:
-        A 1-D array with the same shape as ``reference`` filled with ``value``.
+        An array with the same shape as ``reference`` filled with ``value``.
     """
     dtype = jnp.result_type(reference, jnp.asarray(value))
     return jnp.full(shape=reference.shape, fill_value=value, dtype=dtype)
