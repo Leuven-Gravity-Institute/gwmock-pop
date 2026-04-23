@@ -1,1 +1,1 @@
-"""Unit tests fpr gwmock_pop.samplers."""
+"""Unit tests for gwmock_pop.samplers."""

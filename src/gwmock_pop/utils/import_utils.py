@@ -18,8 +18,8 @@ def import_from_string(object_path: str, default_module: str | None = None) -> A
 
     """
     try:
-        splitted_import_path = object_path.rsplit(sep=".", maxsplit=1)
-        if len(splitted_import_path) == 1:
+        split_import_path = object_path.rsplit(sep=".", maxsplit=1)
+        if len(split_import_path) == 1:
             if default_module is not None:
                 module_path = default_module
                 object_name = object_path
@@ -28,7 +28,7 @@ def import_from_string(object_path: str, default_module: str | None = None) -> A
                     f"object_path={object_path} does not contain a module path, and default_module is None."
                 )
         else:
-            module_path, object_name = splitted_import_path
+            module_path, object_name = split_import_path
         module = importlib.import_module(module_path)
 
         return getattr(module, object_name)
