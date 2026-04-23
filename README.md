@@ -6,7 +6,7 @@
 [![codecov](https://codecov.io/gh/leuven-gravity-institute/gwmock-pop/graph/badge.svg?token=Vwf7NYTHCm)](https://codecov.io/gh/leuven-gravity-institute/gwmock-pop)
 [![PyPI Version](https://img.shields.io/pypi/v/gwmock-pop)](https://pypi.org/project/gwmock-pop/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/gwmock-pop)](https://pypi.org/project/gwmock-pop/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE)
 [![Security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://github.com/PyCQA/bandit)
 [![DOI](https://zenodo.org/badge/1147941311.svg)](https://doi.org/10.5281/zenodo.18574076)
 
