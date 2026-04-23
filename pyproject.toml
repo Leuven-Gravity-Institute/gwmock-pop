@@ -24,7 +24,7 @@ dependencies = [
   "jax>=0.10.0",
   "PyYAML>=6.0.3",
   "ruyaml>=0.91.0",
-  "pydantic>=2.13.2",
+  "pydantic>=2.13.3",
   "h5py>=3.16.0",
   "networkx>=3.6.1",
 ]
