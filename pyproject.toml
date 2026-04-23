@@ -7,10 +7,11 @@ name = "gwmock-pop"
 authors = [{ name = "Isaac C. F. Wong" }]
 description = "A python package for simulating populations of gravitational-wave sources."
 readme = "README.md"
+license = { file = "LICENSE" }
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: MIT License",
+  "License :: OSI Approved :: BSD License",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
