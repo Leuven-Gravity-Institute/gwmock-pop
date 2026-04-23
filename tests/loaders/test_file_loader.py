@@ -36,6 +36,14 @@ def _write_hdf5_catalogue(path: Path, columns: dict[str, np.ndarray]) -> None:
         handle.create_dataset("data", data=structured)
 
 
+def _write_hdf5_group_catalogue(path: Path, columns: dict[str, np.ndarray]) -> None:
+    """Write an HDF5 group where each column is its own dataset."""
+    with h5py.File(path, "w") as handle:
+        group = handle.create_group("data")
+        for name, values in columns.items():
+            group.create_dataset(name, data=values)
+
+
 def _write_csv_catalogue(path: Path, columns: dict[str, np.ndarray]) -> None:
     """Write a header-based CSV file with named columns."""
     matrix = np.column_stack([columns[name] for name in columns])
@@ -70,6 +78,21 @@ def test_csv_round_trip(tmp_path: Path) -> None:
     assert list(result.keys()) == loader.parameter_names
     assert set(result) == set(columns)
     assert all(array.shape == (50,) for array in result.values())
+
+
+def test_hdf5_group_round_trip(tmp_path: Path) -> None:
+    """Load an HDF5 group-of-datasets catalogue and sample rows."""
+    path = tmp_path / "catalogue_group.hdf5"
+    columns = _catalogue_columns()
+    _write_hdf5_group_catalogue(path, columns)
+
+    loader = FilePopulationLoader("bbh", path)
+    result = loader.simulate(40, seed=13)
+
+    assert isinstance(loader, GWPopSimulator)
+    assert list(result.keys()) == loader.parameter_names
+    assert set(result) == set(columns)
+    assert all(array.shape == (40,) for array in result.values())
 
 
 def test_column_map_renames_keys(tmp_path: Path) -> None:
@@ -137,6 +160,18 @@ def test_simulate_accepts_backend_agnostic_kwargs(tmp_path: Path) -> None:
 
     assert list(result.keys()) == loader.parameter_names
     assert all(array.shape == (10,) for array in result.values())
+
+
+def test_hdf5_group_mismatched_column_lengths_raise(tmp_path: Path) -> None:
+    """Reject group-of-datasets catalogues with inconsistent column lengths."""
+    path = tmp_path / "catalogue_bad_group.hdf5"
+    with h5py.File(path, "w") as handle:
+        group = handle.create_group("data")
+        group.create_dataset("mass_1", data=np.linspace(30.0, 60.0, 20))
+        group.create_dataset("mass_2", data=np.linspace(20.0, 40.0, 19))
+
+    with pytest.raises(ValueError, match="mismatched column lengths"):
+        FilePopulationLoader("bbh", path)
 
 
 def test_unsupported_format_raises(tmp_path: Path) -> None:

@@ -123,14 +123,32 @@ class FilePopulationLoader:
 
     @staticmethod
     def _read_hdf5_catalogue(path: Path, *, dataset_name: str) -> dict[str, Array]:
-        """Read a structured HDF5 dataset into a catalogue mapping."""
+        """Read an HDF5 catalogue from a compound dataset or group-of-datasets."""
         with h5py.File(path, "r") as handle:
-            dataset = handle[dataset_name]
-            if not isinstance(dataset, h5py.Dataset):
-                raise ValueError(f"HDF5 object '{dataset_name}' is not a dataset.")
-            data = np.atleast_1d(dataset[()])
-
-        return FilePopulationLoader._structured_array_to_catalogue(data, file_format="HDF5")
+            hdf5_object = handle[dataset_name]
+            if isinstance(hdf5_object, h5py.Dataset):
+                data = np.atleast_1d(hdf5_object[()])
+                return FilePopulationLoader._structured_array_to_catalogue(data, file_format="HDF5")
+            if isinstance(hdf5_object, h5py.Group):
+                group_catalogue: dict[str, np.ndarray] = {}
+                expected_length: int | None = None
+                for child_name, child_object in hdf5_object.items():
+                    if not isinstance(child_object, h5py.Dataset):
+                        raise ValueError(f"HDF5 group '{dataset_name}' contains non-dataset member '{child_name}'.")
+                    column = np.atleast_1d(child_object[()])
+                    if column.ndim != 1:
+                        raise ValueError(f"HDF5 group dataset '{dataset_name}/{child_name}' must be a 1-D array.")
+                    current_length = len(column)
+                    if expected_length is None:
+                        expected_length = current_length
+                    elif current_length != expected_length:
+                        raise ValueError(
+                            f"HDF5 group '{dataset_name}' has mismatched column lengths: "
+                            f"'{child_name}' has {current_length}, expected {expected_length}."
+                        )
+                    group_catalogue[child_name] = column
+                return FilePopulationLoader._structured_array_to_catalogue(group_catalogue, file_format="HDF5")
+            raise ValueError(f"HDF5 object '{dataset_name}' must be a dataset or a group of datasets.")
 
     @staticmethod
     def _read_csv_catalogue(path: Path) -> dict[str, Array]:
@@ -140,13 +158,20 @@ class FilePopulationLoader:
         return FilePopulationLoader._structured_array_to_catalogue(data, file_format="CSV")
 
     @staticmethod
-    def _structured_array_to_catalogue(data: np.ndarray, *, file_format: str) -> dict[str, Array]:
-        """Convert a structured array with named columns into JAX arrays."""
-        column_names = data.dtype.names
-        if column_names is None:
-            raise ValueError(f"{file_format} catalogue must provide named columns.")
+    def _structured_array_to_catalogue(
+        data: np.ndarray | Mapping[str, np.ndarray | Array], *, file_format: str
+    ) -> dict[str, Array]:
+        """Convert named-column data into a catalogue mapping of 1-D JAX arrays."""
+        if isinstance(data, Mapping):
+            catalogue = {name: jnp.asarray(np.atleast_1d(values)) for name, values in data.items()}
+        else:
+            column_names = data.dtype.names
+            if column_names is None:
+                raise ValueError(f"{file_format} catalogue must provide named columns.")
+            catalogue = {name: jnp.asarray(np.atleast_1d(data[name])) for name in column_names}
 
-        catalogue = {name: jnp.asarray(np.atleast_1d(data[name])) for name in column_names}
+        if not catalogue:
+            raise ValueError(f"{file_format} catalogue is empty.")
         if any(values.ndim != 1 for values in catalogue.values()):
             raise ValueError(f"{file_format} catalogue columns must be 1-D arrays.")
         return catalogue
