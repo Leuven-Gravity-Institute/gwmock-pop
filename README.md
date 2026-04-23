@@ -58,7 +58,7 @@ cd gwmock-pop
 # Create a virtual environment (recommended with uv)
 uv venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-uv sync
+uv sync --no-dev
 ```
 
 #### Development Installation
