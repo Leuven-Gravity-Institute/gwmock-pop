@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import tomllib
 from enum import Enum
 from pathlib import Path
 from typing import Any
 
-import tomllib
 import yaml
 from ruyaml import YAML
 
