@@ -20,7 +20,7 @@ MD007:
 # Allow multiple consecutive blank lines for flexibility
 MD012: false
 
-# Disable top-level heading requirement
+# Allow trailing punctuation in headings
 MD026: false
 
 # Allow inline HTML for flexibility in Markdown rendering
