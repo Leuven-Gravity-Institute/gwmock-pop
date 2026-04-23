@@ -29,17 +29,16 @@ dependencies = [
   "networkx>=3.6.1",
 ]
 
-[project.optional-dependencies]
-test = [
+[dependency-groups]
+dev = [
   "bandit[toml]>=1.9.4",
   "hypothesis>=6.152.1",
   "pre-commit>=4.5.1",
   "pytest-cov>=7.1.0",
   "pytest-mock>=3.15.1",
   "pytest>=9.0.3",
+  "pytest-github-actions-annotate-failures>=0.4.0",
 ]
-ci = ["pytest-github-actions-annotate-failures>=0.4.0"]
-dev = ["pre-commit>=4.5.1", "gwmock-pop[test,docs]"]
 docs = ["zensical>=0.0.33", "mkdocstrings-python>=2.0.3"]
 build = ["hatch>=1.16.5"]
 
