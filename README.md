@@ -9,6 +9,7 @@
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE)
 [![Security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://github.com/PyCQA/bandit)
 [![DOI](https://zenodo.org/badge/1147941311.svg)](https://doi.org/10.5281/zenodo.18574076)
+[![SPEC 0 — Minimum Supported Dependencies](https://img.shields.io/badge/SPEC-0-green?labelColor=%23004811&color=%235CA038)](https://scientific-python.org/specs/spec-0000/)
 
 A Python package for simulating populations of gravitational-wave sources.
 
@@ -27,13 +28,13 @@ pages for more details:
 
 ### Requirements
 
-- Python 3.10 or higher
+- Python 3.12 or higher
 - Operating System: Linux, macOS, or Windows
 
-**Note:** The package is built and tested against Python 3.10-3.12. When
+**Note:** The package is built and tested against Python 3.12-3.14. When
 creating a virtual environment with `uv`, specify the Python version to ensure
-compatibility: `uv venv --python 3.10` (replace `3.10` with your preferred
-version in the 3.10-3.12 range). This avoids potential issues with unsupported
+compatibility: `uv venv --python 3.12` (replace `3.12` with your preferred
+version in the 3.12-3.14 range). This avoids potential issues with unsupported
 Python versions.
 
 ### Install from PyPI
@@ -42,7 +43,7 @@ The recommended way to install `gwmock-pop` is from PyPI:
 
 ```bash
 # Create a virtual environment (recommended with uv)
-uv venv --python 3.10
+uv venv --python 3.12
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 uv pip install gwmock-pop
 ```
