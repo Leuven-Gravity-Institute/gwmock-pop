@@ -45,6 +45,9 @@ class CBCPriorSimulator(BBHSimulator):
         total_mass_max: Optional upper bound on the sum of the two component
             masses.
         f_ref: Constant reference frequency assigned to every sample.
+        seed: Optional integer seed forwarded to the parent :class:`BBHSimulator`
+            so :class:`~gwmock_pop.mixins.random.RandomMixin` initializes its
+            RNG manager for callers that rely on mixin-based randomness.
     """
 
     def __init__(  # noqa: PLR0913
@@ -60,9 +63,10 @@ class CBCPriorSimulator(BBHSimulator):
         gps_end: float = 1.0,
         total_mass_max: float | None = None,
         f_ref: float = 20.0,
+        seed: int | None = None,
     ) -> None:
         """Initialize the prior simulator."""
-        super().__init__()
+        super().__init__(seed=seed)
         self._source_type = source_type
         self._m_min = float(m_min)
         self._m_max = float(m_max)
@@ -84,18 +88,31 @@ class CBCPriorSimulator(BBHSimulator):
         """Validate constructor arguments."""
         if not self._source_type.strip():
             raise ValueError("source_type must be a non-empty string.")
+        for name, value in (
+            ("m_min", self._m_min),
+            ("m_max", self._m_max),
+            ("d_max", self._d_max),
+            ("chi_max", self._chi_max),
+            ("gps_start", self._gps_start),
+            ("gps_end", self._gps_end),
+            ("f_ref", self._f_ref),
+        ):
+            if not math.isfinite(value):
+                raise ValueError(f"{name} must be finite.")
+        if self._total_mass_max is not None and not math.isfinite(self._total_mass_max):
+            raise ValueError("total_mass_max must be finite when provided.")
         if self._m_min <= 0.0:
             raise ValueError("m_min must be positive.")
         if self._m_max <= self._m_min:
             raise ValueError("m_max must be greater than m_min.")
         if self._d_max <= 0.0:
             raise ValueError("d_max must be positive.")
-        if self._chi_max < 0.0:
-            raise ValueError("chi_max must be non-negative.")
+        if not (0.0 <= self._chi_max <= 1.0):
+            raise ValueError("chi_max must be in [0, 1].")
         if self._gps_end <= self._gps_start:
             raise ValueError("gps_end must be greater than gps_start.")
-        if self._total_mass_max is not None and self._total_mass_max < 2.0 * self._m_min:
-            raise ValueError("total_mass_max must be at least 2 * m_min to admit any samples.")
+        if self._total_mass_max is not None and self._total_mass_max <= 2.0 * self._m_min:
+            raise ValueError("total_mass_max must be greater than 2 * m_min to admit any samples.")
         if self._f_ref <= 0.0:
             raise ValueError("f_ref must be positive.")
 
@@ -123,6 +140,11 @@ class CBCPriorSimulator(BBHSimulator):
         mass_1, mass_2 = self._sample_component_masses(mass_key, n_samples)
         distance = self._sample_distance(distance_key, n_samples)
         inclination = self._sample_isotropic_polar_angle(inclination_key, n_samples)
+        theta_jn = (
+            inclination
+            if self._aligned_spins
+            else self._sample_isotropic_polar_angle(jax.random.fold_in(inclination_key, 1), n_samples)
+        )
 
         spin_1x, spin_1y, spin_1z = self._sample_spin_components(spin1_key, n_samples)
         spin_2x, spin_2y, spin_2z = self._sample_spin_components(spin2_key, n_samples)
@@ -140,7 +162,7 @@ class CBCPriorSimulator(BBHSimulator):
             "distance": distance,
             "coa_phase": jax.random.uniform(phase_key, shape=(n_samples,), minval=0.0, maxval=_TWO_PI),
             "inclination": inclination,
-            "theta_jn": inclination,
+            "theta_jn": theta_jn,
             "long_asc_node": jax.random.uniform(asc_node_key, shape=(n_samples,), minval=0.0, maxval=_TWO_PI),
             "mean_per_ano": jax.random.uniform(periastron_key, shape=(n_samples,), minval=0.0, maxval=_TWO_PI),
             "coa_time": jax.random.uniform(

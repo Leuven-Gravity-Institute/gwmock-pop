@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import importlib
+import inspect
 import math
+import sys
 from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from gwmock_pop import CBCPriorSimulator
 from gwmock_pop.protocols import GWPopSimulator
@@ -54,6 +58,12 @@ def test_simulator_satisfies_protocol() -> None:
     assert isinstance(CBCPriorSimulator(), GWPopSimulator)
 
 
+def test_constructor_forwards_seed_to_random_mixin() -> None:
+    """Constructor ``seed`` is passed through to ``RandomMixin`` / ``RNGManager``."""
+    simulator = CBCPriorSimulator(seed=99)
+    assert simulator._rng_manager._seed == 99
+
+
 def test_requested_marginals_pass_ks_checks() -> None:
     """The requested RA, declination, distance, and mass marginals match their targets."""
     simulator = CBCPriorSimulator(m_min=10.0, m_max=80.0, d_max=2_000.0)
@@ -87,10 +97,68 @@ def test_aligned_spins_zero_in_plane_components() -> None:
     np.testing.assert_array_equal(np.asarray(result["spin_2y"]), np.zeros(128))
 
 
-def test_module_does_not_import_graph_simulator() -> None:
-    """The lightweight simulator stays decoupled from graph-engine internals."""
-    module_source = Path(CBCPriorSimulator.__module__.replace(".", "/"))
-    del module_source
-    source_text = Path("src/gwmock_pop/simulators/cbc_prior.py").read_text(encoding="utf-8")
+def test_theta_jn_depends_on_spin_alignment_mode() -> None:
+    """theta_jn matches inclination only in aligned-spin mode."""
+    aligned = CBCPriorSimulator(aligned_spins=True)
+    aligned_result = aligned.simulate(256, seed=11)
+    np.testing.assert_array_equal(
+        np.asarray(aligned_result["theta_jn"]),
+        np.asarray(aligned_result["inclination"]),
+    )
 
+    precessing = CBCPriorSimulator(aligned_spins=False)
+    precessing_result = precessing.simulate(256, seed=11)
+    assert not np.array_equal(
+        np.asarray(precessing_result["theta_jn"]),
+        np.asarray(precessing_result["inclination"]),
+    )
+
+
+def test_module_does_not_import_graph_simulator() -> None:
+    """Public imports should not eagerly pull in the graph simulator."""
+    sys.modules.pop("gwmock_pop.simulators", None)
+    sys.modules.pop("gwmock_pop.simulators.cbc_prior", None)
+    sys.modules.pop("gwmock_pop.simulators.graph", None)
+
+    simulators_module = importlib.import_module("gwmock_pop.simulators")
+    if simulators_module.__spec__ is None or simulators_module.__spec__.origin is None:
+        source_text = inspect.getsource(simulators_module)
+    else:
+        source_text = Path(simulators_module.__spec__.origin).read_text(encoding="utf-8")
     assert "gwmock_pop.simulators.graph" not in source_text
+
+    importlib.import_module("gwmock_pop.simulators.cbc_prior")
+    assert "gwmock_pop.simulators.graph" not in sys.modules
+
+
+def test_chi_max_enforces_closed_unit_interval() -> None:
+    """chi_max must lie in [0, 1]."""
+    with pytest.raises(ValueError, match=r"chi_max must be in \[0, 1\]"):
+        CBCPriorSimulator(chi_max=1.01)
+    with pytest.raises(ValueError, match=r"chi_max must be in \[0, 1\]"):
+        CBCPriorSimulator(chi_max=-0.01)
+
+
+def test_total_mass_max_must_be_strictly_greater_than_two_m_min() -> None:
+    """total_mass_max == 2*m_min is rejected to avoid zero-measure acceptance."""
+    with pytest.raises(ValueError, match="total_mass_max must be greater than 2 \\* m_min"):
+        CBCPriorSimulator(m_min=10.0, total_mass_max=20.0)
+
+
+@pytest.mark.parametrize(
+    ("field", "kwargs"),
+    [
+        ("m_min", {"m_min": math.inf}),
+        ("m_max", {"m_max": math.nan}),
+        ("d_max", {"d_max": math.inf}),
+        ("chi_max", {"chi_max": math.nan}),
+        ("gps_start", {"gps_start": math.inf}),
+        ("gps_end", {"gps_end": math.nan}),
+        ("f_ref", {"f_ref": math.inf}),
+        ("total_mass_max", {"total_mass_max": math.nan}),
+    ],
+)
+def test_numeric_configuration_values_must_be_finite(field: str, kwargs: dict[str, float]) -> None:
+    """All numeric configuration bounds must be finite."""
+    with pytest.raises(ValueError, match=f"{field} must be finite"):
+        CBCPriorSimulator(**kwargs)
