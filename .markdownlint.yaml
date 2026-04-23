@@ -6,6 +6,8 @@ MD013:
     headings: false
     # Allow code blocks to exceed line length
     code_blocks: false
+    # Allow tables to exceed line length
+    tables: false
 
 # Require ATX-style headings (# instead of = or -)
 MD003:
@@ -18,7 +20,7 @@ MD007:
 # Allow multiple consecutive blank lines for flexibility
 MD012: false
 
-# Allow trailing punctuation in heading
+# Disable top-level heading requirement
 MD026: false
 
 # Allow inline HTML for flexibility in Markdown rendering
@@ -39,3 +41,6 @@ MD032: true
 
 MD046:
     style: fenced
+
+# Disable only one top-level heading
+MD025: false
