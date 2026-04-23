@@ -43,24 +43,9 @@ The recommended way to install `gwmock-pop` is from PyPI:
 
 ```bash
 # Create a virtual environment (recommended with uv)
-uv venv --python 3.12
+uv venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 uv pip install gwmock-pop
-```
-
-#### Optional Dependencies
-
-For development or specific features:
-
-```bash
-# Development dependencies (testing, linting, etc.)
-uv pip install gwmock-pop[dev]
-
-# Documentation dependencies
-uv pip install gwmock-pop[docs]
-
-# All dependencies
-uv pip install gwmock-pop[dev,docs]
 ```
 
 ### Install from Source
@@ -71,9 +56,9 @@ For the latest development version:
 git clone git@github.com:Leuven-Gravity-Institute/gwmock-pop.git
 cd gwmock-pop
 # Create a virtual environment (recommended with uv)
-uv venv --python 3.10
+uv venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-uv pip install .
+uv sync
 ```
 
 #### Development Installation
@@ -85,16 +70,24 @@ git clone git@github.com:Leuven-Gravity-Institute/gwmock-pop.git
 cd gwmock-pop
 
 # Create a virtual environment (recommended with uv)
-uv venv --python 3.10
+uv venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-uv pip install ".[dev]"
 
-# Install the commitlint dependencies
-npm install
+# For development
+uv sync --group dev
 
 # Install pre-commit hooks
-pre-commit install
-pre-commit install --hook-type commit-msg
+uv run pre-commit install
+```
+
+To build the documentation locally:
+
+```bash
+# For building the documentation locally
+uv sync --group docs
+
+# Start the documentation server
+uv run zensical serve
 ```
 
 ### Verify Installation
