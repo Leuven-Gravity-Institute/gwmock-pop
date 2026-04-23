@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import logging
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 
 from gwmock_pop.version import __version__
 
 
-class LoggingLevel(str, Enum):
+class LoggingLevel(StrEnum):
     """Logging level."""
 
     NOTSET = "NOTSET"
