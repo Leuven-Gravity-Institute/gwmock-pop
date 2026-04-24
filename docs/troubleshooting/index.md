@@ -58,7 +58,15 @@ how to resolve them.
 
 <!-- prettier-ignore-end -->
 
+<<<<<<< HEAD
+
 ## Development Issues
+
+=======
+
+## Testing Issues
+
+> > > > > > > 65d49bc (docs: Update the docs of troubleshooting)
 
 ### "Unstaged Changes" After Running Hooks
 
