@@ -122,6 +122,9 @@ jobs:
               with:
                   python-version: '3.13'
 
+            - name: Install dependencies
+              run: uv sync --group dev --frozen
+
             - name: Build distribution
               run: uv build
 

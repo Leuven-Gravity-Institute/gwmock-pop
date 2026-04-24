@@ -62,6 +62,12 @@ how to resolve them.
 
 ## Development Issues
 
+=======
+
+## Testing Issues
+
+> > > > > > > 65d49bc (docs: Update the docs of troubleshooting)
+
 ### "Unstaged Changes" After Running Hooks
 
 **Problem:** Pre-commit modified files but they're not staged.
