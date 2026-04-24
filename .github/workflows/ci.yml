@@ -34,10 +34,3 @@ jobs:
               with:
                   token: ${{ secrets.CODECOV_TOKEN }}
                   slug: leuven-gravity-institute/gwsim_pop
-
-    codeql:
-        uses: ./.github/workflows/codeql.yml
-        permissions:
-            security-events: write
-            actions: read
-            contents: read
