@@ -58,6 +58,8 @@ how to resolve them.
 
 <!-- prettier-ignore-end -->
 
+<<<<<<< HEAD
+
 ## Development Issues
 
 ### "Unstaged Changes" After Running Hooks
