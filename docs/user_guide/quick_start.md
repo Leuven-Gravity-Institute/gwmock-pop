@@ -1,7 +1,7 @@
 # Quick Start
 
-Welcome to **gwmock_pop**! This is a Python package for simulating populations
-of gravitational-wave sources.
+Welcome to **gwmock-pop**. This package simulates populations of
+gravitational-wave sources.
 
 ## Generate a Population with the CLI
 
@@ -48,12 +48,27 @@ gwmock-pop simulate population.yaml
 
 This writes `outputs/demo_population.csv`.
 
+## Programmatic Usage
+
+All simulators and compatible loaders implement the same protocol surface:
+
+- `source_type` is a non-empty string
+- `simulate(n_samples, **kwargs)` returns a mapping of 1-D arrays
+
+```python
+from gwmock_pop import CBCPriorSimulator
+
+simulator = CBCPriorSimulator(source_type="bbh", seed=42)
+population = simulator.simulate(5)
+print(population["detector_frame_mass_1"].shape)  # (5,)
+```
+
 ## Notes
 
 - The CLI MVP currently supports `run.mode: fixed_n_samples`.
 - `parameters` is passed directly to `GraphSimulator`.
-- The base `Simulator` interface stays source-agnostic; source-specific behavior
-  belongs in concrete simulators.
+- `FilePopulationLoader` supports CSV and HDF5 catalogues (including
+  group-of-datasets HDF5 layouts).
 
 ## Next Steps
 

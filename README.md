@@ -11,108 +11,64 @@
 [![DOI](https://zenodo.org/badge/1147941311.svg)](https://doi.org/10.5281/zenodo.18574076)
 [![SPEC 0 — Minimum Supported Dependencies](https://img.shields.io/badge/SPEC-0-green?labelColor=%23004811&color=%235CA038)](https://scientific-python.org/specs/spec-0000/)
 
-A Python package for simulating populations of gravitational-wave sources.
+`gwmock-pop` is a Python package for simulating populations of
+gravitational-wave sources.
+
+## Current Package Surface
+
+- Protocol-first simulator interface via `GWPopSimulator`:
+    - `source_type: str` (non-empty routing key)
+    - `simulate(n_samples, **kwargs) -> Mapping[str, jax.Array]`
+    - each returned parameter array is 1-D with length `n_samples`
+- Core simulator implementations:
+    - `GraphSimulator` (config-driven dependency graph)
+    - `CBCPriorSimulator` (lightweight analytic CBC priors)
+- External catalogue loader:
+    - `FilePopulationLoader` for CSV/HDF5
+    - supports structured HDF5 datasets and group-of-datasets layouts
+
+## Requirements
+
+- Python `>=3.12` (tested on 3.12-3.14)
+- Linux, macOS, or Windows
 
 ## Installation
 
-We recommend using `uv` to manage virtual environments for installing
-`gwmock-pop`.
-
-If you don't have `uv` installed, you can install it with pip. See the project
-pages for more details:
-
-- Install via pip: `pip install --upgrade pip && pip install uv`
-- Project pages: [uv on PyPI](https://pypi.org/project/uv/) |
-  [uv on GitHub](https://github.com/astral-sh/uv)
-- Full documentation and usage guide: [uv docs](https://docs.astral.sh/uv/)
-
-### Requirements
-
-- Python 3.12 or higher
-- Operating System: Linux, macOS, or Windows
-
-**Note:** The package is built and tested against Python 3.12-3.14. When
-creating a virtual environment with `uv`, specify the Python version to ensure
-compatibility: `uv venv --python 3.12` (replace `3.12` with your preferred
-version in the 3.12-3.14 range). This avoids potential issues with unsupported
-Python versions.
-
-### Install from PyPI
-
-The recommended way to install `gwmock-pop` is from PyPI:
+Install from PyPI:
 
 ```bash
-# Create a virtual environment (recommended with uv)
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv venv --python 3.12
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 uv pip install gwmock-pop
 ```
 
-### Install from Source
-
-For the latest development version:
+Install from source:
 
 ```bash
 git clone git@github.com:Leuven-Gravity-Institute/gwmock-pop.git
 cd gwmock-pop
-# Create a virtual environment (recommended with uv)
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv venv --python 3.12
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 uv sync --no-dev
 ```
 
-#### Development Installation
-
-To set up for development:
+Developer setup:
 
 ```bash
-git clone git@github.com:Leuven-Gravity-Institute/gwmock-pop.git
-cd gwmock-pop
-
-# Create a virtual environment (recommended with uv)
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# For development
 uv sync --group dev
-
-# Install pre-commit hooks
 uv run pre-commit install
 ```
 
-To build the documentation locally:
+Docs setup:
 
 ```bash
-# For building the documentation locally
 uv sync --group docs
-
-# Start the documentation server
 uv run zensical serve
 ```
 
-### Verify Installation
+## Quick Start (CLI)
 
-Check that `gwmock-pop` is installed correctly:
-
-```bash
-gwmock-pop --help
-```
-
-```bash
-python -c "import gwmock-pop; print(gwmock-pop.__version__)"
-```
-
-## Documentation
-
-Full documentation to be available at
-[https://leuven-gravity-institute.github.io/gwmock-pop](https://leuven-gravity-institute.github.io/gwmock-pop).
-
-## Quick Start with the CLI
-
-The current MVP CLI supports fixed-size population generation through
-`GraphSimulator`.
-
-Create a configuration file such as `population.yaml`:
+Create `population.yaml`:
 
 ```yaml
 run:
@@ -128,7 +84,7 @@ run:
 parameters:
     mass_1:
         sampler:
-            function: gwmock-pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
+            function: gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
             arguments:
                 alpha_1: 1.72
                 alpha_2: 4.51
@@ -144,47 +100,39 @@ parameters:
                 lambda_1: 0.586
 ```
 
-Run the simulator:
+Run:
 
 ```bash
 gwmock-pop simulate population.yaml
 ```
 
-This writes `outputs/demo_population.csv`. For the MVP, the CLI only supports
-`run.mode: fixed_n_samples`.
+## Verification
 
-## Contributing
-
-Contributions are welcome!
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
-
-### Release Schedule
-
-Releases follow a fixed schedule: every Tuesday at 00:00 UTC, unless an emergent
-bugfix is required. This ensures predictable updates while allowing flexibility
-for critical issues. Users can view upcoming changes in the draft release on the
-[GitHub Releases page](https://github.com/Leuven-Gravity-Institute/gwmock-pop/releases).
+```bash
+gwmock-pop --help
+python -c "import gwmock_pop; print(gwmock_pop.__version__)"
+```
 
 ## Testing
 
-Run the test suite:
+Default test run excludes `integration`-marked tests:
 
 ```bash
-pytest
+uv run pytest
 ```
+
+Run integration/smoke tests explicitly:
+
+```bash
+uv run pytest -m integration
+```
+
+## Documentation
+
+- Docs home:
+  [https://leuven-gravity-institute.github.io/gwmock-pop/](https://leuven-gravity-institute.github.io/gwmock-pop/)
+- API reference: [docs/api/index.md](docs/api/index.md)
 
 ## License
 
-This project is licensed under the BSD 3-Clause License - see the
-[LICENSE](LICENSE) file for details.
-
-## Support
-
-For questions or issues, please open an issue on
-[GitHub](https://github.com/Leuven-Gravity-Institute/gwmock-pop/issues/new) or
-contact the maintainers.
+BSD 3-Clause, see [LICENSE](LICENSE).
