@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
+requires = ["hatchling", "uv-dynamic-versioning"]
 build-backend = "hatchling.build"
 
 [project]
@@ -41,6 +41,7 @@ dev = [
 ]
 docs = ["zensical>=0.0.33", "mkdocstrings-python>=2.0.3"]
 build = ["hatch>=1.16.5"]
+release = ["git-cliff>=2.12.0"]
 
 [project.scripts]
 gwmock-pop = "gwmock_pop.cli.main:app"
@@ -52,8 +53,12 @@ Tracker = "https://github.com/Leuven-Gravity-Institute/gwmock-pop/issues"
 Home = "https://github.com/Leuven-Gravity-Institute/gwmock-pop"
 "Release Notes" = "https://github.com/Leuven-Gravity-Institute/gwmock-pop/releases"
 
+[tool.uv-dynamic-versioning]
+vcs = "git"      # default
+style = "pep440"
+
 [tool.hatch.version]
-source = "vcs"
+source = "uv-dynamic-versioning"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gwmock_pop"]
@@ -128,3 +133,9 @@ convention = "google"
 # ARG001: allow unused function arguments (common in fixtures)
 # PLC0415: allow import statements not at the top level
 # PLR2004: allow magic values in the unit tests
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true
