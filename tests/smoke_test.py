@@ -5,7 +5,11 @@ from __future__ import annotations
 import subprocess
 import sys
 
+import pytest
+
 import gwmock_pop
+
+pytestmark = pytest.mark.integration
 
 
 def test_basic_import() -> None:
