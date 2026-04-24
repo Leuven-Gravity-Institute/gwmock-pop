@@ -29,15 +29,8 @@ jobs:
         if: ${{ needs.check_new_commits.outputs.has-changes == 'true' }}
         uses: ./.github/workflows/ci.yml
 
-    codeql:
-        needs: check_new_commits
-        if: ${{ needs.check_new_commits.outputs.has-changes == 'true'}}
-        uses: ./.github/workflows/codeql.yml
-        permissions:
-            security-events: write
-
     create_tag:
-        needs: [check_new_commits, ci, codeql]
+        needs: [check_new_commits, ci]
         if: ${{ needs.check_new_commits.outputs.has-changes == 'true' }}
         runs-on: ubuntu-latest
         outputs:
