@@ -18,49 +18,13 @@ how to resolve them.
 3. Reinstall pre-commit:
 
     ```bash
-    pip uninstall pre-commit
-    pip install pre-commit
-    pre-commit install
-    pre-commit install --hook-type commit-msg
+    uv pip uninstall pre-commit
+    uv pip install pre-commit
+    uv run pre-commit install
     ```
 
 4. Check if `.git` directory exists (must be a git repository)
 5. Try running manually: `pre-commit run --all-files`
-
-<!-- prettier-ignore-end -->
-
-### commitlint Not Running
-
-**Problem:** Commit messages aren't validated despite `npm install` being run.
-
-**Solutions:**
-
-<!-- prettier-ignore-start -->
-
-1. Verify `npm install` was successful:
-
-    ```bash
-    npm list @commitlint/config-angular
-    ```
-
-2. Re-install commitlint dependencies:
-
-    ```bash
-    npm install --save-dev @commitlint/cli @commitlint/config-angular
-    ```
-
-3. Reinstall pre-commit hooks:
-
-    ```bash
-    pre-commit install --hook-type commit-msg
-    ```
-
-4. Test manually:
-
-    ```bash
-    echo "invalid message" | commitlint
-    echo "feat: valid message" | commitlint
-    ```
 
 <!-- prettier-ignore-end -->
 
@@ -76,187 +40,25 @@ how to resolve them.
 
     ```bash
     rm -rf .venv
-    python -m venv .venv
+    uv venv
     source .venv/bin/activate  # On Windows: .venv\Scripts\activate
     ```
 
-2. Upgrade pip:
+2. Install dependencies:
 
     ```bash
-    python -m pip install --upgrade pip
+    uv sync
     ```
 
-3. Install dependencies:
+3. Verify installation:
 
     ```bash
-    pip install -e ".[dev,docs,test]"
-    ```
-
-4. Verify installation:
-
-    ```bash
-    python -c "import your_package; print(your_package.__version__)"
-    ```
-
-<!-- prettier-ignore-end -->
-
-### Python Version Mismatch
-
-**Problem:** `python -m venv .venv` fails or tests don't run with wrong Python
-version.
-
-**Solutions:**
-
-<!-- prettier-ignore-start -->
-
-1. Check your Python version:
-
-    ```bash
-    python --version
-    ```
-
-2. Ensure Python 3.10 or higher is installed
-3. Use specific Python version when creating venv:
-
-    ```bash
-    python3.11 -m venv .venv
-    ```
-
-4. Or use uv for version management:
-
-    ```bash
-    uv venv --python 3.11
-    source .venv/bin/activate
+    python -c "import gwmock_pop; print(gwmock_pop.__version__)"
     ```
 
 <!-- prettier-ignore-end -->
 
 ## Testing Issues
-
-### Pytest Fails to Collect Tests
-
-**Problem:** `pytest` returns "no tests collected" or import errors.
-
-**Solutions:**
-
-<!-- prettier-ignore-start -->
-
-1. Verify test file naming: Must be `test_*.py` or `*_test.py`
-2. Verify test function naming: Must start with `test_`
-3. Check `__init__.py` exists in test directory: `touch tests/__init__.py`
-4. Run pytest with verbose output:
-
-    ```bash
-    pytest -vv
-    ```
-
-5. Check test discovery:
-
-    ```bash
-    pytest --collect-only
-    ```
-
-<!-- prettier-ignore-end -->
-
-### Import Errors in Tests
-
-**Problem:** Tests can't import your package modules.
-
-**Solutions:**
-
-<!-- prettier-ignore-start -->
-
-1. Install package in development mode:
-
-    ```bash
-    pip install -e ".[dev,test]"
-    ```
-
-2. Verify package structure (should have `src/your_package/`)
-3. Check `pyproject.toml` has correct `packages` configuration
-4. Run from project root directory
-5. Verify `__init__.py` exists in package directory
-
-<!-- prettier-ignore-end -->
-
-### Coverage Report Issues
-
-**Problem:** Coverage report shows 0% or missing files.
-
-**Solutions:**
-
-<!-- prettier-ignore-start -->
-
-1. Run pytest with coverage:
-
-    ```bash
-    pytest --cov=src/your_package --cov-report=html
-    ```
-
-2. Check `.coveragerc` or `pyproject.toml` coverage settings
-3. Ensure source files have proper imports
-4. Verify test files import from `src/` layout correctly
-
-<!-- prettier-ignore-end -->
-
-## Pre-commit Hook Issues
-
-### Hooks Running Too Slowly
-
-**Problem:** Pre-commit takes a very long time or times out.
-
-**Solutions:**
-
-<!-- prettier-ignore-start -->
-
-1. Check which hooks are slow:
-
-    ```bash
-    pre-commit run --all-files --verbose
-    ```
-
-2. Consider excluding large files:
-
-    ```yaml
-    exclude: |
-      (?x)^(
-        large_data_file.csv|
-        node_modules/
-      )$
-    ```
-
-3. Run specific hooks:
-
-    ```bash
-    pre-commit run black --all-files  # Just black
-    ```
-
-<!-- prettier-ignore-end -->
-
-### Formatting Changes After Commit
-
-**Problem:** Pre-commit auto-fixes files, but you didn't expect it.
-
-**Solutions:**
-
-<!-- prettier-ignore-start -->
-
-1. This is normal behavior - review the changes
-2. Stage the new changes:
-
-    ```bash
-    git add .
-    git commit -m "your message"  # Try again
-    ```
-
-3. Modify tool settings if behavior is unwanted (in `pyproject.toml`)
-4. Disable specific hooks temporarily:
-
-    ```bash
-    SKIP=black,ruff pre-commit run --all-files
-    ```
-
-<!-- prettier-ignore-end -->
 
 ### "Unstaged Changes" After Running Hooks
 
@@ -285,7 +87,7 @@ version.
 
 ### Dependency Conflicts
 
-**Problem:** `pip install` fails with conflict messages.
+**Problem:** `uv pip install` fails with conflict messages.
 
 **Solutions:**
 
@@ -300,23 +102,17 @@ version.
 2. Create fresh virtual environment:
 
     ```bash
-    rm -rf .venv && python -m venv .venv
+    rm -rf .venv && uv venv
     source .venv/bin/activate
     ```
 
-3. Upgrade pip:
+3. Install with verbose output to see conflict:
 
     ```bash
-    python -m pip install --upgrade pip
+    uv sync
     ```
 
-4. Install with verbose output to see conflict:
-
-    ```bash
-    pip install -e ".[dev,docs,test]" -vv
-    ```
-
-5. Check `pyproject.toml` for overly restrictive version constraints
+4. Check `pyproject.toml` for overly restrictive version constraints
 
 <!-- prettier-ignore-end -->
 
