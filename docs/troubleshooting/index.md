@@ -58,7 +58,7 @@ how to resolve them.
 
 <!-- prettier-ignore-end -->
 
-## Testing Issues
+## Development Issues
 
 ### "Unstaged Changes" After Running Hooks
 
@@ -109,7 +109,7 @@ how to resolve them.
 3. Install with verbose output to see conflict:
 
     ```bash
-    uv sync
+    uv sync -vv
     ```
 
 4. Check `pyproject.toml` for overly restrictive version constraints
