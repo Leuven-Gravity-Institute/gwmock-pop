@@ -5,11 +5,14 @@ from __future__ import annotations
 import subprocess
 import sys
 
-import pytest
-
 import gwmock_pop
 
-pytestmark = pytest.mark.integration
+try:
+    import pytest
+except ModuleNotFoundError:  # pragma: no cover - used in isolated wheel smoke runs.
+    pytestmark = ()
+else:
+    pytestmark = pytest.mark.integration
 
 
 def test_basic_import() -> None:
