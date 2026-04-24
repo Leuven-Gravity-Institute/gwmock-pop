@@ -14,13 +14,14 @@ def test_basic_import() -> None:
     print(f"Package version: {gwmock_pop.__version__}")
 
     # Ensure it's not importing the local folder
-    if "site-packages" not in gwmock_pop.__file__ and "dist" not in gwmock_pop.__file__:
-        print(f"Warning: Package imported from unexpected location: {gwmock_pop.__file__}")
+    assert "site-packages" in gwmock_pop.__file__ or "dist" in gwmock_pop.__file__, (
+        f"Package imported from unexpected location: {gwmock_pop.__file__}"
+    )
 
 
 def test_cli_help() -> None:
     """Test CLI help."""
-    # Ensure the 'my-tool' command was registered and runs
+    # Ensure the 'gwmock-pop' command was registered and runs
     result = subprocess.run(["gwmock-pop", "--help"], capture_output=True, text=True, check=False)
     assert result.returncode == 0
     assert "usage:" in result.stdout.lower()
