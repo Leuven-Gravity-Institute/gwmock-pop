@@ -36,24 +36,8 @@ jobs:
                   slug: leuven-gravity-institute/gwsim_pop
 
     codeql:
-        if:
-            ${{ github.event_name == 'push' || github.event_name ==
-            'pull_request' || github.event_name == 'workflow_dispatch' ||
-            (github.event_name == 'workflow_call') }}
-        name: codeql
-        runs-on: ubuntu-latest
+        uses: ./.github/workflows/codeql.yml
         permissions:
             security-events: write
-        steps:
-            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-
-            - name: Initialize CodeQL
-              uses: github/codeql-action/init@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4
-              with:
-                  languages: python
-
-            - name: Autobuild
-              uses: github/codeql-action/autobuild@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4
-
-            - name: Perform CodeQL Analysis
-              uses: github/codeql-action/analyze@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4
+            actions: read
+            contents: read
