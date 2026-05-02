@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+from importlib.resources import as_file, files
+from typing import Any
+
 from gwmock_pop.mixins.random import RandomMixin
+from gwmock_pop.simulators.graph import GraphSimulator
 from gwmock_pop.simulators.simulator import Simulator
 
 
@@ -18,6 +22,31 @@ class BBHSimulator(RandomMixin, Simulator):
             **kwargs: Keyword arguments.
         """
         super().__init__(seed=seed, **kwargs)
+
+    @classmethod
+    def from_preset(cls, preset_name: str, **kwargs: Any) -> Simulator:
+        """Build a graph-backed BBH simulator from a packaged preset config.
+
+        Args:
+            preset_name: Name of the packaged preset.
+            **kwargs: Additional keyword arguments forwarded to ``GraphSimulator``.
+
+        Returns:
+            A graph-backed simulator configured for BBH sampling.
+        """
+        del cls
+
+        preset_map = {
+            "power_law_plus_peak": "bbh_power_law_plus_peak.yaml",
+        }
+        if preset_name not in preset_map:
+            available = ", ".join(sorted(preset_map))
+            raise ValueError(f"Unknown BBH preset {preset_name!r}. Available presets: {available}.")
+
+        options = dict(kwargs)
+        options.setdefault("source_type", "bbh")
+        with as_file(files("gwmock_pop.configs").joinpath(preset_map[preset_name])) as config_path:
+            return GraphSimulator.from_config_file(config_path, **options)
 
     @property
     def parameter_names(self) -> list[str]:

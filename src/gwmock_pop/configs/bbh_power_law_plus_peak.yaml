@@ -1,0 +1,27 @@
+parameters:
+    detector_frame_mass_1:
+        sampler:
+            function: power_law_plus_peak
+            arguments:
+                alpha: 2.63
+                minimum: 4.59
+                maximum: 86.22
+                lambda_peak: 0.10
+                peak_mean: 33.07
+                peak_sigma: 5.69
+                peak_maximum: 100.0
+    mass_ratio:
+        intermediate: true
+        sampler:
+            function: mass_ratio_pairing
+            arguments:
+                primary_mass: '@detector_frame_mass_1'
+                beta: 1.26
+                secondary_minimum: 4.59
+                minimum: 0.0
+    detector_frame_mass_2:
+        transform:
+            function: multiply
+            arguments:
+                left: '@detector_frame_mass_1'
+                right: '@mass_ratio'
