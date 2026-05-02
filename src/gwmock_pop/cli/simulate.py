@@ -1,82 +1,139 @@
-"""Simulate populations."""
+"""Simulate populations from packaged presets or graph config files."""
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated
 
+import h5py
+import numpy as np
 import typer
-from pydantic import ValidationError
+from jax import Array
 
-from gwmock_pop.config.main import MainConfiguration
+from gwmock_pop.protocols import GWPopSimulator
+from gwmock_pop.simulators.bbh.base import BBHSimulator
 from gwmock_pop.simulators.graph import GraphSimulator
 
-
-def _get_output_path(config: MainConfiguration) -> Path:
-    """Build the output path for a simulation run."""
-    output_dir = Path(config.run.output.directory)
-    suffixes = {"csv": ".csv", "hdf5": ".hdf5", "npz": ".npz"}
-    return output_dir / f"{config.run.name}{suffixes[config.run.output.format]}"
+_HDF5_DATASET_NAME = "data"
+_SUPPORTED_OUTPUT_SUFFIXES = {".csv": "csv", ".hdf5": "hdf5", ".h5": "hdf5"}
+_CONFIG_FILE_SUFFIXES = {".yaml", ".yml", ".toml"}
 
 
-def _build_output_metadata(config: MainConfiguration, simulator: GraphSimulator) -> dict[str, Any]:
-    """Build generic output metadata for formats that can persist it."""
-    return {
-        "config_version": config.config_version,
-        "run_name": config.run.name,
-        "n_samples": config.run.n_samples,
-        "seed": config.run.seed,
-        "parameter_names": simulator.parameter_names,
-    }
+def _infer_output_format(output_path: Path) -> str:
+    """Infer the persistence format from the output file suffix."""
+    file_format = _SUPPORTED_OUTPUT_SUFFIXES.get(output_path.suffix.lower())
+    if file_format is None:
+        supported = ", ".join(sorted(_SUPPORTED_OUTPUT_SUFFIXES))
+        raise ValueError(f"Unsupported output format for {output_path}. Supported suffixes: {supported}.")
+    return file_format
 
 
-def simulate_command(filename: Annotated[str, typer.Argument(help="File name of the configuration file.")]) -> None:
-    """Simulate a population from a configuration file.
+def _resolve_simulator(config: str, seed: int | None) -> GWPopSimulator:
+    """Build a simulator from either a packaged preset name or a config-file path."""
+    config_path = Path(config).expanduser()
+    if config_path.exists():
+        return GraphSimulator.from_config_file(config_path, source_type="bbh", seed=seed)
 
-    Args:
-        filename: File name of the configuration file.
-    """
+    try:
+        return BBHSimulator.from_preset(config, seed=seed)
+    except ValueError as error:
+        if config_path.suffix.lower() in _CONFIG_FILE_SUFFIXES:
+            raise FileNotFoundError(f"Configuration file does not exist: {config_path}") from error
+        raise ValueError(f"Unknown preset or configuration path {config!r}.") from error
+
+
+def _population_columns(population: Mapping[str, Array]) -> list[str]:
+    """Return the stable output column ordering for a sampled population."""
+    return list(population)
+
+
+def _population_size(population: Mapping[str, Array], columns: Sequence[str]) -> int:
+    """Return the number of sampled rows in the population."""
+    if not columns:
+        return 0
+    return int(np.asarray(population[columns[0]]).shape[0])
+
+
+def _population_matrix(population: Mapping[str, Array], columns: Sequence[str], n_rows: int) -> np.ndarray:
+    """Materialize the sampled population as a dense 2-D matrix."""
+    matrix = np.empty((n_rows, len(columns)), dtype=float)
+    for column_index, column_name in enumerate(columns):
+        matrix[:, column_index] = np.asarray(population[column_name], dtype=float)
+    return matrix
+
+
+def _population_structured_array(population: Mapping[str, Array], columns: Sequence[str], n_rows: int) -> np.ndarray:
+    """Materialize the sampled population as a structured array with named columns."""
+    dtype = [(column_name, np.asarray(population[column_name]).dtype) for column_name in columns]
+    structured = np.empty(n_rows, dtype=dtype)
+    for column_name in columns:
+        structured[column_name] = np.asarray(population[column_name])
+    return structured
+
+
+def _write_population_csv(
+    output_path: Path, population: Mapping[str, Array], columns: Sequence[str], n_rows: int
+) -> None:
+    """Persist a population as a header-based CSV file."""
+    matrix = _population_matrix(population=population, columns=columns, n_rows=n_rows)
+    np.savetxt(output_path, matrix, delimiter=",", header=",".join(columns), comments="")
+
+
+def _write_population_hdf5(
+    output_path: Path, population: Mapping[str, Array], columns: Sequence[str], n_rows: int
+) -> None:
+    """Persist a population as a structured HDF5 dataset named ``data``."""
+    structured = _population_structured_array(population=population, columns=columns, n_rows=n_rows)
+    with h5py.File(output_path, "w") as handle:
+        handle.create_dataset(_HDF5_DATASET_NAME, data=structured)
+
+
+def _write_population(output_path: Path, population: Mapping[str, Array]) -> None:
+    """Persist a sampled population using named-column conventions."""
+    columns = _population_columns(population)
+    n_rows = _population_size(population=population, columns=columns)
+    file_format = _infer_output_format(output_path)
+
+    if file_format == "csv":
+        _write_population_csv(output_path=output_path, population=population, columns=columns, n_rows=n_rows)
+        return
+    if file_format == "hdf5":
+        _write_population_hdf5(output_path=output_path, population=population, columns=columns, n_rows=n_rows)
+        return
+
+    raise ValueError(f"Unsupported output format {file_format!r}.")
+
+
+def simulate_command(
+    config: Annotated[str, typer.Option("--config", help="Preset name or YAML/TOML config-file path.")],
+    n: Annotated[int, typer.Option("--n", min=0, help="Number of events to sample.")],
+    output: Annotated[Path, typer.Option("--output", help="Destination .csv, .h5, or .hdf5 file.")],
+    seed: Annotated[int | None, typer.Option("--seed", help="Optional random seed.")] = None,
+) -> None:
+    """Simulate a population and persist it as a named-column catalogue."""
     import logging  # noqa: PLC0415
 
     logger = logging.getLogger("gwmock_pop")
 
     try:
-        config = MainConfiguration.from_file(filename)
-    except (FileNotFoundError, ValidationError, ValueError) as error:
-        logger.error("Failed to load configuration from %s: %s", filename, error)
+        simulator = _resolve_simulator(config=config, seed=seed)
+        output_path = output.expanduser()
+        _infer_output_format(output_path)
+    except (FileNotFoundError, ValueError) as error:
+        logger.error("%s", error)
         raise typer.Exit(1) from error
 
-    if config.run.mode != "fixed_n_samples":
-        logger.error("Only run.mode='fixed_n_samples' is supported by the CLI MVP.")
-        raise typer.Exit(1)
-
-    if not config.parameters:
-        logger.error("No parameter graph configuration found under 'parameters'.")
-        raise typer.Exit(1)
-
-    output_path = _get_output_path(config)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    if output_path.exists() and not config.run.output.overwrite:
-        logger.error(
-            "Refusing to overwrite existing output file %s. Set run.output.overwrite=true to replace it.",
-            output_path,
-        )
+    if output_path.exists():
+        logger.error("Refusing to overwrite existing output file %s.", output_path)
         raise typer.Exit(1)
 
-    simulator = GraphSimulator(config=config.parameters, seed=config.run.seed, source_type="population")
-    population = simulator.simulate(n_samples=config.run.n_samples)
+    try:
+        population = simulator.simulate(n)
+        _write_population(output_path=output_path, population=population)
+    except ValueError as error:
+        logger.error("%s", error)
+        raise typer.Exit(1) from error
 
-    metadata = None
-    if config.run.output.save_metadata:
-        metadata = _build_output_metadata(config, simulator)
-
-    simulator.save(
-        output_path=output_path,
-        file_format=config.run.output.format,
-        data=population,
-        compression=config.run.output.compression,
-        metadata=metadata,
-    )
-    sample_count = len(next(iter(population.values()))) if population else 0
-    logger.info("Saved %s samples to %s", sample_count, output_path)
+    logger.info("Saved %s samples to %s", n, output_path)
