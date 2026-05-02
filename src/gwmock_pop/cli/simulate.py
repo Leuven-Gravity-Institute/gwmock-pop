@@ -120,7 +120,7 @@ def simulate_command(
         simulator = _resolve_simulator(config=config, seed=seed)
         output_path = output.expanduser()
         _infer_output_format(output_path)
-    except (FileNotFoundError, ValueError) as error:
+    except Exception as error:
         logger.error("%s", error)
         raise typer.Exit(1) from error
 
@@ -132,7 +132,7 @@ def simulate_command(
     try:
         population = simulator.simulate(n)
         _write_population(output_path=output_path, population=population)
-    except ValueError as error:
+    except Exception as error:
         logger.error("%s", error)
         raise typer.Exit(1) from error
 
