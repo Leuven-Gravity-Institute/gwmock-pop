@@ -32,8 +32,8 @@ class GWPopSimulator(Protocol):
             signal_sim.simulate(params_i, ...)
 
     The ``source_type`` property is used by ``gwmock`` to select the matching
-    ``gwmock-signal`` simulator (e.g. a ``CBCSimulator`` for ``"bbh"`` or
-    ``"bns"``).
+    ``gwmock-signal`` simulator (e.g. a ``CBCSimulator`` for compact-binary keys
+    such as ``"bbh"``, ``"bns"``, or ``"nsbh"``).
 
     **Valid ``source_type`` values**
 
@@ -41,6 +41,8 @@ class GWPopSimulator(Protocol):
     | ``"bbh"``        | Binary black hole coalescence             |
     +------------------+-------------------------------------------+
     | ``"bns"``        | Binary neutron star coalescence           |
+    +------------------+-------------------------------------------+
+    | ``"nsbh"``       | Neutron star - black hole coalescence     |
     +------------------+-------------------------------------------+
     | ``"stochastic"`` | Stochastic gravitational-wave background  |
     +------------------+-------------------------------------------+
@@ -81,8 +83,8 @@ class GWPopSimulator(Protocol):
         ``None`` at call-time is an error.
 
         Returns:
-            Source type string (e.g. ``"bbh"``, ``"bns"``, ``"stochastic"``,
-            ``"supernova"``, ``"cosmic_string"``).
+            Source type string (e.g. ``"bbh"``, ``"bns"``, ``"nsbh"``,
+            ``"stochastic"``, ``"supernova"``, ``"cosmic_string"``).
         """
         ...
 

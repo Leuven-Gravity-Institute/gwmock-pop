@@ -237,10 +237,13 @@ class CBCPriorSimulator(BBHSimulator):
         cos_theta = jax.random.uniform(key, shape=(n_samples,), minval=-1.0, maxval=1.0)
         return jnp.arccos(cos_theta)
 
-    def _sample_spin_components(self, key: Array, n_samples: int) -> tuple[Array, Array, Array]:
+    def _sample_spin_components(
+        self, key: Array, n_samples: int, *, chi_max: float | None = None
+    ) -> tuple[Array, Array, Array]:
         """Draw dimensionless spin components."""
         magnitude_key, orientation_key, azimuth_key, sign_key = jax.random.split(key, 4)
-        magnitude = jax.random.uniform(magnitude_key, shape=(n_samples,), minval=0.0, maxval=self._chi_max)
+        spin_bound = self._chi_max if chi_max is None else chi_max
+        magnitude = jax.random.uniform(magnitude_key, shape=(n_samples,), minval=0.0, maxval=spin_bound)
 
         if self._aligned_spins:
             sign = jnp.where(jax.random.bernoulli(sign_key, p=0.5, shape=(n_samples,)), 1.0, -1.0)
