@@ -61,12 +61,13 @@ def iter_packaged_presets() -> list[PackagedPreset]:
 
 def get_packaged_preset_resource(preset_name: str) -> Traversable:
     """Return the packaged config resource for a named preset."""
-    for preset in iter_packaged_presets():
+    presets = iter_packaged_presets()
+    for preset in presets:
         if preset.name == preset_name:
             return files(__name__).joinpath(preset.resource_name)
 
-    available = ", ".join(preset.name for preset in iter_packaged_presets())
-    raise ValueError(f"Unknown BBH preset {preset_name!r}. Available presets: {available}.")
+    available = ", ".join(p.name for p in presets)
+    raise ValueError(f"Unknown preset {preset_name!r}. Available presets: {available}.")
 
 
 __all__ = ["PackagedPreset", "get_packaged_preset_resource", "iter_packaged_presets"]
