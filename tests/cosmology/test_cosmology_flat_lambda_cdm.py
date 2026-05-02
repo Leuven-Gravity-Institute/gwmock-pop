@@ -3,15 +3,24 @@
 from __future__ import annotations
 
 import jax.numpy as jnp
+from astropy import units as u
+from astropy.cosmology import FlatLambdaCDM, z_at_value
 from jax import Array
 
 from gwmock_pop.constants import SPEED_OF_LIGHT
 from gwmock_pop.cosmology.flat_lambda_cdm import (
+    PLANCK18_H0_KM_S_MPC,
+    PLANCK18_OMEGA_M,
+    build_distance_lookup,
     compute_comoving_distance,
     compute_differential_comoving_volume,
     compute_hubble_parameter,
+    compute_luminosity_distance,
     compute_normalized_hubble_parameter,
+    compute_redshift_from_luminosity_distance,
 )
+
+_REFERENCE_COSMOLOGY = FlatLambdaCDM(H0=PLANCK18_H0_KM_S_MPC, Om0=PLANCK18_OMEGA_M)
 
 
 class TestFlatLambdaCDM:
@@ -171,3 +180,59 @@ class TestFlatLambdaCDM:
         )
 
         assert isinstance(result, Array)
+
+    def test_compute_luminosity_distance(self) -> None:
+        """Luminosity distance is ``(1 + z)`` times the comoving distance."""
+        redshift = jnp.array(1.0)
+        hubble_constant = jnp.array(70.0)
+        omega_m = jnp.array(0.3)
+
+        luminosity_distance = compute_luminosity_distance(
+            redshift=redshift,
+            hubble_constant=hubble_constant,
+            omega_m=omega_m,
+            n_grid=1000,
+        )
+        comoving_distance = compute_comoving_distance(
+            redshift=redshift,
+            hubble_constant=hubble_constant,
+            omega_m=omega_m,
+            n_grid=1000,
+        )
+
+        assert jnp.isclose(luminosity_distance, (1.0 + redshift) * comoving_distance)
+
+    def test_build_distance_lookup_starts_at_zero_and_increases_monotonically(self) -> None:
+        """The lookup table should span physical, monotonically increasing distances."""
+        redshift_grid, comoving_distance_grid, luminosity_distance_grid = build_distance_lookup()
+
+        assert redshift_grid.shape == comoving_distance_grid.shape == luminosity_distance_grid.shape
+        assert redshift_grid[0] == 0.0
+        assert comoving_distance_grid[0] == 0.0
+        assert luminosity_distance_grid[0] == 0.0
+        assert jnp.all(jnp.diff(redshift_grid) > 0.0)
+        assert jnp.all(jnp.diff(comoving_distance_grid) >= 0.0)
+        assert jnp.all(jnp.diff(luminosity_distance_grid) >= 0.0)
+
+    @staticmethod
+    def _luminosity_distance_at_redshift(redshift: float) -> float:
+        """Return the Astropy luminosity distance for the reference cosmology."""
+        return float(_REFERENCE_COSMOLOGY.luminosity_distance(redshift).to_value(u.Mpc))
+
+    @staticmethod
+    def _astropy_redshift_from_distance(distance_mpc: float) -> float:
+        """Return the Astropy redshift for a luminosity distance."""
+        return float(z_at_value(_REFERENCE_COSMOLOGY.luminosity_distance, distance_mpc * u.Mpc))
+
+    @staticmethod
+    def _relative_error(measured: float, expected: float) -> float:
+        """Return the relative error against a non-zero reference."""
+        return abs(measured - expected) / expected
+
+    def test_compute_redshift_from_luminosity_distance_matches_astropy_reference(self) -> None:
+        """The lookup-based inversion matches the Astropy cosmology reference."""
+        for expected_redshift in (0.01, 0.1, 1.0, 5.0, 10.0):
+            luminosity_distance = self._luminosity_distance_at_redshift(expected_redshift)
+            measured_redshift = float(compute_redshift_from_luminosity_distance(jnp.array(luminosity_distance)))
+            reference_redshift = self._astropy_redshift_from_distance(luminosity_distance)
+            assert self._relative_error(measured_redshift, reference_redshift) < 1e-3
