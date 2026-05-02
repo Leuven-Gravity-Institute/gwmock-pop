@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from importlib.resources import as_file, files
+from importlib.resources import as_file
 from typing import Any
 
+from gwmock_pop.configs import get_packaged_preset_resource
 from gwmock_pop.mixins.random import RandomMixin
 from gwmock_pop.simulators.graph import GraphSimulator
 from gwmock_pop.simulators.simulator import Simulator
@@ -36,17 +37,9 @@ class BBHSimulator(RandomMixin, Simulator):
         """
         del cls
 
-        preset_map = {
-            "gwtc4": "bbh_gwtc4.yaml",
-            "power_law_plus_peak": "bbh_power_law_plus_peak.yaml",
-        }
-        if preset_name not in preset_map:
-            available = ", ".join(sorted(preset_map))
-            raise ValueError(f"Unknown BBH preset {preset_name!r}. Available presets: {available}.")
-
         options = dict(kwargs)
         options.setdefault("source_type", "bbh")
-        with as_file(files("gwmock_pop.configs").joinpath(preset_map[preset_name])) as config_path:
+        with as_file(get_packaged_preset_resource(preset_name)) as config_path:
             return GraphSimulator.from_config_file(config_path, **options)
 
     @property

@@ -1,3 +1,8 @@
+name: power_law_plus_peak
+source_type: bbh
+description:
+    Talbot-Thrane-inspired BBH mass graph preset with a power law, Gaussian
+    peak, and mass-ratio pairing.
 parameters:
     detector_frame_mass_1:
         sampler:
