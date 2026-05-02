@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import jax.numpy as jnp
 import numpy as np
@@ -24,7 +24,7 @@ class _RecordingSimulator:
         self.fail_on_zero = fail_on_zero
         self.calls: list[tuple[int, int | None]] = []
 
-    def simulate(self, n_samples: int, **kwargs: int) -> dict[str, jnp.ndarray]:
+    def simulate(self, n_samples: int, **kwargs: Any) -> dict[str, jnp.ndarray]:
         """Return deterministic arrays of the requested size."""
         if self.fail_on_zero and n_samples == 0:
             raise AssertionError("Wrapped simulator should not be called for zero events.")
