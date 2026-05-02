@@ -9,11 +9,13 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
+import jax.numpy as jnp
 import numpy as np
 import pytest
 
 from gwmock_pop import CBCPriorSimulator
 from gwmock_pop.protocols import GWPopSimulator
+from gwmock_pop.simulators import cbc_prior as cbc_prior_module
 
 
 def _ks_p_value(samples: np.ndarray, cdf: Callable[[np.ndarray], np.ndarray]) -> float:
@@ -66,7 +68,7 @@ def test_constructor_forwards_seed_to_random_mixin() -> None:
 
 def test_requested_marginals_pass_ks_checks() -> None:
     """The requested RA, declination, distance, and mass marginals match their targets."""
-    simulator = CBCPriorSimulator(m_min=10.0, m_max=80.0, d_max=2_000.0)
+    simulator = CBCPriorSimulator(m_min=10.0, m_max=80.0, d_max=2_000.0, accurate_cosmology=False)
     result = simulator.simulate(10_000, seed=123)
 
     right_ascension = np.asarray(result["right_ascension"])
@@ -83,6 +85,41 @@ def test_requested_marginals_pass_ks_checks() -> None:
     assert p_declination > 0.01, p_declination
     assert p_distance > 0.01, p_distance
     assert p_mass_1 > 0.01, p_mass_1
+
+
+def test_accurate_cosmology_mode_uses_lookup_sampler_and_transform(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Accurate cosmology mode delegates to the new sampler and transform nodes."""
+    calls = {"sampler": 0, "transform": 0}
+
+    def fake_sampler(*, key, n_samples: int, d_max: float):
+        calls["sampler"] += 1
+        assert d_max == 5_000.0
+        return jnp.full((n_samples,), 1234.5)
+
+    def fake_transform(distance):
+        calls["transform"] += 1
+        return jnp.full(distance.shape, 0.321)
+
+    monkeypatch.setattr(cbc_prior_module, "uniform_comoving_volume_distance", fake_sampler)
+    monkeypatch.setattr(cbc_prior_module, "comoving_distance_to_redshift", fake_transform)
+
+    result = CBCPriorSimulator().simulate(8, seed=7)
+
+    assert calls == {"sampler": 1, "transform": 1}
+    np.testing.assert_array_equal(np.asarray(result["distance"]), np.full(8, 1234.5))
+    np.testing.assert_allclose(np.asarray(result["redshift"]), np.full(8, 0.321))
+
+
+def test_legacy_cosmology_mode_reproduces_low_redshift_hubble_law() -> None:
+    """Legacy cosmology mode preserves the previous low-redshift approximation."""
+    simulator = CBCPriorSimulator(d_max=2_000.0, accurate_cosmology=False)
+
+    result = simulator.simulate(4096, seed=42)
+    expected_redshift = np.asarray(result["distance"]) * (
+        cbc_prior_module.PLANCK18_H0_KM_S_MPC / cbc_prior_module._SPEED_OF_LIGHT_KM_S
+    )
+
+    np.testing.assert_allclose(np.asarray(result["redshift"]), expected_redshift)
 
 
 def test_aligned_spins_zero_in_plane_components() -> None:

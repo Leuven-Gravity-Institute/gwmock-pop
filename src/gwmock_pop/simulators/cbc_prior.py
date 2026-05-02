@@ -9,10 +9,12 @@ import jax
 import jax.numpy as jnp
 from jax import Array
 
+from gwmock_pop.cosmology.flat_lambda_cdm import PLANCK18_H0_KM_S_MPC
+from gwmock_pop.samplers import uniform_comoving_volume_distance
 from gwmock_pop.simulators.bbh.base import BBHSimulator
+from gwmock_pop.transforms import comoving_distance_to_redshift
 
 _TWO_PI = 2.0 * math.pi
-_PLANCK18_H0_KM_S_MPC = 67.66
 _SPEED_OF_LIGHT_KM_S = 299792.458
 
 
@@ -21,10 +23,12 @@ class CBCPriorSimulator(BBHSimulator):
 
     The simulator is intentionally independent of the graph engine and provides a
     small configurable prior surface for testing, injection studies, and simple
-    baseline populations. Distances are sampled with a Euclidean
-    ``p(d) proportional to d^2`` approximation on ``[0, d_max]`` and converted to
-    redshift via the low-redshift Hubble-law relation
-    ``z ~= H0 * d / c`` using the Planck18 value ``H0 = 67.66 km s^-1 Mpc^-1``.
+    baseline populations. By default, distances are sampled uniformly in
+    comoving volume and converted to redshift with a flat-ΛCDM lookup using the
+    prompt-specified Planck18 parameters ``H0 = 67.66 km s^-1 Mpc^-1`` and
+    ``Omega_m = 0.3111``. Set ``accurate_cosmology=False`` to recover the legacy
+    Euclidean ``p(d) proportional to d^2`` prior and low-redshift Hubble-law
+    approximation ``z ~= H0 * d / c``.
 
     Component masses are sampled independently and are not reordered after the
     draw. When ``total_mass_max`` is set, the simulator rejects samples with
@@ -45,6 +49,9 @@ class CBCPriorSimulator(BBHSimulator):
         total_mass_max: Optional upper bound on the sum of the two component
             masses.
         f_ref: Constant reference frequency assigned to every sample.
+        accurate_cosmology: If ``True``, sample luminosity distance uniformly in
+            comoving volume and convert it to redshift with the lookup-backed
+            transform. If ``False``, use the legacy low-redshift approximation.
         seed: Optional integer seed forwarded to the parent :class:`BBHSimulator`
             so :class:`~gwmock_pop.mixins.random.RandomMixin` initializes its
             RNG manager for callers that rely on mixin-based randomness.
@@ -63,6 +70,7 @@ class CBCPriorSimulator(BBHSimulator):
         gps_end: float = 1.0,
         total_mass_max: float | None = None,
         f_ref: float = 20.0,
+        accurate_cosmology: bool = True,
         seed: int | None = None,
     ) -> None:
         """Initialize the prior simulator."""
@@ -77,6 +85,7 @@ class CBCPriorSimulator(BBHSimulator):
         self._gps_end = float(gps_end)
         self._total_mass_max = None if total_mass_max is None else float(total_mass_max)
         self._f_ref = float(f_ref)
+        self._accurate_cosmology = accurate_cosmology
         self._validate_configuration()
 
     @property
@@ -216,7 +225,9 @@ class CBCPriorSimulator(BBHSimulator):
         return jnp.concatenate(accepted_mass_1), jnp.concatenate(accepted_mass_2)
 
     def _sample_distance(self, key: Array, n_samples: int) -> Array:
-        """Draw luminosity distance from a Euclidean-volume prior."""
+        """Draw luminosity distance from the configured distance prior."""
+        if self._accurate_cosmology:
+            return uniform_comoving_volume_distance(key=key, n_samples=n_samples, d_max=self._d_max)
         unit_uniform = jax.random.uniform(key, shape=(n_samples,))
         return self._d_max * jnp.cbrt(unit_uniform)
 
@@ -260,6 +271,12 @@ class CBCPriorSimulator(BBHSimulator):
         )
 
     @staticmethod
-    def _distance_to_redshift(distance: Array) -> Array:
+    def _legacy_distance_to_redshift(distance: Array) -> Array:
         """Approximate redshift from luminosity distance using the Hubble law."""
-        return distance * (_PLANCK18_H0_KM_S_MPC / _SPEED_OF_LIGHT_KM_S)
+        return distance * (PLANCK18_H0_KM_S_MPC / _SPEED_OF_LIGHT_KM_S)
+
+    def _distance_to_redshift(self, distance: Array) -> Array:
+        """Convert luminosity distance to redshift using the configured cosmology mode."""
+        if self._accurate_cosmology:
+            return comoving_distance_to_redshift(distance)
+        return self._legacy_distance_to_redshift(distance)
