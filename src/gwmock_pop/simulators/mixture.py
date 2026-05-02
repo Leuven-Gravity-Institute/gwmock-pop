@@ -70,12 +70,13 @@ class MixtureSimulator(RandomMixin, Simulator):
     def _validate_parameter_names(self) -> tuple[str, ...]:
         """Validate that every component exposes the same parameter-name set."""
         reference = tuple(self._simulators[0].parameter_names)
-        reference_set = set(reference)
+        if len(reference) != len(set(reference)):
+            raise ValueError("parameter_names must be unique.")
 
         for index, simulator in enumerate(self._simulators[1:], start=1):
-            if set(simulator.parameter_names) != reference_set:
+            if tuple(simulator.parameter_names) != reference:
                 raise ValueError(
-                    "All component simulators must expose the same parameter_names set. "
+                    "All component simulators must expose the same parameter_names sequence. "
                     f"Mismatch found at simulators[{index}]."
                 )
 
