@@ -11,13 +11,10 @@ import numpy as np
 import typer
 from jax import Array
 
-from gwmock_pop.protocols import GWPopSimulator
-from gwmock_pop.simulators.bbh.base import BBHSimulator
-from gwmock_pop.simulators.graph import GraphSimulator
+from gwmock_pop.cli.common import resolve_simulator
 
 _HDF5_DATASET_NAME = "data"
 _SUPPORTED_OUTPUT_SUFFIXES = {".csv": "csv", ".hdf5": "hdf5", ".h5": "hdf5"}
-_CONFIG_FILE_SUFFIXES = {".yaml", ".yml", ".toml"}
 
 
 def _infer_output_format(output_path: Path) -> str:
@@ -27,20 +24,6 @@ def _infer_output_format(output_path: Path) -> str:
         supported = ", ".join(sorted(_SUPPORTED_OUTPUT_SUFFIXES))
         raise ValueError(f"Unsupported output format for {output_path}. Supported suffixes: {supported}.")
     return file_format
-
-
-def _resolve_simulator(config: str, seed: int | None) -> GWPopSimulator:
-    """Build a simulator from either a packaged preset name or a config-file path."""
-    config_path = Path(config).expanduser()
-    if config_path.exists():
-        return GraphSimulator.from_config_file(config_path, source_type="bbh", seed=seed)
-
-    try:
-        return BBHSimulator.from_preset(config, seed=seed)
-    except ValueError as error:
-        if config_path.suffix.lower() in _CONFIG_FILE_SUFFIXES:
-            raise FileNotFoundError(f"Configuration file does not exist: {config_path}") from error
-        raise ValueError(f"Unknown preset or configuration path {config!r}.") from error
 
 
 def _population_columns(population: Mapping[str, Array]) -> list[str]:
@@ -117,7 +100,7 @@ def simulate_command(
     logger = logging.getLogger("gwmock_pop")
 
     try:
-        simulator = _resolve_simulator(config=config, seed=seed)
+        simulator = resolve_simulator(config=config, seed=seed)
         output_path = output.expanduser()
         _infer_output_format(output_path)
     except Exception as error:
