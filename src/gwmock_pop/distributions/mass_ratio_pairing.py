@@ -11,6 +11,7 @@ def _effective_minimum_mass_ratio(primary_mass: Array, secondary_minimum: float,
     """Return the support lower bound for the conditional mass ratio."""
     primary_mass_array = jnp.asarray(primary_mass)
     checkify.check(jnp.all(primary_mass_array > 0.0), "primary_mass must be strictly positive.")
+    checkify.check(secondary_minimum > 0.0, "secondary_minimum must be strictly positive.")
     return jnp.maximum(minimum, secondary_minimum / primary_mass_array)
 
 
