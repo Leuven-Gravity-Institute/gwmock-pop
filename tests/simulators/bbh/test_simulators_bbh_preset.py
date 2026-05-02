@@ -95,7 +95,7 @@ def test_gwtc4_preset_returns_canonical_bbh_surface() -> None:
 
 def test_from_preset_rejects_unknown_preset_name() -> None:
     """Unknown preset names raise a helpful error."""
-    with pytest.raises(ValueError, match="Unknown BBH preset"):
+    with pytest.raises(ValueError, match="Unknown preset"):
         BBHSimulator.from_preset("does_not_exist")
 
 
