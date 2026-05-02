@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from .bns_prior import BNSPriorSimulator
     from .cbc_prior import CBCPriorSimulator
     from .graph import GraphSimulator
+    from .mixture import MixtureSimulator
     from .nsbh_prior import NSBHPriorSimulator
     from .poisson_event import PoissonEventSampler
     from .simulator import Simulator
@@ -17,6 +18,7 @@ __all__ = [
     "BNSPriorSimulator",
     "CBCPriorSimulator",
     "GraphSimulator",
+    "MixtureSimulator",
     "NSBHPriorSimulator",
     "PoissonEventSampler",
     "Simulator",
@@ -29,6 +31,7 @@ def __getattr__(name: str) -> Any:
         "BNSPriorSimulator": ".bns_prior",
         "CBCPriorSimulator": ".cbc_prior",
         "GraphSimulator": ".graph",
+        "MixtureSimulator": ".mixture",
         "NSBHPriorSimulator": ".nsbh_prior",
         "PoissonEventSampler": ".poisson_event",
         "Simulator": ".simulator",

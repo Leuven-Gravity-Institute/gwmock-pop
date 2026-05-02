@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from gwmock_pop.loaders import FilePopulationLoader
 from gwmock_pop.protocols import ExternalPopulationLoader, GWPopSimulator
-from gwmock_pop.simulators import BNSPriorSimulator, CBCPriorSimulator, NSBHPriorSimulator, PoissonEventSampler
+from gwmock_pop.simulators import (
+    BNSPriorSimulator,
+    CBCPriorSimulator,
+    MixtureSimulator,
+    NSBHPriorSimulator,
+    PoissonEventSampler,
+)
 from gwmock_pop.version import __version__
 
 __all__ = [
@@ -13,6 +19,7 @@ __all__ = [
     "ExternalPopulationLoader",
     "FilePopulationLoader",
     "GWPopSimulator",
+    "MixtureSimulator",
     "NSBHPriorSimulator",
     "PoissonEventSampler",
     "__version__",
