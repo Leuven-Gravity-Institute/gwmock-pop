@@ -41,8 +41,8 @@ def multiply(left: Array, right: Array) -> Array:
     return jnp.asarray(left) * jnp.asarray(right)
 
 
-def comoving_distance_to_redshift(
-    distance: Array,
+def luminosity_distance_to_redshift(
+    luminosity_distance: Array,
     *,
     hubble_constant: float = PLANCK18_H0_KM_S_MPC,
     omega_m: float = PLANCK18_OMEGA_M,
@@ -51,21 +51,18 @@ def comoving_distance_to_redshift(
 ) -> Array:
     """Convert luminosity distance to redshift with a flat-ΛCDM lookup.
 
-    The historical transform name is retained for graph-config compatibility even
-    though the input quantity is luminosity distance.
-
     Args:
-        distance: Luminosity distance in Mpc.
+        luminosity_distance: Luminosity distance in Mpc.
         hubble_constant: Hubble constant in km / s / Mpc.
         omega_m: Matter density.
         max_redshift: Largest redshift supported by the lookup table.
         n_grid: Number of tabulation points.
 
     Returns:
-        Redshift inferred from ``distance``.
+        Redshift inferred from ``luminosity_distance``.
     """
     return compute_redshift_from_luminosity_distance(
-        luminosity_distance=distance,
+        luminosity_distance=luminosity_distance,
         hubble_constant=hubble_constant,
         omega_m=omega_m,
         max_redshift=max_redshift,

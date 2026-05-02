@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 from gwmock_pop.samplers import uniform_comoving_volume_distance
-from gwmock_pop.transforms import comoving_distance_to_redshift
+from gwmock_pop.transforms import luminosity_distance_to_redshift
 
 
 def _ks_p_value(samples: np.ndarray, cdf) -> float:
@@ -40,9 +40,9 @@ def test_uniform_comoving_volume_distance_is_uniform_in_comoving_volume() -> Non
     """The implied comoving-distance CDF follows ``(d_c / d_c,max)^3``."""
     d_max = 40_000.0
     distance = uniform_comoving_volume_distance(jax.random.PRNGKey(123), 10_000, d_max)
-    redshift = comoving_distance_to_redshift(distance)
+    redshift = luminosity_distance_to_redshift(distance)
     comoving_distance = np.asarray(distance) / (1.0 + np.asarray(redshift))
-    comoving_distance_max = d_max / (1.0 + float(comoving_distance_to_redshift(np.asarray(d_max))))
+    comoving_distance_max = d_max / (1.0 + float(luminosity_distance_to_redshift(np.asarray(d_max))))
 
     p_value = _ks_p_value(comoving_distance, lambda x: np.clip((x / comoving_distance_max) ** 3, 0.0, 1.0))
     assert p_value > 0.01, p_value

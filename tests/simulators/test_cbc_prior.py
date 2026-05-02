@@ -101,7 +101,7 @@ def test_accurate_cosmology_mode_uses_lookup_sampler_and_transform(monkeypatch: 
         return jnp.full(distance.shape, 0.321)
 
     monkeypatch.setattr(cbc_prior_module, "uniform_comoving_volume_distance", fake_sampler)
-    monkeypatch.setattr(cbc_prior_module, "comoving_distance_to_redshift", fake_transform)
+    monkeypatch.setattr(cbc_prior_module, "luminosity_distance_to_redshift", fake_transform)
 
     result = CBCPriorSimulator().simulate(8, seed=7)
 

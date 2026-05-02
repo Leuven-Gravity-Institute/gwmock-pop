@@ -12,7 +12,7 @@ from jax import Array
 from gwmock_pop.cosmology.flat_lambda_cdm import PLANCK18_H0_KM_S_MPC
 from gwmock_pop.samplers import uniform_comoving_volume_distance
 from gwmock_pop.simulators.bbh.base import BBHSimulator
-from gwmock_pop.transforms import comoving_distance_to_redshift
+from gwmock_pop.transforms import luminosity_distance_to_redshift
 
 _TWO_PI = 2.0 * math.pi
 _SPEED_OF_LIGHT_KM_S = 299792.458
@@ -278,5 +278,5 @@ class CBCPriorSimulator(BBHSimulator):
     def _distance_to_redshift(self, distance: Array) -> Array:
         """Convert luminosity distance to redshift using the configured cosmology mode."""
         if self._accurate_cosmology:
-            return comoving_distance_to_redshift(distance)
+            return luminosity_distance_to_redshift(distance)
         return self._legacy_distance_to_redshift(distance)
