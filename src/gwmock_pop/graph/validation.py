@@ -15,6 +15,8 @@ from gwmock_pop.graph.transform import extract_transform_dependencies
 from gwmock_pop.utils.import_utils import import_from_string
 from gwmock_pop.utils.yaml import read_data_file
 
+_TRANSFORM_STRING_SUMMARY_MAX_CHARS = 120
+
 
 @dataclass(frozen=True)
 class NodeSummary:
@@ -183,13 +185,14 @@ def _validate_node(
             )
         )
 
-    callable_issues = _validate_callable(
-        node_name=node_name,
-        block_name=block_name,
-        function_name=function_name,
-        arguments=arguments,
-    )
-    issues.extend(callable_issues)
+    if not (block_name == "transform" and isinstance(block, str)):
+        callable_issues = _validate_callable(
+            node_name=node_name,
+            block_name=block_name,
+            function_name=function_name,
+            arguments=arguments,
+        )
+        issues.extend(callable_issues)
 
     summary = NodeSummary(
         name=node_name,
@@ -203,10 +206,10 @@ def _validate_node(
 def _resolve_node_block(  # noqa: PLR0912
     node_name: str,
     spec: Any,
-) -> tuple[str, dict[str, Any], str] | ValidationIssue:
+) -> tuple[str, dict[str, Any] | str, str] | ValidationIssue:
     """Resolve the active node block and function name."""
     issue: ValidationIssue | None = None
-    resolved: tuple[str, dict[str, Any], str] | None = None
+    resolved: tuple[str, dict[str, Any] | str, str] | None = None
 
     if not isinstance(spec, dict):
         issue = ValidationIssue(node_name=node_name, message="Node spec must be a mapping.")
@@ -224,14 +227,7 @@ def _resolve_node_block(  # noqa: PLR0912
         else:
             block_name = "sampler" if has_sampler else "transform"
             block = spec[block_name]
-            if not isinstance(block, dict):
-                if block_name == "transform" and isinstance(block, str):
-                    issue = ValidationIssue(
-                        node_name=node_name, message="String transform expressions are not supported."
-                    )
-                else:
-                    issue = ValidationIssue(node_name=node_name, message=f"'{block_name}' block must be a mapping.")
-            else:
+            if isinstance(block, dict):
                 function_name = block.get("function")
                 if not function_name:
                     issue = ValidationIssue(
@@ -242,6 +238,19 @@ def _resolve_node_block(  # noqa: PLR0912
                     issue = ValidationIssue(node_name=node_name, message=f"'{block_name}.function' must be a string.")
                 else:
                     resolved = (block_name, block, function_name)
+            elif block_name == "transform" and isinstance(block, str):
+                if not block.strip():
+                    issue = ValidationIssue(
+                        node_name=node_name,
+                        message="'transform' expression must be a non-empty string.",
+                    )
+                else:
+                    max_len = _TRANSFORM_STRING_SUMMARY_MAX_CHARS
+                    ellipsis = "..."
+                    display = block if len(block) <= max_len else f"{block[: max_len - len(ellipsis)]}{ellipsis}"
+                    resolved = (block_name, block, display)
+            else:
+                issue = ValidationIssue(node_name=node_name, message=f"'{block_name}' block must be a mapping.")
 
     if issue is not None:
         return issue
@@ -253,9 +262,14 @@ def _resolve_node_block(  # noqa: PLR0912
 def _resolve_node_arguments(
     node_name: str,
     block_name: str,
-    block: dict[str, Any],
+    block: dict[str, Any] | str,
 ) -> dict[str, Any] | ValidationIssue:
     """Resolve configured node arguments into a mapping."""
+    if isinstance(block, str):
+        if block_name != "transform":
+            return ValidationIssue(node_name=node_name, message=f"'{block_name}' block must be a mapping.")
+        return {}
+
     arguments = block.get("arguments")
     if arguments is None:
         return {}
