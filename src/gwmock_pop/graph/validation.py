@@ -197,7 +197,7 @@ def _validate_node(
     summary = NodeSummary(
         name=node_name,
         function=function_name,
-        parameters=tuple(arguments),
+        parameters=_parameters_for_summary(arguments),
         output_keys=(node_name,),
     )
     return issues, summary
@@ -259,12 +259,19 @@ def _resolve_node_block(  # noqa: PLR0912
     return resolved
 
 
+def _parameters_for_summary(arguments: dict[str, Any] | list[Any] | tuple[Any, ...]) -> tuple[str, ...]:
+    """Build summary parameter labels from mapping keys or sequence entries."""
+    if isinstance(arguments, dict):
+        return tuple(arguments.keys())
+    return tuple(str(item) for item in arguments)
+
+
 def _resolve_node_arguments(
     node_name: str,
     block_name: str,
     block: dict[str, Any] | str,
-) -> dict[str, Any] | ValidationIssue:
-    """Resolve configured node arguments into a mapping."""
+) -> dict[str, Any] | list[Any] | tuple[Any, ...] | ValidationIssue:
+    """Resolve configured node arguments into a mapping or sequence form."""
     if isinstance(block, str):
         if block_name != "transform":
             return ValidationIssue(node_name=node_name, message=f"'{block_name}' block must be a mapping.")
@@ -275,14 +282,19 @@ def _resolve_node_arguments(
         return {}
     if isinstance(arguments, dict):
         return arguments
-    return ValidationIssue(node_name=node_name, message=f"'{block_name}.arguments' must be a mapping or null.")
+    if isinstance(arguments, (list, tuple)):
+        return arguments
+    return ValidationIssue(
+        node_name=node_name,
+        message=f"'{block_name}.arguments' must be a mapping, sequence, or null.",
+    )
 
 
 def _validate_callable(
     node_name: str,
     block_name: str,
     function_name: str,
-    arguments: dict[str, Any],
+    arguments: dict[str, Any] | list[Any] | tuple[Any, ...],
 ) -> list[ValidationIssue]:
     """Validate function import and configured arguments for a node."""
     issues: list[ValidationIssue] = []
@@ -292,6 +304,9 @@ def _validate_callable(
         callable_object = import_from_string(function_name, default_module=default_module)
     except ImportError as error:
         issues.append(ValidationIssue(node_name=node_name, message=f"Unknown {block_name} '{function_name}': {error}"))
+        return issues
+
+    if isinstance(arguments, (list, tuple)):
         return issues
 
     signature = inspect.signature(callable_object)
