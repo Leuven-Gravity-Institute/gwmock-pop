@@ -6,16 +6,18 @@ from importlib import import_module
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from .bns_prior import BNSPriorSimulator
     from .cbc_prior import CBCPriorSimulator
     from .graph import GraphSimulator
     from .simulator import Simulator
 
-__all__ = ["CBCPriorSimulator", "GraphSimulator", "Simulator"]
+__all__ = ["BNSPriorSimulator", "CBCPriorSimulator", "GraphSimulator", "Simulator"]
 
 
 def __getattr__(name: str) -> Any:
     """Lazily import simulator classes for package-level access."""
     module_map = {
+        "BNSPriorSimulator": ".bns_prior",
         "CBCPriorSimulator": ".cbc_prior",
         "GraphSimulator": ".graph",
         "Simulator": ".simulator",
