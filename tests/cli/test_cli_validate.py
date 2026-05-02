@@ -13,7 +13,8 @@ _RUNNER = CliRunner()
 
 def test_validate_command_prints_summary_for_gwtc4_example() -> None:
     """The validator prints a stable node summary for the repository example config."""
-    result = _RUNNER.invoke(app, ["validate", "examples/gwtc4/bbh_population.yaml"])
+    config_path = Path(__file__).resolve().parents[2] / "examples/gwtc4/bbh_population.yaml"
+    result = _RUNNER.invoke(app, ["validate", str(config_path)])
 
     assert result.exit_code == 0, result.output
     assert "Node" in result.output
