@@ -36,7 +36,7 @@ def test_simulate_is_reproducible_for_fixed_seed() -> None:
 
 
 def test_default_source_type_is_nsbh() -> None:
-    """The NSBH prior routes to the NSBH signal backend."""
+    """Default ``source_type`` identifies neutron star - black hole systems."""
     assert NSBHPriorSimulator().source_type == "nsbh"
 
 
