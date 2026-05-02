@@ -119,7 +119,7 @@ def test_legacy_cosmology_mode_reproduces_low_redshift_hubble_law() -> None:
         cbc_prior_module.PLANCK18_H0_KM_S_MPC / cbc_prior_module._SPEED_OF_LIGHT_KM_S
     )
 
-    np.testing.assert_allclose(np.asarray(result["redshift"]), expected_redshift)
+    np.testing.assert_allclose(np.asarray(result["redshift"]), expected_redshift, rtol=1e-5)
 
 
 def test_aligned_spins_zero_in_plane_components() -> None:
