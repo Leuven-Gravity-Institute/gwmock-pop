@@ -17,6 +17,7 @@ def mass_ratio_pairing(  # noqa: PLR0913
     n_samples: int | None = None,
 ) -> Array:
     """Draw one conditional mass ratio per primary mass."""
+    checkify.check(secondary_minimum > 0.0, "secondary_minimum must be strictly positive.")
     primary_mass_array = jnp.asarray(primary_mass)
 
     if primary_mass_array.ndim == 0:
