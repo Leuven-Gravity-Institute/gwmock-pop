@@ -67,8 +67,8 @@ def test_component_fractions_match_requested_weights_within_three_sigma() -> Non
 
 
 def test_mismatched_parameter_names_raise_value_error_at_construction() -> None:
-    """Component simulators must agree on the parameter-name set."""
-    with pytest.raises(ValueError, match="same parameter_names set"):
+    """Component simulators must agree on the parameter-name sequence."""
+    with pytest.raises(ValueError, match="same parameter_names sequence"):
         MixtureSimulator(
             [
                 _ConstantComponentSimulator(0.0),
