@@ -1,3 +1,8 @@
+name: gwtc4
+source_type: bbh
+description:
+    GWTC-4-inspired BBH graph preset with masses, spins, distance, and extrinsic
+    parameters.
 parameters:
     detector_frame_mass_1:
         sampler:

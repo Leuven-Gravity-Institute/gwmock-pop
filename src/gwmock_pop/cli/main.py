@@ -95,10 +95,12 @@ def main(
 def register_commands() -> None:
     """Register CLI commands."""
     from gwmock_pop.cli.inspect import inspect_command  # noqa: PLC0415
+    from gwmock_pop.cli.list import list_command  # noqa: PLC0415
     from gwmock_pop.cli.simulate import simulate_command  # noqa: PLC0415
     from gwmock_pop.cli.validate import validate_command  # noqa: PLC0415
 
     app.command("inspect", help="Inspect populations with quick summary statistics.")(inspect_command)
+    app.command("list", help="List packaged presets and public simulator classes.")(list_command)
     app.command("simulate", help="Simulate populations.")(simulate_command)
     app.command("validate", help="Validate graph configs without sampling.")(validate_command)
 
