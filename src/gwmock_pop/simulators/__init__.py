@@ -9,9 +9,10 @@ if TYPE_CHECKING:
     from .bns_prior import BNSPriorSimulator
     from .cbc_prior import CBCPriorSimulator
     from .graph import GraphSimulator
+    from .nsbh_prior import NSBHPriorSimulator
     from .simulator import Simulator
 
-__all__ = ["BNSPriorSimulator", "CBCPriorSimulator", "GraphSimulator", "Simulator"]
+__all__ = ["BNSPriorSimulator", "CBCPriorSimulator", "GraphSimulator", "NSBHPriorSimulator", "Simulator"]
 
 
 def __getattr__(name: str) -> Any:
@@ -20,6 +21,7 @@ def __getattr__(name: str) -> Any:
         "BNSPriorSimulator": ".bns_prior",
         "CBCPriorSimulator": ".cbc_prior",
         "GraphSimulator": ".graph",
+        "NSBHPriorSimulator": ".nsbh_prior",
         "Simulator": ".simulator",
     }
     if name not in module_map:
