@@ -37,6 +37,7 @@ class BBHSimulator(RandomMixin, Simulator):
         del cls
 
         preset_map = {
+            "gwtc4": "bbh_gwtc4.yaml",
             "power_law_plus_peak": "bbh_power_law_plus_peak.yaml",
         }
         if preset_name not in preset_map:

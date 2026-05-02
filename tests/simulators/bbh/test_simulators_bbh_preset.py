@@ -55,6 +55,44 @@ def test_from_preset_returns_protocol_conformant_simulator() -> None:
     assert bool(jnp.all(result["detector_frame_mass_2"] <= result["detector_frame_mass_1"]))
 
 
+def test_gwtc4_preset_returns_canonical_bbh_surface() -> None:
+    """The GWTC4 preset exposes the full canonical BBH parameter set."""
+    simulator = BBHSimulator.from_preset("gwtc4", seed=42)
+
+    result = simulator.simulate(64)
+
+    assert isinstance(simulator, GWPopSimulator)
+    assert simulator.source_type == "bbh"
+    assert list(result.keys()) == list(simulator.parameter_names)
+    assert len(result) == 21
+    assert list(result.keys()) == [
+        "detector_frame_mass_1",
+        "detector_frame_mass_2",
+        "spin_1x",
+        "spin_1y",
+        "spin_1z",
+        "spin_2x",
+        "spin_2y",
+        "spin_2z",
+        "eccentricity",
+        "distance",
+        "coa_phase",
+        "inclination",
+        "theta_jn",
+        "long_asc_node",
+        "mean_per_ano",
+        "coa_time",
+        "right_ascension",
+        "declination",
+        "polarization_angle",
+        "redshift",
+        "f_ref",
+    ]
+    assert all(array.shape == (64,) for array in result.values())
+    assert bool(jnp.all(jnp.isfinite(result["distance"])))
+    assert bool(jnp.all(jnp.isfinite(result["redshift"])))
+
+
 def test_from_preset_rejects_unknown_preset_name() -> None:
     """Unknown preset names raise a helpful error."""
     with pytest.raises(ValueError, match="Unknown BBH preset"):

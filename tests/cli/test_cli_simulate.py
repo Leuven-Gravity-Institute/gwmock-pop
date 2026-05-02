@@ -1,50 +1,52 @@
-"""Unit tests for CLI simulate command."""
+"""Tests for the CLI simulate command."""
 
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
+import h5py
 import numpy as np
 import pytest
-import typer
 from typer.testing import CliRunner
 
+from gwmock_pop import FilePopulationLoader
 from gwmock_pop.cli.main import app, setup_logging
-from gwmock_pop.cli.simulate import _build_output_metadata, simulate_command
-from gwmock_pop.config.main import MainConfiguration
-from gwmock_pop.simulators.graph import GraphSimulator
 from gwmock_pop.utils.log import LoggingLevel
 
+_RUNNER = CliRunner()
+_EXPECTED_BBH_COLUMNS = {
+    "detector_frame_mass_1",
+    "detector_frame_mass_2",
+    "spin_1x",
+    "spin_1y",
+    "spin_1z",
+    "spin_2x",
+    "spin_2y",
+    "spin_2z",
+    "eccentricity",
+    "distance",
+    "coa_phase",
+    "inclination",
+    "theta_jn",
+    "long_asc_node",
+    "mean_per_ano",
+    "coa_time",
+    "right_ascension",
+    "declination",
+    "polarization_angle",
+    "redshift",
+    "f_ref",
+}
 
-class TestSimulateCommand:
-    """Test class for simulate command."""
 
-    # Constants for test configuration
-    TEST_N_SAMPLES = 20
-    TEST_SEED = 789
-
-    def test_simulate_command_writes_population(self, tmp_path: Path) -> None:
-        """Test that simulate_command runs GraphSimulator and writes an output file."""
-        output_dir = tmp_path / "outputs"
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(
-            f"""
-config_version: "1.0.0"
-run:
-  name: cli_test
-  seed: 123
-  mode: fixed_n_samples
-  n_samples: 5
-  output:
-    directory: "{output_dir.as_posix()}"
-    format: csv
-    overwrite: true
-    save_metadata: false
+def _minimal_graph_config(path: Path) -> None:
+    """Write a minimal graph config for the file-path CLI route."""
+    path.write_text(
+        """
 parameters:
   mass_1:
     sampler:
-      function: gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
+      function: planck_tapered_broken_power_law_plus_two_peaks
       arguments:
         alpha_1: 1.72
         alpha_2: 4.51
@@ -58,287 +60,107 @@ parameters:
         taper_range: 4.32
         lambda_0: 0.361
         lambda_1: 0.586
-""",
-            encoding="utf-8",
-        )
+""".strip(),
+        encoding="utf-8",
+    )
 
-        simulate_command(str(config_path))
 
-        output_path = output_dir / "cli_test.csv"
-        assert output_path.exists()
-        loaded = np.loadtxt(output_path, delimiter=",")
-        assert loaded.shape == (5,)
+def test_simulate_command_writes_hdf5_from_packaged_preset(tmp_path: Path) -> None:
+    """The CLI samples the packaged GWTC4 preset into a named-column HDF5 file."""
+    output_path = tmp_path / "population.hdf5"
 
-    @patch("logging.getLogger")
-    def test_simulate_command_rejects_duration_mode(self, mock_get_logger: MagicMock, tmp_path: Path) -> None:
-        """Test that the MVP CLI rejects duration mode explicitly."""
-        mock_logger = MagicMock()
-        mock_get_logger.return_value = mock_logger
+    result = _RUNNER.invoke(
+        app,
+        ["simulate", "--config", "gwtc4", "--n", "100", "--output", str(output_path), "--seed", "42"],
+    )
 
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(
-            """
-run:
-  mode: duration
-parameters:
-  mass_1:
-    sampler:
-      function: gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
-      arguments:
-        alpha_1: 1.72
-        alpha_2: 4.51
-        transition: 35.6
-        minimum: 5.06
-        maximum: 300.0
-        mean_1: 9.76
-        sigma_1: 0.649
-        mean_2: 32.8
-        sigma_2: 3.92
-        taper_range: 4.32
-        lambda_0: 0.361
-        lambda_1: 0.586
-""",
-            encoding="utf-8",
-        )
+    assert result.exit_code == 0, result.output
+    assert output_path.exists()
 
-        with pytest.raises(typer.Exit):
-            simulate_command(str(config_path))
+    with h5py.File(output_path, "r") as handle:
+        dataset = handle["data"]
+        assert dataset.shape == (100,)
+        assert set(dataset.dtype.names or ()) == _EXPECTED_BBH_COLUMNS
 
-        mock_logger.error.assert_called_once_with("Only run.mode='fixed_n_samples' is supported by the CLI MVP.")
 
-    @patch("logging.getLogger")
-    def test_simulate_command_requires_parameters(self, mock_get_logger: MagicMock, tmp_path: Path) -> None:
-        """Test that the simulate command requires parameter graph configuration."""
-        mock_logger = MagicMock()
-        mock_get_logger.return_value = mock_logger
+def test_simulate_command_writes_csv_from_config_file(tmp_path: Path) -> None:
+    """The CLI samples a graph config file into a header-based CSV file."""
+    config_path = tmp_path / "config.yaml"
+    output_path = tmp_path / "population.csv"
+    _minimal_graph_config(config_path)
 
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(
-            """
-run:
-  mode: fixed_n_samples
-  n_samples: 10
-""",
-            encoding="utf-8",
-        )
+    result = _RUNNER.invoke(
+        app,
+        ["simulate", "--config", str(config_path), "--n", "50", "--output", str(output_path), "--seed", "7"],
+    )
 
-        with pytest.raises(typer.Exit):
-            simulate_command(str(config_path))
+    assert result.exit_code == 0, result.output
+    assert output_path.exists()
 
-        mock_logger.error.assert_called_once_with("No parameter graph configuration found under 'parameters'.")
+    data = np.genfromtxt(output_path, delimiter=",", names=True, dtype=float)
+    assert np.atleast_1d(data).shape == (50,)
+    assert data.dtype.names == ("mass_1",)
 
-    @patch("gwmock_pop.cli.simulate._build_output_metadata")
-    def test_simulate_command_with_metadata(self, mock_build_metadata: MagicMock, tmp_path: Path) -> None:
-        """Test that simulate_command builds and saves metadata when requested."""
-        mock_build_metadata.return_value = {"run_name": "cli_test_metadata"}
 
-        output_dir = tmp_path / "outputs"
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(
-            f"""
-config_version: "1.0.0"
-run:
-  name: cli_test_metadata
-  seed: 456
-  mode: fixed_n_samples
-  n_samples: 10
-  output:
-    directory: "{output_dir.as_posix()}"
-    format: csv
-    overwrite: true
-    save_metadata: true
-parameters:
-  mass_1:
-    sampler:
-      function: gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
-      arguments:
-        alpha_1: 1.72
-        alpha_2: 4.51
-        transition: 35.6
-        minimum: 5.06
-        maximum: 300.0
-        mean_1: 9.76
-        sigma_1: 0.649
-        mean_2: 32.8
-        sigma_2: 3.92
-        taper_range: 4.32
-        lambda_0: 0.361
-        lambda_1: 0.586
-""",
-            encoding="utf-8",
-        )
+@pytest.mark.integration
+def test_hdf5_output_round_trips_through_file_population_loader(tmp_path: Path) -> None:
+    """The CLI HDF5 output is readable through FilePopulationLoader."""
+    output_path = tmp_path / "population.hdf5"
 
-        simulate_command(str(config_path))
-        mock_build_metadata.assert_called_once()
+    result = _RUNNER.invoke(
+        app,
+        ["simulate", "--config", "gwtc4", "--n", "100", "--output", str(output_path), "--seed", "11"],
+    )
 
-        output_path = output_dir / "cli_test_metadata.csv"
-        assert output_path.exists()
+    assert result.exit_code == 0, result.output
 
-    def test_build_output_metadata(self, tmp_path: Path) -> None:
-        """Test that _build_output_metadata builds correct metadata."""
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(
-            f"""
-config_version: "1.0.0"
-run:
-  name: test_metadata
-  seed: {self.TEST_SEED}
-  mode: fixed_n_samples
-  n_samples: {self.TEST_N_SAMPLES}
-  output:
-    directory: "/tmp/test"
-    format: csv
-    overwrite: true
-    save_metadata: false
-parameters:
-  mass_1:
-    sampler:
-      function: gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
-      arguments:
-        alpha_1: 1.72
-        alpha_2: 4.51
-        transition: 35.6
-        minimum: 5.06
-        maximum: 300.0
-        mean_1: 9.76
-        sigma_1: 0.649
-        mean_2: 32.8
-        sigma_2: 3.92
-        taper_range: 4.32
-        lambda_0: 0.361
-        lambda_1: 0.586
-""",
-            encoding="utf-8",
-        )
+    loader = FilePopulationLoader("bbh", output_path)
+    reloaded = loader.simulate(100, seed=5)
 
-        config = MainConfiguration.from_file(str(config_path))
-        simulator = GraphSimulator(config=config.parameters, seed=config.run.seed)
+    assert len(loader.parameter_names) == 21
+    assert set(loader.parameter_names) == _EXPECTED_BBH_COLUMNS
+    assert set(reloaded) == _EXPECTED_BBH_COLUMNS
+    assert all(values.shape == (100,) for values in reloaded.values())
 
-        metadata = _build_output_metadata(config, simulator)
 
-        assert metadata["config_version"] == "1.0.0"
-        assert metadata["run_name"] == "test_metadata"
-        assert metadata["n_samples"] == self.TEST_N_SAMPLES
-        assert metadata["seed"] == self.TEST_SEED
-        assert "mass_1" in metadata["parameter_names"]
+def test_simulate_command_rejects_existing_output_path(tmp_path: Path) -> None:
+    """The CLI refuses to overwrite an existing output file."""
+    output_path = tmp_path / "population.csv"
+    output_path.write_text("existing\n", encoding="utf-8")
 
-    def test_simulate_command_overwrite_rejection(self, tmp_path: Path) -> None:
-        """Test that simulate_command rejects overwriting without explicit permission."""
-        output_dir = tmp_path / "outputs"
-        output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / "existing.csv"
-        output_path.write_text("1,2,3\n", encoding="utf-8")
+    result = _RUNNER.invoke(app, ["simulate", "--config", "gwtc4", "--n", "10", "--output", str(output_path)])
 
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(
-            f"""
-config_version: "1.0.0"
-run:
-  name: existing
-  seed: 111
-  mode: fixed_n_samples
-  n_samples: 5
-  output:
-    directory: "{output_dir.as_posix()}"
-    format: csv
-    overwrite: false
-    save_metadata: false
-parameters:
-  mass_1:
-    sampler:
-      function: gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
-      arguments:
-        alpha_1: 1.72
-        alpha_2: 4.51
-        transition: 35.6
-        minimum: 5.06
-        maximum: 300.0
-        mean_1: 9.76
-        sigma_1: 0.649
-        mean_2: 32.8
-        sigma_2: 3.92
-        taper_range: 4.32
-        lambda_0: 0.361
-        lambda_1: 0.586
-""",
-            encoding="utf-8",
-        )
+    assert result.exit_code == 1
+    assert "Refusing to overwrite existing output file" in result.output
 
-        with pytest.raises(typer.Exit):
-            simulate_command(str(config_path))
 
-        assert output_path.exists()
+def test_simulate_command_rejects_unknown_config_target(tmp_path: Path) -> None:
+    """Unknown preset names and missing config files fail clearly."""
+    output_path = tmp_path / "population.hdf5"
+
+    result = _RUNNER.invoke(
+        app,
+        ["simulate", "--config", "does-not-exist", "--n", "10", "--output", str(output_path)],
+    )
+
+    assert result.exit_code == 1
+    assert "Unknown preset or configuration path" in result.output
 
 
 class TestSetupLogging:
-    """Test class for setup_logging function."""
+    """Smoke tests for logging setup."""
 
     def test_setup_logging_with_info_level(self) -> None:
-        """Test that setup_logging sets up logging with INFO level."""
+        """INFO setup does not raise."""
         setup_logging(LoggingLevel.INFO)
-        # Just verify it doesn't raise an exception
         assert True
 
     def test_setup_logging_with_debug_level(self) -> None:
-        """Test that setup_logging sets up logging with DEBUG level."""
+        """DEBUG setup does not raise."""
         setup_logging(LoggingLevel.DEBUG)
-        # Just verify it doesn't raise an exception
         assert True
 
     def test_setup_logging_with_error_level(self) -> None:
-        """Test that setup_logging sets up logging with ERROR level."""
+        """ERROR setup does not raise."""
         setup_logging(LoggingLevel.ERROR)
-        # Just verify it doesn't raise an exception
         assert True
-
-
-class TestVersionCallback:
-    """Test class for version callback function."""
-
-    def test_version_callback_logs_version(self) -> None:
-        """Test that version_callback logs version and raises Exit."""
-        runner = CliRunner()
-        result = runner.invoke(app, ["--version"])
-        assert result.exit_code == 0
-        # Version output goes to stderr via logging
-        assert (
-            "gwmock_pop version:" in result.stdout
-            or "gwmock_pop version:" in result.stderr
-            or "gwmock_pop version:" in str(result)
-        )
-
-
-class TestSimulateCommandErrorHandling:
-    """Test class for simulate command error handling."""
-
-    def test_simulate_command_file_not_found(self) -> None:
-        """Test that simulate_command raises typer.Exit for non-existent file."""
-        with pytest.raises(typer.Exit):
-            simulate_command("nonexistent_config.yaml")
-
-    @patch("logging.getLogger")
-    def test_simulate_command_validation_error(self, mock_get_logger: MagicMock, tmp_path: Path) -> None:
-        """Test that simulate_command handles validation errors."""
-        mock_logger = MagicMock()
-        mock_get_logger.return_value = mock_logger
-
-        config_path = tmp_path / "invalid_config.yaml"
-        config_path.write_text(
-            """
-# Invalid config - missing required fields
-run:
-  mode: fixed_n_samples
-""",
-            encoding="utf-8",
-        )
-
-        with pytest.raises(typer.Exit):
-            simulate_command(str(config_path))
-
-    def test_simulate_command_empty_config(self, tmp_path: Path) -> None:
-        """Test that simulate_command handles empty config file."""
-        config_path = tmp_path / "empty_config.yaml"
-        config_path.write_text("", encoding="utf-8")
-
-        with pytest.raises(typer.Exit):
-            simulate_command(str(config_path))
