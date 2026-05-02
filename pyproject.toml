@@ -31,7 +31,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-  "astropy>=7.1.0",
+  "astropy>=7.2.0",
   "bandit[toml]>=1.9.4",
   "hypothesis>=6.152.4",
   "pre-commit>=4.6.0",
