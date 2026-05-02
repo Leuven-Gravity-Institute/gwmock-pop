@@ -942,7 +942,8 @@ lambda_1 = 0.586
             assert object_path == "double_values"
             assert default_module == "gwmock_pop.transforms"
 
-            def fake_transform(*, values: jnp.ndarray, scale: int) -> jnp.ndarray:
+            def fake_transform(*, values: jnp.ndarray, scale: int, key: jax.Array) -> jnp.ndarray:
+                del key
                 return values * scale
 
             return fake_transform
@@ -993,6 +994,33 @@ lambda_1 = 0.586
                     "arguments": {"values": "@mass_1"},
                 }
             )
+
+    def test_transform_execution_injects_rng_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that stochastic transforms receive an injected RNG key."""
+        simulator = GraphSimulator(config={"mass_1": {"transform": {"function": "stochastic_transform"}}}, seed=1234)
+        simulator._sampled_values["mass_1"] = jnp.array([1.0, 2.0, 3.0])
+
+        def fake_import_from_string(object_path: str, default_module: str | None = None):
+            assert object_path == "stochastic_transform"
+            assert default_module == "gwmock_pop.transforms"
+
+            def fake_transform(*, reference: jnp.ndarray, key: jax.Array) -> jnp.ndarray:
+                assert reference.shape == (3,)
+                assert str(key.dtype).startswith("key<")
+                return jax.random.uniform(key, shape=reference.shape)
+
+            return fake_transform
+
+        monkeypatch.setattr(graph_module, "import_from_string", fake_import_from_string)
+
+        result = simulator._execute_transform(
+            {
+                "function": "stochastic_transform",
+                "arguments": {"reference": "@mass_1"},
+            }
+        )
+
+        assert result.shape == (3,)
 
     def test_simulate_with_transform(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test simulation with both sampler and transform."""
@@ -1051,7 +1079,8 @@ lambda_1 = 0.586
             if object_path == "offset_values":
                 assert default_module == "gwmock_pop.transforms"
 
-                def fake_transform(*, values: jnp.ndarray) -> jnp.ndarray:
+                def fake_transform(*, values: jnp.ndarray, key: jax.Array) -> jnp.ndarray:
+                    del key
                     return values + 1
 
                 return fake_transform
@@ -1464,6 +1493,229 @@ lambda_1 = 0.586
         assert len(result) == expected_n_parameters
         assert "mass_1" in simulator.parameter_names
         assert "mass_1_transformed" in simulator.parameter_names
+
+    def test_bbh_config_with_spin_transform_nodes_is_protocol_conformant(self) -> None:
+        """Test a BBH graph config that composes the stochastic spin transform nodes."""
+        n_samples = 128
+        config = {
+            "detector_frame_mass_1": {
+                "sampler": {
+                    "function": "gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks",
+                    "arguments": {
+                        "alpha_1": 1.72,
+                        "alpha_2": 4.51,
+                        "transition": 35.6,
+                        "minimum": 5.06,
+                        "maximum": 300.0,
+                        "mean_1": 9.76,
+                        "sigma_1": 0.649,
+                        "mean_2": 32.8,
+                        "sigma_2": 3.92,
+                        "taper_range": 4.32,
+                        "lambda_0": 0.361,
+                        "lambda_1": 0.586,
+                    },
+                }
+            },
+            "mass_ratio": {
+                "sampler": {
+                    "function": "gwmock_pop.samplers.planck_tapered_conditional_ratio_power_law",
+                    "arguments": {
+                        "denominator": "@detector_frame_mass_1",
+                        "beta": 1.5,
+                        "numerator_minimum": 0.5,
+                        "taper_range": 0.5,
+                        "minimum": 0.1,
+                        "maximum": 1.0,
+                        "n_grids": 128,
+                    },
+                },
+                "intermediate": True,
+            },
+            "detector_frame_mass_2": {
+                "transform": {
+                    "function": "multiply",
+                    "arguments": {
+                        "left": "@detector_frame_mass_1",
+                        "right": "@mass_ratio",
+                    },
+                }
+            },
+            "spin_1_magnitude": {
+                "transform": {
+                    "function": "beta_spin_magnitude",
+                    "arguments": {
+                        "reference": "@detector_frame_mass_1",
+                        "alpha": 2.0,
+                        "beta": 5.0,
+                    },
+                },
+                "intermediate": True,
+            },
+            "spin_2_magnitude": {
+                "transform": {
+                    "function": "beta_spin_magnitude",
+                    "arguments": {
+                        "reference": "@detector_frame_mass_1",
+                        "alpha": 2.5,
+                        "beta": 4.0,
+                    },
+                },
+                "intermediate": True,
+            },
+            "chi_eff": {
+                "transform": {
+                    "function": "gaussian_chi_eff",
+                    "arguments": {
+                        "reference": "@detector_frame_mass_1",
+                        "mean": 0.05,
+                        "sigma": 0.15,
+                    },
+                },
+                "intermediate": True,
+            },
+            "spin_1x": {
+                "transform": {
+                    "function": "constant_like",
+                    "arguments": {"reference": "@detector_frame_mass_1", "value": 0.0},
+                }
+            },
+            "spin_1y": {
+                "transform": {
+                    "function": "constant_like",
+                    "arguments": {"reference": "@detector_frame_mass_1", "value": 0.0},
+                }
+            },
+            "spin_1z": {
+                "transform": {
+                    "function": "gaussian_chi_eff",
+                    "arguments": {
+                        "chi_eff": "@chi_eff",
+                        "component": "primary",
+                        "mass_1": "@detector_frame_mass_1",
+                        "mass_2": "@detector_frame_mass_2",
+                        "spin_magnitude_1": "@spin_1_magnitude",
+                        "spin_magnitude_2": "@spin_2_magnitude",
+                    },
+                }
+            },
+            "spin_2x": {
+                "transform": {
+                    "function": "constant_like",
+                    "arguments": {"reference": "@detector_frame_mass_1", "value": 0.0},
+                }
+            },
+            "spin_2y": {
+                "transform": {
+                    "function": "constant_like",
+                    "arguments": {"reference": "@detector_frame_mass_1", "value": 0.0},
+                }
+            },
+            "spin_2z": {
+                "transform": {
+                    "function": "gaussian_chi_eff",
+                    "arguments": {
+                        "chi_eff": "@chi_eff",
+                        "component": "secondary",
+                        "mass_1": "@detector_frame_mass_1",
+                        "mass_2": "@detector_frame_mass_2",
+                        "spin_magnitude_1": "@spin_1_magnitude",
+                        "spin_magnitude_2": "@spin_2_magnitude",
+                    },
+                }
+            },
+            "eccentricity": {
+                "transform": {
+                    "function": "constant_like",
+                    "arguments": {"reference": "@detector_frame_mass_1", "value": 0.0},
+                }
+            },
+            "distance": {
+                "sampler": {
+                    "function": "uniform_comoving_volume_distance",
+                    "arguments": {
+                        "d_max": 5_000.0,
+                    },
+                }
+            },
+            "coa_phase": {
+                "transform": {
+                    "function": "constant_like",
+                    "arguments": {"reference": "@detector_frame_mass_1", "value": 0.0},
+                }
+            },
+            "inclination": {
+                "transform": {
+                    "function": "isotropic_spin_orientation",
+                    "arguments": {"reference": "@detector_frame_mass_1"},
+                }
+            },
+            "theta_jn": {
+                "transform": {
+                    "function": "isotropic_spin_orientation",
+                    "arguments": {"reference": "@detector_frame_mass_1"},
+                }
+            },
+            "long_asc_node": {
+                "transform": {
+                    "function": "constant_like",
+                    "arguments": {"reference": "@detector_frame_mass_1", "value": 0.0},
+                }
+            },
+            "mean_per_ano": {
+                "transform": {
+                    "function": "constant_like",
+                    "arguments": {"reference": "@detector_frame_mass_1", "value": 0.0},
+                }
+            },
+            "coa_time": {
+                "transform": {
+                    "function": "constant_like",
+                    "arguments": {"reference": "@detector_frame_mass_1", "value": 0.0},
+                }
+            },
+            "right_ascension": {
+                "transform": {
+                    "function": "constant_like",
+                    "arguments": {"reference": "@detector_frame_mass_1", "value": 0.0},
+                }
+            },
+            "declination": {
+                "transform": {
+                    "function": "constant_like",
+                    "arguments": {"reference": "@detector_frame_mass_1", "value": 0.0},
+                }
+            },
+            "polarization_angle": {
+                "transform": {
+                    "function": "constant_like",
+                    "arguments": {"reference": "@detector_frame_mass_1", "value": 0.0},
+                }
+            },
+            "redshift": {
+                "transform": {
+                    "function": "luminosity_distance_to_redshift",
+                    "arguments": {"luminosity_distance": "@distance"},
+                }
+            },
+            "f_ref": {
+                "transform": {
+                    "function": "constant_like",
+                    "arguments": {"reference": "@detector_frame_mass_1", "value": 20.0},
+                }
+            },
+        }
+
+        simulator: GWPopSimulator = GraphSimulator(config=config, source_type="bbh", seed=123)
+
+        assert isinstance(simulator, GWPopSimulator)
+        assert simulator.source_type == "bbh"
+
+        result = simulator.simulate(n_samples=n_samples)
+
+        assert list(result.keys()) == list(simulator.parameter_names)
+        assert all(values.shape == (n_samples,) for values in result.values())
+        assert all(bool(jnp.all(jnp.isfinite(values))) for values in result.values())
 
     def test_simulate_empty_parameter_names_raises_error(self) -> None:
         """Test that _simulate_impl raises error when no output parameters defined."""

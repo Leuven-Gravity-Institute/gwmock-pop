@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import secrets
 from pathlib import Path
 from typing import Any
@@ -206,6 +207,12 @@ class GraphSimulator(RandomMixin, Simulator):
 
         # Dispatch to transform function
         transform_func = import_from_string(object_path=function_name, default_module="gwmock_pop.transforms")
+        transform_signature = inspect.signature(transform_func)
+        accepts_kwargs = any(
+            parameter.kind is inspect.Parameter.VAR_KEYWORD for parameter in transform_signature.parameters.values()
+        )
+        if "key" not in resolved_args and ("key" in transform_signature.parameters or accepts_kwargs):
+            resolved_args["key"] = self.rng_manager.new_key
         return transform_func(**resolved_args)
 
     def _coerce_output_column(
