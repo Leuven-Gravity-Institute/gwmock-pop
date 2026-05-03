@@ -25,15 +25,24 @@ def test_validate_command_prints_summary_for_gwtc4_example() -> None:
 
 
 def test_validate_command_reports_unknown_transform_with_node_name(tmp_path: Path) -> None:
-    """Unknown transforms fail with a per-node error message."""
+    """Unknown transforms fail with a per-node close-match suggestion."""
     config_path = tmp_path / "unknown_transform.yaml"
     config_path.write_text(
         """
 parameters:
+  source:
+    sampler:
+      function: uniform_comoving_volume_distance
+      arguments:
+        d_max: 1000.0
   bad_node:
     transform:
-      function: does_not_exist
-      arguments: {}
+      # typos:off
+      function: multply
+      # typos:on
+      arguments:
+        left: "@source"
+        right: "@source"
 """.strip(),
         encoding="utf-8",
     )
@@ -42,18 +51,21 @@ parameters:
 
     assert result.exit_code == 1
     assert "bad_node" in result.output
-    assert "does_not_exist" in result.output
+    # typos:off
+    assert "multply" in result.output
+    # typos:on
+    assert "multiply" in result.output
+    assert "Did you mean" in result.output
 
 
-def test_validate_command_reports_missing_required_field(tmp_path: Path) -> None:
-    """Missing required transform arguments fail with the field name."""
-    config_path = tmp_path / "missing_field.yaml"
+def test_validate_command_reports_missing_required_key(tmp_path: Path) -> None:
+    """Missing required keys fail with the field path in the error output."""
+    config_path = tmp_path / "missing_key.yaml"
     config_path.write_text(
         """
 parameters:
   bad_node:
     transform:
-      function: constant_like
       arguments:
         value: 1.0
 """.strip(),
@@ -64,4 +76,4 @@ parameters:
 
     assert result.exit_code == 1
     assert "bad_node" in result.output
-    assert "reference" in result.output
+    assert "transform.function" in result.output

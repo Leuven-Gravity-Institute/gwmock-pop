@@ -15,10 +15,10 @@ from jax import Array
 
 from gwmock_pop.configs import get_packaged_preset, get_packaged_preset_resource
 from gwmock_pop.graph.build import build_dependency_graph
+from gwmock_pop.graph.validation import load_validated_parameters_config
 from gwmock_pop.mixins.random import RandomMixin
 from gwmock_pop.simulators.simulator import Simulator
 from gwmock_pop.utils.import_utils import import_from_string
-from gwmock_pop.utils.yaml import read_data_file
 
 
 class GraphSimulator(RandomMixin, Simulator):
@@ -304,23 +304,7 @@ class GraphSimulator(RandomMixin, Simulator):
         Returns:
             Configured simulator instance.
         """
-        config_path = Path(config_path)
-        try:
-            config = read_data_file(config_path, encoding=encoding)
-        except ValueError as error:
-            message = str(error)
-            if "Suffix of filename=" in message:
-                raise ValueError(
-                    f"Suffix of config_path={config_path} is not supported. Only '.yaml', '.yml', and '.toml' are supported."
-                ) from error
-            if "mapping at the top level" in message:
-                raise ValueError("Config file must contain a mapping at the root.") from error
-            raise
-
-        # Extract parameters section if present
-        if "parameters" in config:
-            config = config["parameters"]
-
+        config, _ = load_validated_parameters_config(config_path=config_path, encoding=encoding)
         return cls(config=config, **kwargs)
 
     @classmethod

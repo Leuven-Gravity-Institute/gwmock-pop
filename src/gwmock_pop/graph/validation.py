@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import importlib
 import inspect
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import networkx as nx
+import pydantic
+from pydantic import BaseModel, ConfigDict, TypeAdapter, model_validator
 
 from gwmock_pop.graph.build import build_dependency_graph
 from gwmock_pop.graph.sampler import extract_sampler_dependencies
@@ -34,12 +37,27 @@ class ValidationIssue:
 
     message: str
     node_name: str | None = None
+    field_name: str | None = None
 
     def render(self) -> str:
         """Render a human-readable validation message."""
-        if self.node_name is None:
-            return self.message
-        return f"Node '{self.node_name}': {self.message}"
+        if self.node_name is not None and self.field_name is not None:
+            return f"Node '{self.node_name}' field '{self.field_name}': {self.message}"
+        if self.node_name is not None:
+            return f"Node '{self.node_name}': {self.message}"
+        if self.field_name is not None:
+            return f"Field '{self.field_name}': {self.message}"
+        return self.message
+
+
+class ConfigValidationError(ValueError):
+    """Raised when a graph config file fails schema or static validation."""
+
+    def __init__(self, issues: tuple[ValidationIssue, ...] | list[ValidationIssue]) -> None:
+        """Initialize the exception with all collected validation issues."""
+        self.issues = tuple(issues)
+        details = "\n".join(f"- {issue.render()}" for issue in self.issues)
+        super().__init__(f"Graph config validation failed:\n{details}")
 
 
 @dataclass(frozen=True)
@@ -55,8 +73,81 @@ class ValidationReport:
         return not self.issues
 
 
+class _GraphCallableSchema(BaseModel):
+    """Schema for mapping-style sampler or transform blocks."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    function: str
+    arguments: dict[str, Any] | list[Any] | tuple[Any, ...] | None = None
+    depends_on: dict[str, Any] | list[Any] | tuple[Any, ...] | None = None
+
+
+class _GraphNodeSchema(BaseModel):
+    """Schema for a single graph node."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    sampler: _GraphCallableSchema | None = None
+    transform: _GraphCallableSchema | str | None = None
+    intermediate: bool | None = None
+    exclude: bool | None = None
+    condition: str | None = None
+    condition_else: Any = None
+    branches: list[dict[str, Any]] | None = None
+
+    @model_validator(mode="after")
+    def validate_node_blocks(self) -> _GraphNodeSchema:
+        """Require exactly one active sampler or transform block per node."""
+        if self.sampler is not None and self.transform is not None:
+            raise ValueError("Node cannot define both 'sampler' and 'transform' blocks.")
+        if self.sampler is None and self.transform is None:
+            raise ValueError("Node must define either a 'sampler' or 'transform' block.")
+        return self
+
+
+class _GraphConfigFileSchema(BaseModel):
+    """Schema for graph config files with an explicit ``parameters`` root."""
+
+    model_config = ConfigDict(extra="allow")
+
+    parameters: dict[str, _GraphNodeSchema]
+
+
+_GRAPH_PARAMETER_MAPPING_ADAPTER = TypeAdapter(dict[str, _GraphNodeSchema])
+
+
 def load_parameters_config(config_path: str | Path, encoding: str = "utf-8") -> dict[str, Any]:
     """Load and normalize a graph config file."""
+    config = _read_graph_config_file(config_path=config_path, encoding=encoding)
+    if "parameters" in config:
+        config = config["parameters"]
+
+    if not isinstance(config, dict):
+        raise ValueError("Graph config must define a mapping of parameters.")
+
+    return config
+
+
+def load_validated_parameters_config(
+    config_path: str | Path,
+    encoding: str = "utf-8",
+) -> tuple[dict[str, Any], ValidationReport]:
+    """Load, schema-validate, and statically validate a graph config file."""
+    raw_config = _read_graph_config_file(config_path=config_path, encoding=encoding)
+    schema_issues = _validate_file_schema(raw_config)
+    if schema_issues:
+        raise ConfigValidationError(schema_issues)
+
+    config = raw_config.get("parameters", raw_config)
+    report = validate_graph_config(config)
+    if not report.is_valid:
+        raise ConfigValidationError(report.issues)
+    return config, report
+
+
+def _read_graph_config_file(config_path: str | Path, encoding: str = "utf-8") -> dict[str, Any]:
+    """Read a graph config file and ensure the root value is a mapping."""
     config_path = Path(config_path)
     try:
         config = read_data_file(config_path, encoding=encoding)
@@ -70,18 +161,13 @@ def load_parameters_config(config_path: str | Path, encoding: str = "utf-8") -> 
             raise ValueError("Config file must contain a mapping at the root.") from error
         raise
 
-    if "parameters" in config:
-        config = config["parameters"]
-
-    if not isinstance(config, dict):
-        raise ValueError("Graph config must define a mapping of parameters.")
-
     return config
 
 
 def validate_graph_config_file(config_path: str | Path, encoding: str = "utf-8") -> ValidationReport:
     """Validate a graph config file without executing any sampling."""
-    return validate_graph_config(load_parameters_config(config_path=config_path, encoding=encoding))
+    _, report = load_validated_parameters_config(config_path=config_path, encoding=encoding)
+    return report
 
 
 def validate_graph_config(config: dict[str, Any]) -> ValidationReport:
@@ -181,6 +267,7 @@ def _validate_node(
         issues.append(
             ValidationIssue(
                 node_name=node_name,
+                field_name=f"{block_name}.arguments",
                 message=f"References undefined parameter(s): {', '.join(undefined_dependencies)}.",
             )
         )
@@ -218,11 +305,13 @@ def _resolve_node_block(  # noqa: PLR0912
         has_transform = "transform" in spec
         if has_sampler and has_transform:
             issue = ValidationIssue(
-                node_name=node_name, message="Node cannot define both 'sampler' and 'transform' blocks."
+                node_name=node_name,
+                message="Node cannot define both 'sampler' and 'transform' blocks.",
             )
         elif not has_sampler and not has_transform:
             issue = ValidationIssue(
-                node_name=node_name, message="Node must define either a 'sampler' or 'transform' block."
+                node_name=node_name,
+                message="Node must define either a 'sampler' or 'transform' block.",
             )
         else:
             block_name = "sampler" if has_sampler else "transform"
@@ -232,16 +321,22 @@ def _resolve_node_block(  # noqa: PLR0912
                 if not function_name:
                     issue = ValidationIssue(
                         node_name=node_name,
+                        field_name=f"{block_name}.function",
                         message=f"'{block_name}' block is missing required field 'function'.",
                     )
                 elif not isinstance(function_name, str):
-                    issue = ValidationIssue(node_name=node_name, message=f"'{block_name}.function' must be a string.")
+                    issue = ValidationIssue(
+                        node_name=node_name,
+                        field_name=f"{block_name}.function",
+                        message=f"'{block_name}.function' must be a string.",
+                    )
                 else:
                     resolved = (block_name, block, function_name)
             elif block_name == "transform" and isinstance(block, str):
                 if not block.strip():
                     issue = ValidationIssue(
                         node_name=node_name,
+                        field_name="transform",
                         message="'transform' expression must be a non-empty string.",
                     )
                 else:
@@ -250,7 +345,11 @@ def _resolve_node_block(  # noqa: PLR0912
                     display = block if len(block) <= max_len else f"{block[: max_len - len(ellipsis)]}{ellipsis}"
                     resolved = (block_name, block, display)
             else:
-                issue = ValidationIssue(node_name=node_name, message=f"'{block_name}' block must be a mapping.")
+                issue = ValidationIssue(
+                    node_name=node_name,
+                    field_name=block_name,
+                    message=f"'{block_name}' block must be a mapping.",
+                )
 
     if issue is not None:
         return issue
@@ -274,7 +373,11 @@ def _resolve_node_arguments(
     """Resolve configured node arguments into a mapping or sequence form."""
     if isinstance(block, str):
         if block_name != "transform":
-            return ValidationIssue(node_name=node_name, message=f"'{block_name}' block must be a mapping.")
+            return ValidationIssue(
+                node_name=node_name,
+                field_name=block_name,
+                message=f"'{block_name}' block must be a mapping.",
+            )
         return {}
 
     arguments = block.get("arguments")
@@ -286,6 +389,7 @@ def _resolve_node_arguments(
         return arguments
     return ValidationIssue(
         node_name=node_name,
+        field_name=f"{block_name}.arguments",
         message=f"'{block_name}.arguments' must be a mapping, sequence, or null.",
     )
 
@@ -299,11 +403,30 @@ def _validate_callable(
     """Validate function import and configured arguments for a node."""
     issues: list[ValidationIssue] = []
     default_module = "gwmock_pop.samplers" if block_name == "sampler" else "gwmock_pop.transforms"
+    registry_names = _registry_names_for_block(block_name)
+
+    if "." not in function_name and function_name not in registry_names:
+        suggestion = _closest_registry_match(function_name, registry_names)
+        suggestion_suffix = f" Did you mean '{suggestion}'?" if suggestion is not None else ""
+        issues.append(
+            ValidationIssue(
+                node_name=node_name,
+                field_name=f"{block_name}.function",
+                message=f"Unknown {block_name} '{function_name}'.{suggestion_suffix}",
+            )
+        )
+        return issues
 
     try:
         callable_object = import_from_string(function_name, default_module=default_module)
     except ImportError as error:
-        issues.append(ValidationIssue(node_name=node_name, message=f"Unknown {block_name} '{function_name}': {error}"))
+        issues.append(
+            ValidationIssue(
+                node_name=node_name,
+                field_name=f"{block_name}.function",
+                message=f"Unknown {block_name} '{function_name}': {error}",
+            )
+        )
         return issues
 
     if isinstance(arguments, (list, tuple)):
@@ -319,6 +442,7 @@ def _validate_callable(
         issues.append(
             ValidationIssue(
                 node_name=node_name,
+                field_name=f"{block_name}.arguments",
                 message=f"Unexpected {block_name} argument(s) for '{function_name}': {', '.join(unexpected)}.",
             )
         )
@@ -333,6 +457,7 @@ def _validate_callable(
             issues.append(
                 ValidationIssue(
                     node_name=node_name,
+                    field_name=f"{block_name}.function",
                     message=f"{block_name.capitalize()} '{function_name}' has unsupported positional-only parameter '{parameter_name}'.",
                 )
             )
@@ -345,6 +470,7 @@ def _validate_callable(
         issues.append(
             ValidationIssue(
                 node_name=node_name,
+                field_name=f"{block_name}.arguments",
                 message=f"Missing required {block_name} argument(s) for '{function_name}': {', '.join(missing)}.",
             )
         )
@@ -363,3 +489,131 @@ def _auto_arguments_for_signature(block_name: str, signature: inspect.Signature)
     if "key" in signature.parameters or accepts_kwargs:
         auto_arguments.add("key")
     return auto_arguments
+
+
+def _validate_file_schema(raw_config: dict[str, Any]) -> list[ValidationIssue]:
+    """Validate the file-level graph config schema."""
+    try:
+        if "parameters" in raw_config:
+            _GraphConfigFileSchema.model_validate(raw_config)
+        else:
+            _GRAPH_PARAMETER_MAPPING_ADAPTER.validate_python(raw_config)
+    except pydantic.ValidationError as error:
+        return _issues_from_pydantic_error(error, wrapped_root="parameters" in raw_config)
+    return []
+
+
+def _issues_from_pydantic_error(
+    error: pydantic.ValidationError,
+    *,
+    wrapped_root: bool,
+) -> list[ValidationIssue]:
+    """Convert Pydantic validation errors into field-aware validation issues."""
+    issues: list[ValidationIssue] = []
+    for entry in error.errors(include_url=False):
+        normalized_location = _normalize_pydantic_location(entry["loc"])
+        if _should_skip_pydantic_error(normalized_location, entry["msg"]):
+            continue
+        node_name, field_name = _location_to_issue_target(normalized_location, wrapped_root=wrapped_root)
+        issues.append(ValidationIssue(message=entry["msg"], node_name=node_name, field_name=field_name))
+    return issues
+
+
+def _location_to_issue_target(
+    location: tuple[Any, ...],
+    *,
+    wrapped_root: bool,
+) -> tuple[str | None, str | None]:
+    """Map a Pydantic error location onto a node name and field path."""
+    parts = list(location)
+    if wrapped_root:
+        if not parts:
+            return None, None
+        if parts[0] != "parameters":
+            return None, _format_field_path(parts)
+        parts = parts[1:]
+        if not parts:
+            return None, "parameters"
+
+    if not parts:
+        return None, None
+
+    first = parts[0]
+    if isinstance(first, str):
+        return first, _format_field_path(parts[1:])
+    return None, _format_field_path(parts)
+
+
+def _normalize_pydantic_location(location: tuple[Any, ...]) -> tuple[Any, ...]:
+    """Drop internal union/model markers from a Pydantic error location."""
+    return tuple(
+        part
+        for part in location
+        if not (isinstance(part, str) and (part.startswith("_") or part in {"dict[str,_GraphNodeSchema]"}))
+    )
+
+
+def _should_skip_pydantic_error(location: tuple[Any, ...], message: str) -> bool:
+    """Skip low-signal union-branch errors when a more precise field error exists."""
+    return bool(location) and location[-1] == "str" and message == "Input should be a valid string"
+
+
+def _format_field_path(parts: list[Any]) -> str | None:
+    """Render a dotted field path with list indices."""
+    if not parts:
+        return None
+
+    rendered = ""
+    for part in parts:
+        if isinstance(part, int):
+            rendered += f"[{part}]"
+        elif rendered:
+            rendered += f".{part}"
+        else:
+            rendered = str(part)
+    return rendered
+
+
+def _registry_names_for_block(block_name: str) -> set[str]:
+    """Return the public short-name registry for a block type."""
+    module_name = "gwmock_pop.samplers" if block_name == "sampler" else "gwmock_pop.transforms"
+    registry = importlib.import_module(module_name)
+    return {name for name in getattr(registry, "__all__", []) if isinstance(name, str)}
+
+
+def _closest_registry_match(name: str, candidates: set[str], max_distance: int = 2) -> str | None:
+    """Return the closest registry name within the allowed edit distance."""
+    best_match: str | None = None
+    best_distance = max_distance + 1
+    for candidate in candidates:
+        distance = _bounded_levenshtein_distance(name, candidate, max_distance=max_distance)
+        if distance <= max_distance and distance < best_distance:
+            best_match = candidate
+            best_distance = distance
+    return best_match
+
+
+def _bounded_levenshtein_distance(left: str, right: str, *, max_distance: int) -> int:
+    """Compute Levenshtein distance with an early-exit cutoff."""
+    if left == right:
+        return 0
+    if abs(len(left) - len(right)) > max_distance:
+        return max_distance + 1
+    if len(left) > len(right):
+        left, right = right, left
+
+    previous = list(range(len(left) + 1))
+    for right_index, right_char in enumerate(right, start=1):
+        current = [right_index]
+        row_min = current[0]
+        for left_index, left_char in enumerate(left, start=1):
+            insertion = current[left_index - 1] + 1
+            deletion = previous[left_index] + 1
+            substitution = previous[left_index - 1] + (left_char != right_char)
+            current_value = min(insertion, deletion, substitution)
+            current.append(current_value)
+            row_min = min(row_min, current_value)
+        if row_min > max_distance:
+            return max_distance + 1
+        previous = current
+    return previous[-1]
