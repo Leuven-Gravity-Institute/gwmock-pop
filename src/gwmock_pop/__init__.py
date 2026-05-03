@@ -14,6 +14,7 @@ from gwmock_pop.simulators import (
     NSBHPriorSimulator,
     PoissonEventSampler,
 )
+from gwmock_pop.validation import validate_sample
 from gwmock_pop.version import __version__
 
 __all__ = [
@@ -29,4 +30,5 @@ __all__ = [
     "PoissonEventSampler",
     "__version__",
     "list_presets",
+    "validate_sample",
 ]
