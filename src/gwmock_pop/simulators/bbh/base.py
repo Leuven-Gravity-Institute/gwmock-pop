@@ -5,7 +5,7 @@ from __future__ import annotations
 from importlib.resources import as_file
 from typing import Any
 
-from gwmock_pop.configs import get_packaged_preset_resource
+from gwmock_pop.configs import get_packaged_preset, get_packaged_preset_resource
 from gwmock_pop.mixins.random import RandomMixin
 from gwmock_pop.simulators.graph import GraphSimulator
 from gwmock_pop.simulators.simulator import Simulator
@@ -37,8 +37,15 @@ class BBHSimulator(RandomMixin, Simulator):
         """
         del cls
 
+        preset = get_packaged_preset(preset_name)
+        if preset.source_type != "bbh":
+            raise ValueError(
+                f"Preset {preset_name!r} has source_type {preset.source_type!r}; "
+                "BBHSimulator.from_preset() only supports BBH presets."
+            )
+
         options = dict(kwargs)
-        options.setdefault("source_type", "bbh")
+        options.setdefault("source_type", preset.source_type)
         with as_file(get_packaged_preset_resource(preset_name)) as config_path:
             return GraphSimulator.from_config_file(config_path, **options)
 

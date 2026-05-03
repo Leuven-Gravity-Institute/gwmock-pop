@@ -18,9 +18,13 @@ def test_list_command_prints_packaged_presets_and_public_simulator_classes() -> 
     assert "Name" in result.output
     assert "Source type" in result.output
     assert "Description" in result.output
-    assert "gwtc4" in result.output
+    assert "bbh_gwtc4" in result.output
+    assert "bbh_flat" in result.output
+    assert "bns_flat" in result.output
     assert "power_law_plus_peak" in result.output
     assert "GWTC-4-inspired BBH graph preset" in result.output
+    assert "Flat-in-log BBH graph preset" in result.output
+    assert "Flat BNS graph preset" in result.output
     assert "Talbot-Thrane-inspired BBH mass graph preset" in result.output
     assert "Simulator classes" in result.output
     assert "BBHSimulator" in result.output

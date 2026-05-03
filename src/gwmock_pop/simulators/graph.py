@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 import secrets
+from importlib.resources import as_file
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +13,7 @@ import jax.numpy as jnp
 import networkx as nx
 from jax import Array
 
+from gwmock_pop.configs import get_packaged_preset, get_packaged_preset_resource
 from gwmock_pop.graph.build import build_dependency_graph
 from gwmock_pop.mixins.random import RandomMixin
 from gwmock_pop.simulators.simulator import Simulator
@@ -320,6 +322,15 @@ class GraphSimulator(RandomMixin, Simulator):
             config = config["parameters"]
 
         return cls(config=config, **kwargs)
+
+    @classmethod
+    def from_preset(cls, preset_name: str, **kwargs: Any) -> GraphSimulator:
+        """Create a graph simulator from a packaged preset."""
+        preset = get_packaged_preset(preset_name)
+        options = dict(kwargs)
+        options.setdefault("source_type", preset.source_type)
+        with as_file(get_packaged_preset_resource(preset_name)) as config_path:
+            return cls.from_config_file(config_path, **options)
 
     def reset(self) -> None:
         """Reset the simulator state."""

@@ -9,6 +9,9 @@ from pathlib import Path
 
 from gwmock_pop.utils.yaml import read_data_file
 
+_PRESET_ALIASES = {
+    "gwtc4": "bbh_gwtc4",
+}
 _SUPPORTED_CONFIG_SUFFIXES = {".yaml", ".yml", ".toml"}
 _REQUIRED_PRESET_FIELDS = ("name", "source_type", "description", "parameters")
 
@@ -59,15 +62,38 @@ def iter_packaged_presets() -> list[PackagedPreset]:
     return sorted(presets, key=lambda preset: preset.name)
 
 
-def get_packaged_preset_resource(preset_name: str) -> Traversable:
-    """Return the packaged config resource for a named preset."""
+def list_presets() -> list[str]:
+    """Return the public packaged preset names."""
+    return [preset.name for preset in iter_packaged_presets()]
+
+
+def _resolve_preset_name(preset_name: str) -> str:
+    """Resolve compatibility aliases to canonical packaged preset names."""
+    return _PRESET_ALIASES.get(preset_name, preset_name)
+
+
+def get_packaged_preset(preset_name: str) -> PackagedPreset:
+    """Return metadata for one named packaged preset."""
+    resolved_name = _resolve_preset_name(preset_name)
     presets = iter_packaged_presets()
     for preset in presets:
-        if preset.name == preset_name:
-            return files(__name__).joinpath(preset.resource_name)
+        if preset.name == resolved_name:
+            return preset
 
-    available = ", ".join(p.name for p in presets)
+    available = ", ".join(list_presets())
     raise ValueError(f"Unknown preset {preset_name!r}. Available presets: {available}.")
 
 
-__all__ = ["PackagedPreset", "get_packaged_preset_resource", "iter_packaged_presets"]
+def get_packaged_preset_resource(preset_name: str) -> Traversable:
+    """Return the packaged config resource for a named preset."""
+    preset = get_packaged_preset(preset_name)
+    return files(__name__).joinpath(preset.resource_name)
+
+
+__all__ = [
+    "PackagedPreset",
+    "get_packaged_preset",
+    "get_packaged_preset_resource",
+    "iter_packaged_presets",
+    "list_presets",
+]

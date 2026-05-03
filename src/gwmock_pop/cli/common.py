@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 from gwmock_pop.protocols import GWPopSimulator
-from gwmock_pop.simulators.bbh.base import BBHSimulator
 from gwmock_pop.simulators.graph import GraphSimulator
 
 _CONFIG_FILE_SUFFIXES = {".yaml", ".yml", ".toml"}
@@ -22,7 +21,7 @@ def resolve_simulator(config: str, seed: int | None) -> GWPopSimulator:
     if config_path.exists():
         raise ValueError(f"Configuration path is not a file: {config_path}")
     try:
-        return BBHSimulator.from_preset(config, seed=seed)
+        return GraphSimulator.from_preset(config, seed=seed)
     except ValueError as error:
         if config_path.suffix.lower() in _CONFIG_FILE_SUFFIXES:
             raise FileNotFoundError(f"Configuration file does not exist: {config_path}") from error
