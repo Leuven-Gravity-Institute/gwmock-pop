@@ -20,8 +20,10 @@ def validate_sample(sample: Mapping[str, Array]) -> list[str]:
     """Return human-readable physical-consistency violations for a population sample.
 
     The validator checks only the recognized parameters present in ``sample`` and
-    ignores extra keys. Mass-ordering checks accept either the package's
-    canonical detector-frame mass names or the shorter ``m1``/``m2`` aliases.
+    ignores extra keys. Mass-ordering (m1 >= m2) is enforced only for the short
+    ``mass_1``/``m1`` and ``mass_2``/``m2`` aliases; the ``detector_frame_mass_*``
+    keys are checked for positivity only, as their ordering is guaranteed by
+    construction in the simulator pipeline.
     """
     violations: list[str] = []
 
