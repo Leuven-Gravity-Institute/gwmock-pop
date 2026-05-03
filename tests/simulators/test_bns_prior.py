@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from gwmock_pop import BNSPriorSimulator
+from gwmock_pop import CBC_PARAMETER_NAMES, BNSPriorSimulator
 from gwmock_pop.protocols import GWPopSimulator
 from gwmock_pop.simulators import BNSPriorSimulator as SimulatorsBNSPriorSimulator
 
@@ -17,6 +17,12 @@ def test_simulate_returns_expected_shape_and_keys() -> None:
 
     assert list(result.keys()) == simulator.parameter_names
     assert all(array.shape == (1000,) for array in result.values())
+
+
+def test_parameter_names_are_subset_of_cbc_parameter_names() -> None:
+    """BNSPriorSimulator parameters stay within the public CBC contract."""
+    simulator = BNSPriorSimulator()
+    assert set(simulator.parameter_names).issubset(CBC_PARAMETER_NAMES)
 
 
 def test_simulate_is_reproducible_for_fixed_seed() -> None:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import jax.numpy as jnp
 
+from gwmock_pop import CBC_PARAMETER_NAMES
 from gwmock_pop.protocols import GWPopSimulator
 from gwmock_pop.simulators.bbh.base import BBHSimulator
 
@@ -79,6 +80,11 @@ class TestBBHSimulator:
         simulator = ConcreteBBHSimulator()
         num_bbh_parameters = 21
         assert len(simulator.parameter_names) == num_bbh_parameters
+
+    def test_parameter_names_are_subset_of_cbc_parameter_names(self) -> None:
+        """BBHSimulator parameters stay within the public CBC contract."""
+        simulator = ConcreteBBHSimulator()
+        assert set(simulator.parameter_names).issubset(CBC_PARAMETER_NAMES)
 
     def test_source_type_is_bbh(self) -> None:
         """Test that source_type returns 'bbh'."""
