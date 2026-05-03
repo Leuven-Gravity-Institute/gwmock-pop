@@ -14,22 +14,28 @@
 `gwmock-pop` is a Python package for simulating populations of
 gravitational-wave sources.
 
-## Current Package Surface
+## Current package surface
 
-- Protocol-first simulator interface via `GWPopSimulator`:
-    - `source_type: str` (non-empty routing key)
-    - `simulate(n_samples, **kwargs) -> Mapping[str, jax.Array]`
-    - each returned parameter array is 1-D with length `n_samples`
-- Core simulator implementations:
-    - `GraphSimulator` (config-driven dependency graph)
-    - `CBCPriorSimulator` (lightweight analytic CBC priors)
-- External catalogue loader:
-    - `FilePopulationLoader` for CSV/HDF5
-    - supports structured HDF5 datasets and group-of-datasets layouts
+- **Protocols:** `GWPopSimulator` (population simulators),
+  `ExternalPopulationLoader` (catalogue loaders).
+- **Graph-driven sampling:** `GraphSimulator` from a YAML/TOML `parameters`
+  graph (packaged **presets** via `list_presets()` /
+  `GraphSimulator.from_preset`).
+- **Lightweight CBC priors:** `CBCPriorSimulator`, `BNSPriorSimulator`,
+  `NSBHPriorSimulator`, and `BBHSimulator` for tests and baselines.
+- **Composition:** `MixtureSimulator`, `PoissonEventSampler` (event-count helper
+  used in mixture workflows).
+- **Catalogues:** `FilePopulationLoader` and `read_population_catalogue` /
+  `write_population_catalogue` for CSV and HDF5 (structured or group-of-datasets
+  layouts).
+- **Quality checks:** `validate_sample` for arrays returned by simulators.
+
+Public re-exports live in `gwmock_pop.__all__`; full module reference is in the
+**[API docs](docs/api/index.md)**.
 
 ## Requirements
 
-- Python `>=3.12` (tested on 3.12-3.14)
+- Python `>=3.12` (tested on 3.12–3.14)
 - Linux, macOS, or Windows
 
 ## Installation
@@ -66,45 +72,46 @@ uv sync --group docs
 uv run zensical serve
 ```
 
-## Quick Start (CLI)
+## Getting started (CLI)
 
-Create `population.yaml`:
-
-```yaml
-run:
-    name: demo_population
-    mode: fixed_n_samples
-    n_samples: 100
-    seed: 42
-    output:
-        directory: outputs
-        format: csv
-        overwrite: true
-
-parameters:
-    mass_1:
-        sampler:
-            function: gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
-            arguments:
-                alpha_1: 1.72
-                alpha_2: 4.51
-                transition: 35.6
-                minimum: 5.06
-                maximum: 300.0
-                mean_1: 9.76
-                sigma_1: 0.649
-                mean_2: 32.8
-                sigma_2: 3.92
-                taper_range: 4.32
-                lambda_0: 0.361
-                lambda_1: 0.586
-```
-
-Run:
+The `gwmock-pop` CLI uses **Typer**. Typical flow: pick a **packaged preset** or
+a **graph config file**, set the sample count, and write a CSV or HDF5
+catalogue.
 
 ```bash
-gwmock-pop simulate population.yaml
+# Packaged preset (see `gwmock-pop list` for names)
+gwmock-pop simulate --config gwtc4 --n 1000 --output population.csv --seed 42
+
+# Or a graph YAML/TOML (top-level `parameters:` as in `examples/gwtc4/bbh_population.yaml`)
+gwmock-pop simulate --config examples/gwtc4/bbh_population.yaml --n 500 --output out.h5
 ```
+
+Other commands:
+
+| Command               | Purpose                                                                          |
+| --------------------- | -------------------------------------------------------------------------------- |
+| `gwmock-pop convert`  | Convert population files between CSV and HDF5; optional `--column-map` JSON/YAML |
+| `gwmock-pop validate` | Check a graph config without sampling                                            |
+| `gwmock-pop inspect`  | Summary statistics for a population file                                         |
+| `gwmock-pop list`     | List presets and public simulator classes                                        |
+
+```bash
+gwmock-pop --help
+gwmock-pop simulate --help
+```
+
+## Getting started (library)
+
+```python
+from gwmock_pop import CBCPriorSimulator
+
+sim = CBCPriorSimulator(seed=42)
+population = sim.simulate(100)
+assert population["detector_frame_mass_1"].shape == (100,)
+```
+
+Use `GraphSimulator.from_config_file(...)` or `GraphSimulator.from_preset(...)`
+for full graph configs (see `examples/` and `gwmock_pop.simulators.graph`).
 
 ## Verification
 
@@ -121,7 +128,7 @@ Default test run excludes `integration`-marked tests:
 uv run pytest
 ```
 
-Run integration/smoke tests explicitly:
+Run integration tests explicitly:
 
 ```bash
 uv run pytest -m integration
@@ -129,9 +136,12 @@ uv run pytest -m integration
 
 ## Documentation
 
-- Docs home:
+- **Site:**
   [https://leuven-gravity-institute.github.io/gwmock-pop/](https://leuven-gravity-institute.github.io/gwmock-pop/)
-- API reference: [docs/api/index.md](docs/api/index.md)
+- **API index (tables + navigation):** [docs/api/index.md](docs/api/index.md)
+- **User guide:**
+  [docs/user_guide/installation.md](docs/user_guide/installation.md),
+  [docs/user_guide/quick_start.md](docs/user_guide/quick_start.md)
 
 ## License
 

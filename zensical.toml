@@ -17,7 +17,7 @@ site_name = "gwmock_pop Documentation"
 # meaningful description of the site content for use by search engines.
 #
 # Read more: https://zensical.org/docs/setup/basics/#site_description
-site_description = "A Python package for simulating populations of gravitations-wave sources."
+site_description = "A Python package for simulating populations of gravitational-wave sources."
 
 # The site_author attribute. This is used in the HTML head element.
 #
@@ -27,11 +27,11 @@ site_author = "Isaac C. F. Wong"
 # The site_url is the canonical URL for your site. When building online
 # documentation you should set this.
 # Read more: https://zensical.org/docs/setup/basics/#site_url
-site_url = "https://leuven-gravity-institute.github.io/gwmock_pop/"
+site_url = "https://leuven-gravity-institute.github.io/gwmock-pop/"
 
 # Configure the source repository so readers can jump between docs and code.
-repo_url = "https://github.com/Leuven-Gravity-Institute/gwmock_pop"
-repo_name = "Leuven-Gravity-Institute/gwmock_pop"
+repo_url = "https://github.com/Leuven-Gravity-Institute/gwmock-pop"
+repo_name = "Leuven-Gravity-Institute/gwmock-pop"
 edit_uri = "edit/main/docs/"
 
 # The copyright notice appears in the page footer and can contain an HTML
@@ -62,6 +62,10 @@ nav = [
       { "Overview" = "api/cli/index.md" },
       { "Main" = "api/cli/main.md" },
       { "Simulate" = "api/cli/simulate.md" },
+      { "Convert" = "api/cli/convert.md" },
+      { "Validate" = "api/cli/validate.md" },
+      { "Inspect" = "api/cli/inspect.md" },
+      { "List" = "api/cli/list.md" },
     ] },
     { "Configuration" = [
       { "Overview" = "api/config/index.md" },
@@ -75,6 +79,7 @@ nav = [
       { "Run" = "api/config/run.md" },
       { "Selection" = "api/config/selection.md" },
     ] },
+    { "Presets" = "api/configs.md" },
     { "Conversion" = [
       { "Overview" = "api/conversion/index.md" },
       { "CBC" = "api/conversion/cbc.md" },
@@ -96,6 +101,7 @@ nav = [
       { "Generic" = "api/graph/generic.md" },
       { "Sampler Dependencies" = "api/graph/sampler.md" },
       { "Transform Dependencies" = "api/graph/transform.md" },
+      { "Config Validation" = "api/graph/validation.md" },
     ] },
     { "Integrators" = [
       { "Overview" = "api/integrators/index.md" },
@@ -114,8 +120,17 @@ nav = [
       { "Planck-Tapered Broken Power Law Plus Two Peaks" = "api/samplers/planck_tapered_broken_power_law_plus_two_peaks.md" },
       { "Planck-Tapered Conditional Ratio Power Law" = "api/samplers/planck_tapered_conditional_ratio_power_law.md" },
     ] },
+    { "Loaders" = [
+      { "Overview" = "api/loaders/index.md" },
+    ] },
+    { "Transforms" = [
+      { "Overview" = "api/transforms/index.md" },
+    ] },
+    { "Population Validation" = "api/validation.md" },
     { "Protocols" = [
+      { "Overview" = "api/protocols/index.md" },
       { "GWPopSimulator" = "api/protocols/simulator.md" },
+      { "ExternalPopulationLoader" = "api/protocols/loader.md" },
     ] },
     { "Simulators" = [
       { "Overview" = "api/simulators/index.md" },
