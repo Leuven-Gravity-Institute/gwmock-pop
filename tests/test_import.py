@@ -25,6 +25,7 @@ def get_all_submodules(package):
 def test_import_main_package():
     """Test that the main gwmock_pop package can be imported."""
     assert hasattr(gwmock_pop, "__version__")
+    assert hasattr(gwmock_pop, "CBC_PARAMETER_NAMES")
     assert gwmock_pop.__version__ is not None
 
 

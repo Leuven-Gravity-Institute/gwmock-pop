@@ -13,7 +13,7 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-from gwmock_pop import CBCPriorSimulator
+from gwmock_pop import CBC_PARAMETER_NAMES, CBCPriorSimulator
 from gwmock_pop.protocols import GWPopSimulator
 from gwmock_pop.simulators import cbc_prior as cbc_prior_module
 
@@ -42,6 +42,12 @@ def test_simulate_returns_expected_shape_and_keys() -> None:
 
     assert list(result.keys()) == simulator.parameter_names
     assert all(array.shape == (1000,) for array in result.values())
+
+
+def test_parameter_names_are_subset_of_cbc_parameter_names() -> None:
+    """CBCPriorSimulator parameters stay within the public CBC contract."""
+    simulator = CBCPriorSimulator()
+    assert set(simulator.parameter_names).issubset(CBC_PARAMETER_NAMES)
 
 
 def test_simulate_is_reproducible_for_fixed_seed() -> None:

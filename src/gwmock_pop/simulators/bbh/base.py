@@ -6,6 +6,7 @@ from importlib.resources import as_file
 from typing import Any
 
 from gwmock_pop.configs import get_packaged_preset, get_packaged_preset_resource
+from gwmock_pop.constants import _CBC_PARAMETER_NAME_SEQUENCE
 from gwmock_pop.mixins.random import RandomMixin
 from gwmock_pop.simulators.graph import GraphSimulator
 from gwmock_pop.simulators.simulator import Simulator
@@ -84,29 +85,7 @@ class BBHSimulator(RandomMixin, Simulator):
         # Allow subclasses to override with dynamic parameter names
         if hasattr(self, "_parameter_names"):
             return self._parameter_names
-        return [
-            "detector_frame_mass_1",
-            "detector_frame_mass_2",
-            "spin_1x",
-            "spin_1y",
-            "spin_1z",
-            "spin_2x",
-            "spin_2y",
-            "spin_2z",
-            "eccentricity",
-            "distance",
-            "coa_phase",
-            "inclination",
-            "theta_jn",
-            "long_asc_node",
-            "mean_per_ano",
-            "coa_time",
-            "right_ascension",
-            "declination",
-            "polarization_angle",
-            "redshift",
-            "f_ref",
-        ]
+        return list(_CBC_PARAMETER_NAME_SEQUENCE)
 
     @property
     def source_type(self) -> str:
