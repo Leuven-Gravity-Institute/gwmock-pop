@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from gwmock_pop.configs import list_presets
 from gwmock_pop.loaders import FilePopulationLoader
 from gwmock_pop.protocols import ExternalPopulationLoader, GWPopSimulator
 from gwmock_pop.simulators import (
@@ -27,4 +28,5 @@ __all__ = [
     "NSBHPriorSimulator",
     "PoissonEventSampler",
     "__version__",
+    "list_presets",
 ]

@@ -57,6 +57,16 @@ def multiply(left: Array, right: Array) -> Array:
     return jnp.asarray(left) * jnp.asarray(right)
 
 
+def maximum(left: Array, right: Array) -> Array:
+    """Return the elementwise maximum of two array-like inputs."""
+    return jnp.maximum(jnp.asarray(left), jnp.asarray(right))
+
+
+def minimum(left: Array, right: Array) -> Array:
+    """Return the elementwise minimum of two array-like inputs."""
+    return jnp.minimum(jnp.asarray(left), jnp.asarray(right))
+
+
 def isotropic_spin_orientation(*, key: Array, reference: Array | None = None, n_samples: int | None = None) -> Array:
     """Draw polar angles with ``cos(tilt)`` uniform on ``[-1, 1]``."""
     shape = _resolve_output_shape(reference=reference, n_samples=n_samples)

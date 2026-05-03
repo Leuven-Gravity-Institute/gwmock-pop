@@ -63,6 +63,7 @@ source = "uv-dynamic-versioning"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gwmock_pop"]
+include = ["src/gwmock_pop/configs/*.yaml"]
 
 [tool.bandit]
 exclude_dirs = ["build", "dist", "tests", "scripts"]

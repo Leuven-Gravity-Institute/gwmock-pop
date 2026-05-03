@@ -1,73 +1,35 @@
-name: bbh_gwtc4
-source_type: bbh
+name: bns_flat
+source_type: bns
 description:
-    GWTC-4-inspired BBH graph preset with masses, spins, distance, and extrinsic
-    parameters.
+    Flat BNS graph preset with ordered component masses on [1.0, 3.0] solar
+    masses.
 parameters:
-    detector_frame_mass_1:
-        sampler:
-            function: planck_tapered_broken_power_law_plus_two_peaks
-            arguments:
-                alpha_1: 1.72
-                alpha_2: 4.51
-                transition: 35.6
-                minimum: 5.06
-                maximum: 300.0
-                mean_1: 9.76
-                sigma_1: 0.649
-                mean_2: 32.8
-                sigma_2: 3.92
-                taper_range: 4.32
-                lambda_0: 0.361
-                lambda_1: 0.586
-    mass_ratio:
+    raw_mass_1:
         intermediate: true
         sampler:
-            function: planck_tapered_conditional_ratio_power_law
+            function: uniform
             arguments:
-                denominator: '@detector_frame_mass_1'
-                beta: 1.26
-                numerator_minimum: 5.06
-                taper_range: 4.32
-                minimum: 0.0
-                maximum: 1.0
-                n_grids: 2048
+                minimum: 1.0
+                maximum: 3.0
+    raw_mass_2:
+        intermediate: true
+        sampler:
+            function: uniform
+            arguments:
+                minimum: 1.0
+                maximum: 3.0
+    detector_frame_mass_1:
+        transform:
+            function: maximum
+            arguments:
+                left: '@raw_mass_1'
+                right: '@raw_mass_2'
     detector_frame_mass_2:
         transform:
-            function: multiply
+            function: minimum
             arguments:
-                left: '@detector_frame_mass_1'
-                right: '@mass_ratio'
-    spin_magnitude_1:
-        intermediate: true
-        transform:
-            function: beta_spin_magnitude
-            arguments:
-                alpha: 2.0
-                beta: 6.0
-                reference: '@detector_frame_mass_1'
-                minimum: 0.0
-                maximum: 0.99
-    spin_magnitude_2:
-        intermediate: true
-        transform:
-            function: beta_spin_magnitude
-            arguments:
-                alpha: 2.0
-                beta: 6.0
-                reference: '@detector_frame_mass_1'
-                minimum: 0.0
-                maximum: 0.99
-    chi_eff:
-        intermediate: true
-        transform:
-            function: gaussian_chi_eff
-            arguments:
-                reference: '@detector_frame_mass_1'
-                mean: 0.0
-                sigma: 0.1
-                minimum: -0.5
-                maximum: 0.5
+                left: '@raw_mass_1'
+                right: '@raw_mass_2'
     spin_1x:
         transform:
             function: constant_like
@@ -82,14 +44,10 @@ parameters:
                 value: 0.0
     spin_1z:
         transform:
-            function: gaussian_chi_eff
+            function: constant_like
             arguments:
-                component: primary
-                chi_eff: '@chi_eff'
-                mass_1: '@detector_frame_mass_1'
-                mass_2: '@detector_frame_mass_2'
-                spin_magnitude_1: '@spin_magnitude_1'
-                spin_magnitude_2: '@spin_magnitude_2'
+                reference: '@detector_frame_mass_1'
+                value: 0.0
     spin_2x:
         transform:
             function: constant_like
@@ -104,14 +62,10 @@ parameters:
                 value: 0.0
     spin_2z:
         transform:
-            function: gaussian_chi_eff
+            function: constant_like
             arguments:
-                component: secondary
-                chi_eff: '@chi_eff'
-                mass_1: '@detector_frame_mass_1'
-                mass_2: '@detector_frame_mass_2'
-                spin_magnitude_1: '@spin_magnitude_1'
-                spin_magnitude_2: '@spin_magnitude_2'
+                reference: '@detector_frame_mass_1'
+                value: 0.0
     eccentricity:
         transform:
             function: constant_like
@@ -122,7 +76,7 @@ parameters:
         sampler:
             function: uniform_comoving_volume_distance
             arguments:
-                d_max: 10000.0
+                d_max: 5000.0
     coa_phase:
         transform:
             function: constant_like

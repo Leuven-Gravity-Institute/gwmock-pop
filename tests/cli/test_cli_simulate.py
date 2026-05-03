@@ -83,6 +83,29 @@ def test_simulate_command_writes_hdf5_from_packaged_preset(tmp_path: Path) -> No
         assert set(dataset.dtype.names or ()) == _EXPECTED_BBH_COLUMNS
 
 
+def test_simulate_command_writes_hdf5_from_bns_packaged_preset(tmp_path: Path) -> None:
+    """The CLI samples the packaged BNS flat preset into a named-column HDF5 file."""
+    output_path = tmp_path / "bns_population.hdf5"
+
+    result = _RUNNER.invoke(
+        app,
+        ["simulate", "--config", "bns_flat", "--n", "64", "--output", str(output_path), "--seed", "42"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert output_path.exists()
+
+    with h5py.File(output_path, "r") as handle:
+        dataset = handle["data"]
+        assert dataset.shape == (64,)
+        assert set(dataset.dtype.names or ()) == _EXPECTED_BBH_COLUMNS
+        assert np.all(dataset["detector_frame_mass_1"] >= dataset["detector_frame_mass_2"])
+        assert np.all(dataset["detector_frame_mass_1"] >= 1.0)
+        assert np.all(dataset["detector_frame_mass_2"] >= 1.0)
+        assert np.all(dataset["detector_frame_mass_1"] <= 3.0)
+        assert np.all(dataset["detector_frame_mass_2"] <= 3.0)
+
+
 def test_simulate_command_writes_csv_from_config_file(tmp_path: Path) -> None:
     """The CLI samples a graph config file into a header-based CSV file."""
     config_path = tmp_path / "config.yaml"

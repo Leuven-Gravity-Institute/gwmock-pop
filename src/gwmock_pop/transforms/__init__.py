@@ -8,6 +8,8 @@ from gwmock_pop.transforms.basic import (
     gaussian_chi_eff,
     isotropic_spin_orientation,
     luminosity_distance_to_redshift,
+    maximum,
+    minimum,
     multiply,
 )
 
@@ -17,5 +19,7 @@ __all__ = [
     "gaussian_chi_eff",
     "isotropic_spin_orientation",
     "luminosity_distance_to_redshift",
+    "maximum",
+    "minimum",
     "multiply",
 ]
