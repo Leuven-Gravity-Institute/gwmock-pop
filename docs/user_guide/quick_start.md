@@ -1,77 +1,85 @@
 # Quick Start
 
 Welcome to **gwmock-pop**. This package simulates populations of
-gravitational-wave sources.
+gravitational-wave sources using JAX and a graph-based configuration model.
 
-## Generate a Population with the CLI
+## Simulate with the CLI
 
-The current minimal CLI workflow uses `GraphSimulator` with an explicit
-`n_samples` run configuration.
+1. Install the package (see [Installation](installation.md)).
+2. Run **`gwmock-pop simulate`** with a **preset name** or a path to a
+   **YAML/TOML** file whose top level defines a `parameters` mapping (same shape
+   as `GraphSimulator` expects).
 
-Create a configuration file like this:
-
-```yaml
-run:
-    name: demo_population
-    mode: fixed_n_samples
-    n_samples: 100
-    seed: 42
-    output:
-        directory: outputs
-        format: csv
-        overwrite: true
-
-parameters:
-    mass_1:
-        sampler:
-            function: gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks
-            arguments:
-                alpha_1: 1.72
-                alpha_2: 4.51
-                transition: 35.6
-                minimum: 5.06
-                maximum: 300.0
-                mean_1: 9.76
-                sigma_1: 0.649
-                mean_2: 32.8
-                sigma_2: 3.92
-                taper_range: 4.32
-                lambda_0: 0.361
-                lambda_1: 0.586
-```
-
-Then run:
+Examples:
 
 ```bash
-gwmock-pop simulate population.yaml
+# Packaged BBH-style preset (names from `gwmock-pop list`)
+gwmock-pop simulate --config gwtc4 --n 1000 --output outputs/population.csv --seed 42
+
+# Full graph from the repository examples
+gwmock-pop simulate --config examples/gwtc4/bbh_population.yaml --n 500 --output outputs/population.h5
 ```
 
-This writes `outputs/demo_population.csv`.
+Options:
 
-## Programmatic Usage
+- **`--config`**: preset identifier or path to `.yaml` / `.yml` / `.toml`.
+- **`--n`**: number of samples (events).
+- **`--output`**: destination `.csv`, `.h5`, or `.hdf5` (must not already
+  exist).
+- **`--seed`**: optional integer for reproducibility.
 
-All simulators and compatible loaders implement the same protocol surface:
+Other useful commands:
 
-- `source_type` is a non-empty string
-- `simulate(n_samples, **kwargs)` returns a mapping of 1-D arrays
+- **`gwmock-pop validate --config <file>`** — static validation of the graph
+  config (no JAX sampling).
+- **`gwmock-pop convert`** — convert between CSV and HDF5 with an optional
+  column map.
+- **`gwmock-pop list`** — presets and exported simulator classes.
+
+## Programmatic usage
+
+Simulators exposed from `gwmock_pop` implement **`GWPopSimulator`**: a non-empty
+`source_type`, stable `parameter_names`, and `simulate(n_samples, **kwargs)`
+returning a mapping of **1-D** `jax.Array` columns of length `n_samples`.
 
 ```python
 from gwmock_pop import CBCPriorSimulator
 
-simulator = CBCPriorSimulator(source_type="bbh", seed=42)
+simulator = CBCPriorSimulator(seed=42)
 population = simulator.simulate(5)
 print(population["detector_frame_mass_1"].shape)  # (5,)
 ```
 
+For graph-based populations:
+
+```python
+from pathlib import Path
+
+from gwmock_pop import GraphSimulator
+
+sim = GraphSimulator.from_config_file(Path("examples/gwtc4/bbh_population.yaml"), source_type="bbh", seed=0)
+population = sim.simulate(10)
+```
+
+Preset-driven construction:
+
+```python
+from gwmock_pop import GraphSimulator
+
+sim = GraphSimulator.from_preset("gwtc4", seed=0)
+```
+
 ## Notes
 
-- The CLI MVP currently supports `run.mode: fixed_n_samples`.
-- `parameters` is passed directly to `GraphSimulator`.
-- `FilePopulationLoader` supports CSV and HDF5 catalogues (including
-  group-of-datasets HDF5 layouts).
+- Graph **parameter names** in YAML should match the keys your downstream stack
+  expects (see examples under `examples/`).
+- **`FilePopulationLoader`** and **`read_population_catalogue`** support CSV and
+  HDF5 (structured `data` dataset or group-of-datasets layouts).
+- **`validate_sample`** can check a simulated batch against the protocol shape
+  contract.
 
-## Next Steps
+## Next steps
 
-- [Request New Features](../CONTRIBUTING.md) - How to request new features or
-  improvements.
-- [API Reference](../api/index.md) - Programmatic usage documentation.
+- [Contributing](../contributing.md) — how to propose changes.
+- [API reference](../api/index.md) — organised index of all reference pages.
+- [Troubleshooting](../troubleshooting/index.md) — common issues.
