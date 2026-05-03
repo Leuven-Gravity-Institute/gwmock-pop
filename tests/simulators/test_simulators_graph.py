@@ -12,6 +12,7 @@ import pytest
 import yaml
 
 import gwmock_pop.simulators.graph as graph_module
+from gwmock_pop.graph.validation import ConfigValidationError
 from gwmock_pop.protocols import GWPopSimulator
 from gwmock_pop.simulators.graph import GraphSimulator
 
@@ -376,6 +377,66 @@ lambda_1 = 0.586
             simulator = GraphSimulator.from_config_file(temp_path)
             assert simulator is not None
             assert simulator.parameter_names == ["mass_1"]
+        finally:
+            Path(temp_path).unlink()
+
+    def test_from_config_file_missing_required_key_raises_config_validation_error(self) -> None:
+        """Missing schema-required keys surface as ``ConfigValidationError``."""
+        config = {
+            "parameters": {
+                "bad_node": {
+                    "transform": {
+                        "arguments": {
+                            "value": 1.0,
+                        },
+                    },
+                },
+            },
+        }
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+            yaml.dump(config, f)
+            temp_path = f.name
+
+        try:
+            with pytest.raises(ConfigValidationError, match=r"transform\.function"):
+                GraphSimulator.from_config_file(temp_path)
+        finally:
+            Path(temp_path).unlink()
+
+    def test_from_config_file_unknown_transform_suggests_close_match(self) -> None:
+        """Unknown transform names include a close-match suggestion."""
+        config = {
+            "parameters": {
+                "source": {
+                    "sampler": {
+                        "function": "uniform_comoving_volume_distance",
+                        "arguments": {
+                            "d_max": 1000.0,
+                        },
+                    },
+                },
+                "bad_node": {
+                    "transform": {
+                        # typos:off
+                        "function": "multply",
+                        # typos:on
+                        "arguments": {
+                            "left": "@source",
+                            "right": "@source",
+                        },
+                    },
+                },
+            },
+        }
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+            yaml.dump(config, f)
+            temp_path = f.name
+
+        try:
+            with pytest.raises(ConfigValidationError, match="Did you mean 'multiply'\\?"):
+                GraphSimulator.from_config_file(temp_path)
         finally:
             Path(temp_path).unlink()
 

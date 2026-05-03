@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from gwmock_pop.graph.validation import render_validation_summary, validate_graph_config_file
+from gwmock_pop.graph.validation import ConfigValidationError, render_validation_summary, validate_graph_config_file
 
 
 def validate_command(
@@ -21,13 +21,12 @@ def validate_command(
 
     try:
         report = validate_graph_config_file(config_path)
+    except ConfigValidationError as error:
+        for issue in error.issues:
+            logger.error("%s", issue.render())
+        raise typer.Exit(1) from error
     except Exception as error:
         logger.error("%s", error)
         raise typer.Exit(1) from error
-
-    if not report.is_valid:
-        for issue in report.issues:
-            logger.error("%s", issue.render())
-        raise typer.Exit(1)
 
     typer.echo(render_validation_summary(report.summaries))
