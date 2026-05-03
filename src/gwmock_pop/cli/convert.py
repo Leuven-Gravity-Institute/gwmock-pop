@@ -55,14 +55,15 @@ def _filter_canonical_columns(
     raw_catalogue: dict[str, np.ndarray], column_map: dict[str, str], canonical_names: set[str]
 ) -> tuple[dict[str, np.ndarray], list[tuple[str, str]], list[str]]:
     """Keep only canonical columns after applying the optional renaming map."""
-    apply_population_column_map(raw_catalogue, column_map)
+    renamed_catalogue = apply_population_column_map(raw_catalogue, column_map)
 
     converted: dict[str, np.ndarray] = {}
     renamed_columns: list[tuple[str, str]] = []
     skipped_columns: list[str] = []
 
-    for source_name, values in raw_catalogue.items():
-        target_name = column_map.get(source_name, source_name)
+    reverse_map = {v: k for k, v in column_map.items()}
+    for target_name, values in renamed_catalogue.items():
+        source_name = reverse_map.get(target_name, target_name)
         if target_name != source_name:
             renamed_columns.append((source_name, target_name))
         if target_name not in canonical_names:
