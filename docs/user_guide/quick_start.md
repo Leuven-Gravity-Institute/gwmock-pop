@@ -34,6 +34,7 @@ Other useful commands:
   config (no JAX sampling).
 - **`gwmock-pop convert`** — convert between CSV and HDF5 with an optional
   column map.
+- **`gwmock-pop inspect`** — summary statistics for a population file.
 - **`gwmock-pop list`** — presets and exported simulator classes.
 
 ## Programmatic usage
