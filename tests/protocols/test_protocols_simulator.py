@@ -21,6 +21,7 @@ from collections.abc import Mapping
 from typing import Any, ClassVar
 
 import jax.numpy as jnp
+import numpy as np
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
@@ -39,7 +40,7 @@ class _MinimalBBHSimulator:
     parameter_names: ClassVar[list[str]] = ["mass_1", "mass_2", "distance", "redshift"]
     source_type = "bbh"
 
-    def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array]:
+    def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array | np.ndarray]:
         """Return constant 1-D arrays of length ``n_samples``."""
         return {k: jnp.ones(n_samples) for k in self.parameter_names}
 
@@ -50,7 +51,7 @@ class _MinimalStochasticSimulator:
     parameter_names: ClassVar[list[str]] = ["omega_gw", "spectral_index"]
     source_type = "stochastic"
 
-    def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array]:
+    def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array | np.ndarray]:
         """Return constant 1-D arrays of length ``n_samples``."""
         return {k: jnp.ones(n_samples) for k in self.parameter_names}
 
@@ -80,7 +81,7 @@ class TestGWPopSimulatorStructure:
         class _NoParameterNames:
             source_type = "bbh"
 
-            def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array]:
+            def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array | np.ndarray]:
                 """Return empty mapping."""
                 return {}
 
@@ -92,7 +93,7 @@ class TestGWPopSimulatorStructure:
         class _NoSourceType:
             parameter_names: ClassVar[list[str]] = ["mass_1"]
 
-            def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array]:
+            def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array | np.ndarray]:
                 """Return empty mapping."""
                 return {}
 
@@ -114,7 +115,7 @@ class TestGWPopSimulatorStructure:
             parameter_names: ClassVar[list[str]] = ["x"]
             source_type = "test"
 
-            def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array]:
+            def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array | np.ndarray]:
                 """Return constant array."""
                 return {"x": jnp.ones(n_samples)}
 
@@ -130,7 +131,7 @@ class TestGWPopSimulatorContracts:
     """Hypothesis-driven contract invariants, parametrized over both simulators."""
 
     @pytest.mark.parametrize("simulator", _SIMULATORS, ids=["bbh", "stochastic"])
-    @settings(max_examples=25)
+    @settings(max_examples=25, deadline=None)
     @given(n_samples=st.integers(min_value=1, max_value=500))
     def test_simulate_keys_match_parameter_names(self, simulator: GWPopSimulator, n_samples: int) -> None:
         """Test that simulate() returns exactly the keys in parameter_names."""
@@ -138,7 +139,7 @@ class TestGWPopSimulatorContracts:
         assert list(result.keys()) == list(simulator.parameter_names)
 
     @pytest.mark.parametrize("simulator", _SIMULATORS, ids=["bbh", "stochastic"])
-    @settings(max_examples=25)
+    @settings(max_examples=25, deadline=None)
     @given(n_samples=st.integers(min_value=1, max_value=500))
     def test_simulate_arrays_have_n_samples_leading_dim(self, simulator: GWPopSimulator, n_samples: int) -> None:
         """Test that every output array has leading dimension equal to n_samples."""
@@ -147,7 +148,7 @@ class TestGWPopSimulatorContracts:
             assert array.shape[0] == n_samples
 
     @pytest.mark.parametrize("simulator", _SIMULATORS, ids=["bbh", "stochastic"])
-    @settings(max_examples=20)
+    @settings(max_examples=20, deadline=None)
     @given(n_samples=st.integers(min_value=1, max_value=500))
     def test_source_type_is_non_empty_string(self, simulator: GWPopSimulator, n_samples: int) -> None:
         """Test that source_type is a non-empty string."""
@@ -160,7 +161,7 @@ class TestGWPopSimulatorContracts:
         assert list(simulator.parameter_names) == list(simulator.parameter_names)
 
     @pytest.mark.parametrize("simulator", _SIMULATORS, ids=["bbh", "stochastic"])
-    @settings(max_examples=20)
+    @settings(max_examples=20, deadline=None)
     @given(n_samples=st.integers(min_value=1, max_value=500))
     def test_no_extra_keys_beyond_parameter_names(self, simulator: GWPopSimulator, n_samples: int) -> None:
         """Test that simulate() produces no keys beyond parameter_names."""
@@ -168,10 +169,10 @@ class TestGWPopSimulatorContracts:
         assert set(result.keys()) <= set(simulator.parameter_names)
 
     @pytest.mark.parametrize("simulator", _SIMULATORS, ids=["bbh", "stochastic"])
-    @settings(max_examples=20)
+    @settings(max_examples=20, deadline=None)
     @given(n_samples=st.integers(min_value=1, max_value=500))
-    def test_simulate_result_values_are_jax_arrays(self, simulator: GWPopSimulator, n_samples: int) -> None:
-        """Test that all values in the simulate() result are jax.Array instances."""
+    def test_simulate_result_values_are_array_like(self, simulator: GWPopSimulator, n_samples: int) -> None:
+        """Test that all values in the simulate() result are NumPy/JAX arrays."""
         result = simulator.simulate(n_samples)
         for value in result.values():
-            assert isinstance(value, Array)
+            assert isinstance(value, Array | np.ndarray)

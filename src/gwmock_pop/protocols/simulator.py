@@ -5,7 +5,10 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any, Protocol, runtime_checkable
 
+import numpy as np
 from jax import Array
+
+type PopulationArray = np.ndarray | Array
 
 
 @runtime_checkable
@@ -53,9 +56,11 @@ class GWPopSimulator(Protocol):
 
     **Array contract**
 
-    Every value in the mapping returned by ``simulate`` is a 1-D ``jax.Array``
-    of shape ``(n_samples,)``.  The keys are exactly ``parameter_names`` in the
-    same order.
+    Every value in the mapping returned by ``simulate`` is a 1-D
+    ``numpy.ndarray`` or ``jax.Array`` of shape ``(n_samples,)``. The keys are
+    exactly ``parameter_names`` in the same order. Consumers that want to drop
+    any downstream JAX dependency can materialize NumPy-backed values with
+    ``gwmock_pop.coerce_to_numpy(...)``.
     """
 
     @property
@@ -88,16 +93,16 @@ class GWPopSimulator(Protocol):
         """
         ...
 
-    def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array]:
+    def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, PopulationArray]:
         """Draw ``n_samples`` parameter sets from the population model.
 
         The returned mapping must satisfy two invariants:
 
         1. **Key completeness and order**:
             ``list(result.keys()) == list(self.parameter_names)``.
-        2. **Shape contract**: every value is a ``jax.Array`` with leading
-           dimension ``n_samples``, i.e. ``result[k].shape[0] == n_samples``
-           for all ``k``.
+        2. **Shape contract**: every value is a 1-D ``numpy.ndarray`` or
+           ``jax.Array`` with leading dimension ``n_samples``, i.e.
+           ``result[k].shape[0] == n_samples`` for all ``k``.
 
         Args:
             n_samples: Number of independent source realizations to draw.
@@ -107,7 +112,7 @@ class GWPopSimulator(Protocol):
                 any keyword arguments; they exist for direct library use.
 
         Returns:
-            Mapping from parameter name to 1-D ``jax.Array`` of length
-            ``n_samples``.
+            Mapping from parameter name to 1-D ``numpy.ndarray`` or
+            ``jax.Array`` of length ``n_samples``.
         """
         ...

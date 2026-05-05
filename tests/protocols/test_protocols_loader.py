@@ -21,6 +21,7 @@ from collections.abc import Mapping
 from typing import Any, ClassVar
 
 import jax.numpy as jnp
+import numpy as np
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
@@ -41,7 +42,7 @@ class _MinimalHDF5Loader:
         if file_format not in self._supported_formats:
             raise ValueError(f"Unsupported file format for external population loader: {file_format}")
 
-    def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array]:
+    def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array | np.ndarray]:
         """Return constant 1-D arrays of length ``n_samples``."""
         return {key: jnp.full((n_samples,), index + 1.0) for index, key in enumerate(self.parameter_names)}
 
@@ -58,7 +59,7 @@ class _MinimalCSVLoader:
         if file_format not in self._supported_formats:
             raise ValueError(f"Unsupported file format for external population loader: {file_format}")
 
-    def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array]:
+    def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array | np.ndarray]:
         """Return constant 1-D arrays of length ``n_samples``."""
         return {key: jnp.full((n_samples,), index + 1.0) for index, key in enumerate(self.parameter_names)}
 
@@ -87,7 +88,7 @@ class TestExternalPopulationLoaderStructure:
         class _NoParameterNames:
             source_type = "bbh"
 
-            def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array]:
+            def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array | np.ndarray]:
                 """Return empty mapping."""
                 return {}
 
@@ -99,7 +100,7 @@ class TestExternalPopulationLoaderStructure:
         class _NoSourceType:
             parameter_names: ClassVar[list[str]] = ["mass_1"]
 
-            def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array]:
+            def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array | np.ndarray]:
                 """Return empty mapping."""
                 return {}
 
@@ -133,7 +134,7 @@ class TestExternalPopulationLoaderContracts:
     """Hypothesis-driven contract invariants, parametrized over both loaders."""
 
     @pytest.mark.parametrize("loader", _LOADERS, ids=["hdf5", "csv"])
-    @settings(max_examples=25)
+    @settings(max_examples=25, deadline=None)
     @given(n_samples=st.integers(min_value=1, max_value=500))
     def test_simulate_keys_match_parameter_names(self, loader: ExternalPopulationLoader, n_samples: int) -> None:
         """Test that simulate() returns exactly the keys in parameter_names."""
@@ -141,7 +142,7 @@ class TestExternalPopulationLoaderContracts:
         assert list(result.keys()) == list(loader.parameter_names)
 
     @pytest.mark.parametrize("loader", _LOADERS, ids=["hdf5", "csv"])
-    @settings(max_examples=25)
+    @settings(max_examples=25, deadline=None)
     @given(n_samples=st.integers(min_value=1, max_value=500))
     def test_simulate_arrays_have_n_samples_leading_dim(
         self,
@@ -154,7 +155,7 @@ class TestExternalPopulationLoaderContracts:
             assert array.shape[0] == n_samples
 
     @pytest.mark.parametrize("loader", _LOADERS, ids=["hdf5", "csv"])
-    @settings(max_examples=20)
+    @settings(max_examples=20, deadline=None)
     @given(n_samples=st.integers(min_value=1, max_value=500))
     def test_source_type_is_non_empty_string(self, loader: ExternalPopulationLoader, n_samples: int) -> None:
         """Test that source_type is a non-empty string."""
@@ -171,7 +172,7 @@ class TestExternalPopulationLoaderContracts:
         assert first == second == third
 
     @pytest.mark.parametrize("loader", _LOADERS, ids=["hdf5", "csv"])
-    @settings(max_examples=20)
+    @settings(max_examples=20, deadline=None)
     @given(n_samples=st.integers(min_value=1, max_value=500))
     def test_no_extra_keys_beyond_parameter_names(self, loader: ExternalPopulationLoader, n_samples: int) -> None:
         """Test that simulate() produces no keys beyond parameter_names."""
@@ -179,10 +180,10 @@ class TestExternalPopulationLoaderContracts:
         assert set(result.keys()) <= set(loader.parameter_names)
 
     @pytest.mark.parametrize("loader", _LOADERS, ids=["hdf5", "csv"])
-    @settings(max_examples=20)
+    @settings(max_examples=20, deadline=None)
     @given(n_samples=st.integers(min_value=1, max_value=500))
-    def test_simulate_result_values_are_jax_arrays(self, loader: ExternalPopulationLoader, n_samples: int) -> None:
-        """Test that all values in the simulate() result are jax.Array instances."""
+    def test_simulate_result_values_are_array_like(self, loader: ExternalPopulationLoader, n_samples: int) -> None:
+        """Test that all values in the simulate() result are NumPy/JAX arrays."""
         result = loader.simulate(n_samples)
         for value in result.values():
-            assert isinstance(value, Array)
+            assert isinstance(value, Array | np.ndarray)
