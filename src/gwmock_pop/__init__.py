@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from gwmock_pop.coercion import coerce_to_numpy
 from gwmock_pop.configs import list_presets
 from gwmock_pop.constants import CBC_PARAMETER_NAMES
 from gwmock_pop.exceptions import PopulationError, PopulationFetchError, PopulationValidationError
@@ -35,6 +36,7 @@ __all__ = [
     "PopulationFetchError",
     "PopulationValidationError",
     "__version__",
+    "coerce_to_numpy",
     "list_presets",
     "validate_sample",
 ]

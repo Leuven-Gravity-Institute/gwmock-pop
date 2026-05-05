@@ -27,14 +27,16 @@ class ParameterSummary:
     maximum: float
 
 
-def _ordered_parameter_names(simulator: GWPopSimulator, population: Mapping[str, Array]) -> list[str]:
+def _ordered_parameter_names(simulator: GWPopSimulator, population: Mapping[str, Array | np.ndarray]) -> list[str]:
     """Return a stable output order for the inspected population."""
     preferred = [name for name in simulator.parameter_names if name in population]
     remaining = [name for name in population if name not in preferred]
     return preferred + remaining
 
 
-def _summarize_population(simulator: GWPopSimulator, population: Mapping[str, Array]) -> list[ParameterSummary]:
+def _summarize_population(
+    simulator: GWPopSimulator, population: Mapping[str, Array | np.ndarray]
+) -> list[ParameterSummary]:
     """Compute scalar summary statistics for each sampled parameter."""
     summaries: list[ParameterSummary] = []
     for parameter in _ordered_parameter_names(simulator=simulator, population=population):
