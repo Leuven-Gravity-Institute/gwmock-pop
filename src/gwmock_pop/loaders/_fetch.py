@@ -30,11 +30,20 @@ class FetchResult:
     """Resolved file location and fetch metadata."""
 
     path: Path
+    """Resolved file path."""
     metadata: dict[str, Any]
+    """Fetch metadata."""
 
 
 def is_population_url(path: str | os.PathLike[str]) -> bool:
-    """Return whether ``path`` is a supported remote URL."""
+    """Return whether ``path`` is a supported remote URL.
+
+    Args:
+        path: The path to check.
+
+    Returns:
+        Whether the path is a supported remote URL.
+    """
     return urlparse(os.fspath(path)).scheme.lower() in _SUPPORTED_URL_SCHEMES
 
 
@@ -47,7 +56,19 @@ def resolve_population_path(  # noqa: PLR0913
     credentials: Mapping[str, str] | Mapping[str, Mapping[str, str]] | None = None,
     timeout: int = 300,
 ) -> FetchResult:
-    """Resolve a local path or fetch a remote URL into the population cache."""
+    """Resolve a local path or fetch a remote URL into the population cache.
+
+    Args:
+        path: The path to resolve.
+        cache_dir: The directory to cache the population in.
+        refresh: Whether to refresh the cache.
+        token: The token to use for authentication.
+        credentials: The credentials to use for authentication.
+        timeout: The timeout for the request.
+
+    Returns:
+        The resolved path and fetch metadata.
+    """
     original_path = os.fspath(path)
     if not is_population_url(original_path):
         resolved_path = Path(original_path).expanduser()
@@ -96,6 +117,7 @@ def resolve_population_path(  # noqa: PLR0913
             parsed=parsed,
             destination=cache_path,
             credentials=credentials,
+            timeout=timeout,
         )
     else:
         download_metadata = _download_http_url(
@@ -119,7 +141,14 @@ def resolve_population_path(  # noqa: PLR0913
 
 
 def _resolve_cache_dir(cache_dir: str | os.PathLike[str] | None) -> Path:
-    """Resolve the configured population cache directory."""
+    """Resolve the configured population cache directory.
+
+    Args:
+        cache_dir: The directory to cache the population in.
+
+    Returns:
+        The resolved cache directory.
+    """
     if cache_dir is not None:
         return Path(cache_dir).expanduser()
 
@@ -135,7 +164,14 @@ def _resolve_cache_dir(cache_dir: str | os.PathLike[str] | None) -> Path:
 
 
 def _resolve_remote_url(parsed) -> str:
-    """Translate custom URL schemes into fetchable URLs."""
+    """Translate custom URL schemes into fetchable URLs.
+
+    Args:
+        parsed: The parsed URL.
+
+    Returns:
+        The resolved URL.
+    """
     if parsed.scheme.lower() != "zenodo":
         return parsed.geturl()
 
@@ -149,7 +185,14 @@ def _resolve_remote_url(parsed) -> str:
 
 
 def _infer_cache_suffix(url: str) -> str:
-    """Infer a stable file suffix for a cached remote object."""
+    """Infer a stable file suffix for a cached remote object.
+
+    Args:
+        url: The URL to infer the cache suffix for.
+
+    Returns:
+        The inferred cache suffix.
+    """
     suffix = Path(urlparse(url).path).suffix.lower()
     return suffix or ".download"
 
@@ -160,7 +203,16 @@ def _build_request_headers(
     token: str | None,
     credentials: Mapping[str, str] | Mapping[str, Mapping[str, str]] | None,
 ) -> dict[str, str]:
-    """Construct request headers from explicit credentials or environment."""
+    """Construct request headers from explicit credentials or environment.
+
+    Args:
+        scheme: The scheme of the URL.
+        token: The token to use for authentication.
+        credentials: The credentials to use for authentication.
+
+    Returns:
+        The constructed request headers.
+    """
     headers: dict[str, str] = {}
     if credentials is not None:
         raw_headers: Mapping[str, str]
@@ -180,7 +232,14 @@ def _build_request_headers(
 
 
 def _resolve_token_from_environment(scheme: str) -> str | None:
-    """Resolve a scheme-specific token from the environment."""
+    """Resolve a scheme-specific token from the environment.
+
+    Args:
+        scheme: The scheme of the URL.
+
+    Returns:
+        The resolved token.
+    """
     if scheme == "zenodo" and os.environ.get(_ZENODO_TOKEN_ENV_VAR):
         return os.environ[_ZENODO_TOKEN_ENV_VAR]
     return os.environ.get(_TOKEN_ENV_VAR)
@@ -193,7 +252,17 @@ def _download_http_url(
     headers: Mapping[str, str],
     timeout: int,
 ) -> dict[str, Any]:
-    """Download a remote HTTP(S)-accessible file to the cache."""
+    """Download a remote HTTP(S)-accessible file to the cache.
+
+    Args:
+        url: The URL to download.
+        destination: The destination path to save the file to.
+        headers: The headers to use for the request.
+        timeout: The timeout for the request.
+
+    Returns:
+        The download metadata.
+    """
     parsed = urlparse(url)
 
     if parsed.scheme.lower() not in {"http", "https"}:
@@ -227,15 +296,28 @@ def _download_s3_url(
     parsed,
     destination: Path,
     credentials: Mapping[str, str] | Mapping[str, Mapping[str, str]] | None,
+    timeout: int,
 ) -> dict[str, Any]:
-    """Download an object from S3 using boto3 when available."""
+    """Download an object from S3 using boto3 when available.
+
+    Args:
+        parsed: The parsed URL.
+        destination: The destination path to save the file to.
+        credentials: The credentials to use for authentication.
+        timeout: The timeout for the request.
+
+    Returns:
+        The download metadata.
+    """
     try:
         boto3 = importlib.import_module("boto3")
         botocore_exceptions = importlib.import_module("botocore.exceptions")
+        botocore_config_mod = importlib.import_module("botocore.config")
     except ImportError as exc:
         raise PopulationFetchError("s3:// population URLs require boto3 and botocore to be installed.") from exc
     boto_core_error = botocore_exceptions.BotoCoreError
     client_error = botocore_exceptions.ClientError
+    boto_config = botocore_config_mod.Config(connect_timeout=timeout, read_timeout=timeout)
 
     bucket = parsed.netloc.strip()
     key = parsed.path.lstrip("/")
@@ -251,7 +333,7 @@ def _download_s3_url(
 
     temporary_path = _temporary_download_path(destination)
     try:
-        boto3.client("s3", **client_kwargs).download_file(bucket, key, str(temporary_path))
+        boto3.client("s3", config=boto_config, **client_kwargs).download_file(bucket, key, str(temporary_path))
     except (boto_core_error, client_error, OSError) as exc:
         temporary_path.unlink(missing_ok=True)
         raise PopulationFetchError(f"Failed to fetch population URL {parsed.geturl()!r}: {exc}.") from exc
@@ -264,7 +346,15 @@ def _download_s3_url(
 
 
 def _load_cached_metadata(cache_metadata_path: Path, *, fallback: dict[str, Any]) -> dict[str, Any]:
-    """Load cached fetch metadata, preserving the required runtime fields."""
+    """Load cached fetch metadata, preserving the required runtime fields.
+
+    Args:
+        cache_metadata_path: The path to the cached metadata file.
+        fallback: The fallback metadata to use if the file does not exist.
+
+    Returns:
+        The loaded metadata.
+    """
     if not cache_metadata_path.exists():
         return fallback
 
@@ -287,7 +377,14 @@ def _load_cached_metadata(cache_metadata_path: Path, *, fallback: dict[str, Any]
 
 
 def _temporary_download_path(destination: Path) -> Path:
-    """Create a temporary file path next to the target cache entry."""
+    """Create a temporary file path next to the target cache entry.
+
+    Args:
+        destination: The destination path to save the file to.
+
+    Returns:
+        The temporary file path.
+    """
     with tempfile.NamedTemporaryFile(
         dir=destination.parent,
         prefix=f"{destination.name}.",
@@ -298,7 +395,14 @@ def _temporary_download_path(destination: Path) -> Path:
 
 
 def _sha256_file(path: Path) -> str:
-    """Compute the SHA256 digest of a downloaded cache entry."""
+    """Compute the SHA256 digest of a downloaded cache entry.
+
+    Args:
+        path: The path to the file to compute the SHA256 digest of.
+
+    Returns:
+        The SHA256 digest.
+    """
     digest = hashlib.sha256()
     with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
