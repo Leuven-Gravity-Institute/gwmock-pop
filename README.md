@@ -27,7 +27,8 @@ gravitational-wave sources.
   used in mixture workflows).
 - **Catalogues:** `FilePopulationLoader` and `read_population_catalogue` /
   `write_population_catalogue` for CSV and HDF5 (structured or group-of-datasets
-  layouts).
+  layouts), including remote URL loading with local caching and CBC
+  canonicalization in the loader.
 - **Quality checks:** `validate_sample` for arrays returned by simulators.
 
 Public re-exports live in `gwmock_pop.__all__`; full module reference is in the
@@ -112,6 +113,12 @@ assert population["detector_frame_mass_1"].shape == (100,)
 
 Use `GraphSimulator.from_config_file(...)` or `GraphSimulator.from_preset(...)`
 for full graph configs (see `examples/` and `gwmock_pop.simulators.graph`).
+
+`FilePopulationLoader` also accepts `http://`, `https://`, `s3://`, and
+`zenodo://<record>/<file>` sources. Remote catalogues are cached under
+`${GWMOCK_POP_CACHE_DIR}` or `${XDG_CACHE_HOME:-~/.cache}/gwmock-pop`, and CBC
+catalogues are validated and rewritten to canonical gwmock-pop parameter names
+before sampling.
 
 ## Verification
 
