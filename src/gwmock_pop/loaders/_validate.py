@@ -155,7 +155,7 @@ def _validate_array_shapes_and_lengths(catalogue: Mapping[str, np.ndarray]) -> N
 def _validate_numeric_values(catalogue: Mapping[str, np.ndarray]) -> None:
     """Validate that every catalogue column is numeric and finite."""
     for name, values in catalogue.items():
-        if not np.issubdtype(values.dtype, np.number):
+        if not (np.issubdtype(values.dtype, np.floating) or np.issubdtype(values.dtype, np.integer)):
             raise PopulationValidationError(f"Column {name!r} must contain numeric values, got dtype {values.dtype}.")
         if not np.all(np.isfinite(values)):
             invalid_index = int(np.flatnonzero(~np.isfinite(values))[0])
