@@ -8,10 +8,17 @@ import h5py
 import numpy as np
 import pytest
 
-from gwmock_pop import FilePopulationLoader
+from gwmock_pop import FilePopulationLoader, PopulationValidationError
 from gwmock_pop.protocols import GWPopSimulator
 
 pytestmark = pytest.mark.integration
+_EXPECTED_CBC_COLUMNS = {
+    "detector_frame_mass_1",
+    "detector_frame_mass_2",
+    "distance",
+    "redshift",
+    "spin_1z",
+}
 
 
 def _catalogue_columns(n_rows: int = 200) -> dict[str, np.ndarray]:
@@ -61,7 +68,7 @@ def test_hdf5_round_trip(tmp_path: Path) -> None:
 
     assert isinstance(loader, GWPopSimulator)
     assert list(result.keys()) == loader.parameter_names
-    assert set(result) == set(columns)
+    assert set(result) == _EXPECTED_CBC_COLUMNS
     assert all(array.shape == (50,) for array in result.values())
 
 
@@ -76,7 +83,7 @@ def test_csv_round_trip(tmp_path: Path) -> None:
 
     assert isinstance(loader, GWPopSimulator)
     assert list(result.keys()) == loader.parameter_names
-    assert set(result) == set(columns)
+    assert set(result) == _EXPECTED_CBC_COLUMNS
     assert all(array.shape == (50,) for array in result.values())
 
 
@@ -91,7 +98,7 @@ def test_hdf5_group_round_trip(tmp_path: Path) -> None:
 
     assert isinstance(loader, GWPopSimulator)
     assert list(result.keys()) == loader.parameter_names
-    assert set(result) == set(columns)
+    assert set(result) == _EXPECTED_CBC_COLUMNS
     assert all(array.shape == (40,) for array in result.values())
 
 
@@ -110,7 +117,12 @@ def test_column_map_renames_keys(tmp_path: Path) -> None:
     loader = FilePopulationLoader(
         "bbh",
         path,
-        column_map={"m1": "mass_1", "m2": "mass_2", "z": "redshift", "spin1z": "spin_1z"},
+        column_map={
+            "m1": "detector_frame_mass_1",
+            "m2": "detector_frame_mass_2",
+            "z": "redshift",
+            "spin1z": "spin_1z",
+        },
     )
     result = loader.simulate(25, seed=9)
 
@@ -118,8 +130,8 @@ def test_column_map_renames_keys(tmp_path: Path) -> None:
     assert "m2" not in loader.parameter_names
     assert "z" not in loader.parameter_names
     assert "spin1z" not in loader.parameter_names
-    assert "mass_1" in loader.parameter_names
-    assert "mass_2" in loader.parameter_names
+    assert "detector_frame_mass_1" in loader.parameter_names
+    assert "detector_frame_mass_2" in loader.parameter_names
     assert "redshift" in loader.parameter_names
     assert "spin_1z" in loader.parameter_names
     assert list(result.keys()) == loader.parameter_names
@@ -179,5 +191,5 @@ def test_unsupported_format_raises(tmp_path: Path) -> None:
     path = tmp_path / "catalogue.fits"
     path.write_text("not-a-supported-catalogue\n", encoding="utf-8")
 
-    with pytest.raises(ValueError, match=r"Supported formats are: \.hdf5, \.h5, \.csv"):
+    with pytest.raises(PopulationValidationError, match=r"Supported suffixes: \.csv, \.h5, \.hdf5"):
         FilePopulationLoader("bbh", path)

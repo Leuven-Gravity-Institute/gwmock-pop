@@ -1,4 +1,4 @@
-"""Concrete external population loader for file-backed catalogues."""
+"""Concrete external population loader for local or cached file-backed catalogues."""
 
 from __future__ import annotations
 
@@ -12,6 +12,10 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 from jax import Array
+
+from gwmock_pop.exceptions import PopulationValidationError
+from gwmock_pop.loaders._fetch import resolve_population_path
+from gwmock_pop.loaders._validate import validate_population_catalogue
 
 _HDF5_DATASET_NAME = "data"
 _SUPPORTED_CATALOGUE_SUFFIXES = {".csv": "csv", ".hdf5": "hdf5", ".h5": "hdf5"}
@@ -122,25 +126,37 @@ class FilePopulationLoader:
     inheritance hierarchy.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         source_type: str,
         path: str | os.PathLike,
         *,
         column_map: dict[str, str] | None = None,
         hdf5_dataset: str = _HDF5_DATASET_NAME,
+        cache_dir: str | os.PathLike[str] | None = None,
+        refresh: bool = False,
+        token: str | None = None,
+        credentials: Mapping[str, str] | Mapping[str, Mapping[str, str]] | None = None,
+        download_timeout: int = 300,
     ) -> None:
-        """Load and validate a population catalogue from disk.
+        """Load and validate a population catalogue from disk or a remote URL.
 
         Args:
             source_type: Non-empty routing key used by downstream simulators,
                 such as ``"bbh"`` or ``"bns"``.
-            path: Path to the input catalogue file. Supported formats are
-                ``.hdf5``, ``.h5``, and ``.csv``.
+            path: Path or supported URL to the input catalogue file. Supported
+                local and remote formats are ``.hdf5``, ``.h5``, and ``.csv``.
             column_map: Optional mapping from file column names to canonical
                 gwmock-pop parameter names. Keys must exist in the loaded
                 catalogue.
             hdf5_dataset: Dataset name to read from HDF5 files.
+            cache_dir: Optional cache directory for remotely fetched catalogues.
+            refresh: Whether to force a re-download for remote URLs even when a
+                cached copy already exists.
+            token: Optional bearer token used for authenticated remote fetches.
+            credentials: Optional mapping of request headers or scheme-specific
+                credential fields for remote fetches.
+            download_timeout: Timeout in seconds for HTTP(S) downloads.
 
         Raises:
             ValueError: If ``source_type`` is empty, the file format is
@@ -151,15 +167,35 @@ class FilePopulationLoader:
             raise ValueError("source_type must be a non-empty string.")
 
         self._source_type = source_type
-        self._path = Path(path)
 
-        raw_catalogue = read_population_catalogue(self._path, column_map=column_map or {}, hdf5_dataset=hdf5_dataset)
-        self._catalogue = {name: jnp.asarray(values) for name, values in raw_catalogue.items()}
+        fetch_result = resolve_population_path(
+            path,
+            cache_dir=cache_dir,
+            refresh=refresh,
+            token=token,
+            credentials=credentials,
+            timeout=download_timeout,
+        )
+        self._path = fetch_result.path
 
+        try:
+            raw_catalogue = read_population_catalogue(self._path, hdf5_dataset=hdf5_dataset)
+            mapped_catalogue = apply_population_column_map(raw_catalogue, column_map)
+            validated_catalogue = validate_population_catalogue(source_type, mapped_catalogue)
+        except ValueError as exc:
+            raise PopulationValidationError(str(exc)) from exc
+
+        self._catalogue = {name: jnp.asarray(values) for name, values in validated_catalogue.items()}
         if not self._catalogue:
-            raise ValueError("Loaded catalogue is empty.")
+            raise PopulationValidationError("Loaded catalogue is empty.")
 
         self._parameter_names = sorted(self._catalogue)
+        self._metadata = {
+            "fetch": fetch_result.metadata,
+            "original_path": os.fspath(path),
+            "resolved_path": str(self._path),
+            "source_type": source_type,
+        }
 
     @property
     def parameter_names(self) -> list[str]:
@@ -178,6 +214,11 @@ class FilePopulationLoader:
             Source type passed at construction time.
         """
         return self._source_type
+
+    @property
+    def metadata(self) -> dict[str, Any]:
+        """Return loader metadata, including remote cache details when relevant."""
+        return self._metadata
 
     def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array]:
         """Sample catalogue rows without replacement.
