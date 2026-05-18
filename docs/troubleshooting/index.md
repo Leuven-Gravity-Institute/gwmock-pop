@@ -5,9 +5,9 @@ how to resolve them.
 
 ## Setup Issues
 
-### Pre-commit Hook Installation Fails
+### Prek Hook Installation Fails
 
-**Problem:** `pre-commit install` returns an error or hooks don't run on commit.
+**Problem:** `prek install` returns an error or hooks don't run on commit.
 
 **Solutions:**
 
@@ -15,16 +15,15 @@ how to resolve them.
 
 1. Ensure you're in the project root directory
 2. Verify Python virtual environment is activated
-3. Reinstall pre-commit:
+3. Reinstall prek:
 
     ```bash
-    uv pip uninstall pre-commit
-    uv pip install pre-commit
-    uv run pre-commit install
+    uv sync --group dev
+    uv run prek install
     ```
 
 4. Check if `.git` directory exists (must be a git repository)
-5. Try running manually: `pre-commit run --all-files`
+5. Try running manually: `uv run prek run --all-files`
 
 <!-- prettier-ignore-end -->
 
@@ -58,19 +57,11 @@ how to resolve them.
 
 <!-- prettier-ignore-end -->
 
-<<<<<<< HEAD
-
 ## Development Issues
-
-=======
-
-## Testing Issues
-
-> > > > > > > 65d49bc (docs: Update the docs of troubleshooting)
 
 ### "Unstaged Changes" After Running Hooks
 
-**Problem:** Pre-commit modified files but they're not staged.
+**Problem:** Prek modified files but they're not staged.
 
 **Solutions:**
 
@@ -126,7 +117,7 @@ how to resolve them.
 
 ### Newer Version of Tool Breaks Things
 
-**Problem:** Pre-commit hooks or tools updated and now fail.
+**Problem:** Prek hooks or tools updated and now fail.
 
 **Solutions:**
 
@@ -135,19 +126,19 @@ how to resolve them.
 1. Check what changed:
 
     ```bash
-    pre-commit autoupdate --dry-run
+    uv run prek auto-update --dry-run
     ```
 
 2. Update individual tool:
 
     ```bash
-    pre-commit autoupdate --repo https://github.com/tool-repo
+    uv run prek auto-update --repo https://github.com/tool-repo
     ```
 
 3. Test changes:
 
     ```bash
-   pre-commit run --all-files
+    uv run prek run --all-files
     ```
 
 4. Pin to known-good version in `.pre-commit-config.yaml`:
