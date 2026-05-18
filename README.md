@@ -63,7 +63,7 @@ Developer setup:
 
 ```bash
 uv sync --group dev
-uv run pre-commit install
+uv run prek install
 ```
 
 Docs setup:
