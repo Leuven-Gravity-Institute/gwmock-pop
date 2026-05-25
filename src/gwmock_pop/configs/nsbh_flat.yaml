@@ -1,35 +1,22 @@
-name: bns_flat
-source_type: bns
+name: nsbh_flat
+source_type: nsbh
 description:
-    Flat BNS graph preset with ordered component masses on [1.0, 3.0] solar
-    masses.
+    Flat NSBH graph preset with BH primary masses on [3.0, 20.0] solar masses
+    and NS secondary masses on [1.0, 3.0] solar masses. BH tidal deformability
+    is zero; NS tidal deformability is uniform on [0.0, 3000.0].
 parameters:
-    raw_mass_1:
-        intermediate: true
-        sampler:
-            function: uniform
-            arguments:
-                minimum: 1.0
-                maximum: 3.0
-    raw_mass_2:
-        intermediate: true
-        sampler:
-            function: uniform
-            arguments:
-                minimum: 1.0
-                maximum: 3.0
     detector_frame_mass_1:
-        transform:
-            function: maximum
+        sampler:
+            function: uniform
             arguments:
-                left: '@raw_mass_1'
-                right: '@raw_mass_2'
+                minimum: 3.0
+                maximum: 20.0
     detector_frame_mass_2:
-        transform:
-            function: minimum
+        sampler:
+            function: uniform
             arguments:
-                left: '@raw_mass_1'
-                right: '@raw_mass_2'
+                minimum: 1.0
+                maximum: 3.0
     spin_1x:
         transform:
             function: constant_like
@@ -67,11 +54,11 @@ parameters:
                 reference: '@detector_frame_mass_1'
                 value: 0.0
     lambda_1:
-        sampler:
-            function: uniform
+        transform:
+            function: constant_like
             arguments:
-                minimum: 0.0
-                maximum: 3000.0
+                reference: '@detector_frame_mass_1'
+                value: 0.0
     lambda_2:
         sampler:
             function: uniform

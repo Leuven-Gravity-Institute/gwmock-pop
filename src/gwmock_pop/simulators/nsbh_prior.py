@@ -37,6 +37,7 @@ class NSBHPriorSimulator(CBCPriorSimulator):
         gps_end: float = 1.0,
         total_mass_max: float | None = None,
         f_ref: float = 20.0,
+        ns_lambda_max: float = 3000.0,
         seed: int | None = None,
     ) -> None:
         """Initialize the NSBH prior simulator."""
@@ -46,6 +47,7 @@ class NSBHPriorSimulator(CBCPriorSimulator):
         self._ns_mass_max = float(ns_mass_max)
         self._bh_chi_max = float(bh_chi_max)
         self._ns_chi_max = float(ns_chi_max)
+        self._ns_lambda_max = float(ns_lambda_max)
         super().__init__(
             source_type=source_type,
             m_min=min(self._bh_mass_min, self._ns_mass_min),
@@ -89,6 +91,10 @@ class NSBHPriorSimulator(CBCPriorSimulator):
             raise ValueError("ns_chi_max must be in [0, 1].")
         if self._total_mass_max is not None and self._total_mass_max <= self._bh_mass_min + self._ns_mass_min:
             raise ValueError("total_mass_max must be greater than bh_mass_min + ns_mass_min to admit any samples.")
+        if not math.isfinite(self._ns_lambda_max):
+            raise ValueError("ns_lambda_max must be finite.")
+        if self._ns_lambda_max < 0.0:
+            raise ValueError("ns_lambda_max must be non-negative.")
 
     def _simulate_impl(self, n_samples: int, *, seed: int | None = None) -> Mapping[str, Array]:
         """Draw ``n_samples`` NSBH prior samples using JAX PRNGs."""
@@ -109,7 +115,8 @@ class NSBHPriorSimulator(CBCPriorSimulator):
             spin2_key,
             asc_node_key,
             periastron_key,
-        ) = jax.random.split(key, 12)
+            lambda_key,
+        ) = jax.random.split(key, 13)
 
         mass_1, mass_2 = self._sample_component_masses(mass_key, n_samples)
         distance = self._sample_distance(distance_key, n_samples)
@@ -132,6 +139,8 @@ class NSBHPriorSimulator(CBCPriorSimulator):
             "spin_2x": spin_2x,
             "spin_2y": spin_2y,
             "spin_2z": spin_2z,
+            "lambda_1": jnp.zeros(n_samples),
+            "lambda_2": jax.random.uniform(lambda_key, shape=(n_samples,), minval=0.0, maxval=self._ns_lambda_max),
             "eccentricity": jnp.zeros(n_samples),
             "distance": distance,
             "coa_phase": jax.random.uniform(phase_key, shape=(n_samples,), minval=0.0, maxval=2.0 * math.pi),

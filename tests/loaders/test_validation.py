@@ -85,3 +85,51 @@ def test_loader_rejects_non_finite_values_with_context(tmp_path: Path) -> None:
 
     with pytest.raises(PopulationValidationError, match="detector_frame_mass_1"):
         FilePopulationLoader("bbh", path)
+
+
+def _write_hdf5_bns_catalogue(path: Path, lambda_col_1: str, lambda_col_2: str) -> None:
+    """Write a minimal BNS HDF5 catalogue with the given tidal column names."""
+    from gwmock_pop.loaders.file_loader import write_population_catalogue
+
+    n = 5
+    pop = {
+        "detector_frame_mass_1": np.ones(n) * 1.4,
+        "detector_frame_mass_2": np.ones(n) * 1.2,
+        "redshift": np.ones(n) * 0.05,
+        lambda_col_1: np.ones(n) * 300.0,
+        lambda_col_2: np.ones(n) * 200.0,
+    }
+    write_population_catalogue(path, pop)
+
+
+def test_bns_loader_accepts_canonical_tidal_columns(tmp_path: Path) -> None:
+    """FilePopulationLoader accepts lambda_1/lambda_2 canonical column names for BNS."""
+    path = tmp_path / "bns_canonical.h5"
+    _write_hdf5_bns_catalogue(path, "lambda_1", "lambda_2")
+
+    loader = FilePopulationLoader("bns", path)
+
+    assert "lambda_1" in loader.parameter_names
+    assert "lambda_2" in loader.parameter_names
+
+
+def test_bns_loader_accepts_tidal_alias_lambda1_lambda2(tmp_path: Path) -> None:
+    """FilePopulationLoader resolves lambda1/lambda2 aliases to canonical lambda_1/lambda_2."""
+    path = tmp_path / "bns_alias.h5"
+    _write_hdf5_bns_catalogue(path, "lambda1", "lambda2")
+
+    loader = FilePopulationLoader("bns", path)
+
+    assert "lambda_1" in loader.parameter_names
+    assert "lambda_2" in loader.parameter_names
+
+
+def test_bns_loader_accepts_tidal_alias_capital_lambda(tmp_path: Path) -> None:
+    """FilePopulationLoader resolves Lambda1/Lambda2 aliases to canonical lambda_1/lambda_2."""
+    path = tmp_path / "bns_Lambda.h5"
+    _write_hdf5_bns_catalogue(path, "Lambda1", "Lambda2")
+
+    loader = FilePopulationLoader("bns", path)
+
+    assert "lambda_1" in loader.parameter_names
+    assert "lambda_2" in loader.parameter_names

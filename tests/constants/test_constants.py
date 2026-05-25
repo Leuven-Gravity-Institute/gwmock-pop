@@ -13,6 +13,8 @@ EXPECTED_CBC_PARAMETER_NAMES = frozenset(
         "spin_2x",
         "spin_2y",
         "spin_2z",
+        "lambda_1",
+        "lambda_2",
         "eccentricity",
         "distance",
         "coa_phase",
@@ -39,9 +41,9 @@ class TestConstants:
         assert SPEED_OF_LIGHT == SPEED_OF_LIGHT_REFERENCE
 
     def test_cbc_parameter_names_is_public_frozenset(self) -> None:
-        """CBC parameter names are exported as a 21-name frozenset."""
+        """CBC parameter names are exported as a 23-name frozenset."""
         assert isinstance(CBC_PARAMETER_NAMES, frozenset)
-        assert len(CBC_PARAMETER_NAMES) == 21
+        assert len(CBC_PARAMETER_NAMES) == 23
 
     def test_cbc_parameter_names_match_notes_table(self) -> None:
         """CBC parameter names match the canonical NOTES table."""
