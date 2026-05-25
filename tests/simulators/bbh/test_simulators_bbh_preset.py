@@ -50,6 +50,32 @@ _CANONICAL_PARAMETER_NAMES = [
     "f_ref",
 ]
 
+_CANONICAL_PARAMETER_NAMES_WITH_TIDAL = [
+    "detector_frame_mass_1",
+    "detector_frame_mass_2",
+    "spin_1x",
+    "spin_1y",
+    "spin_1z",
+    "spin_2x",
+    "spin_2y",
+    "spin_2z",
+    "lambda_1",
+    "lambda_2",
+    "eccentricity",
+    "distance",
+    "coa_phase",
+    "inclination",
+    "theta_jn",
+    "long_asc_node",
+    "mean_per_ano",
+    "coa_time",
+    "right_ascension",
+    "declination",
+    "polarization_angle",
+    "redshift",
+    "f_ref",
+]
+
 
 def _ks_p_value(samples: np.ndarray, cdf: Callable[[np.ndarray], np.ndarray]) -> float:
     """Return the asymptotic one-sample Kolmogorov-Smirnov p-value."""
@@ -124,13 +150,24 @@ def test_bns_flat_preset_loads_as_graph_simulator() -> None:
 
     assert isinstance(simulator, GWPopSimulator)
     assert simulator.source_type == "bns"
-    assert list(result.keys()) == _CANONICAL_PARAMETER_NAMES
+    assert list(result.keys()) == _CANONICAL_PARAMETER_NAMES_WITH_TIDAL
     assert all(array.shape == (64,) for array in result.values())
     assert bool(jnp.all(result["detector_frame_mass_1"] >= result["detector_frame_mass_2"]))
     assert bool(jnp.all(result["detector_frame_mass_1"] >= 1.0))
     assert bool(jnp.all(result["detector_frame_mass_2"] >= 1.0))
     assert bool(jnp.all(result["detector_frame_mass_1"] <= 3.0))
     assert bool(jnp.all(result["detector_frame_mass_2"] <= 3.0))
+
+
+def test_bns_flat_tidal_params_are_sampled_in_range() -> None:
+    """BNS flat preset samples lambda_1 and lambda_2 from Uniform[0, 3000]."""
+    simulator = GraphSimulator.from_preset("bns_flat", seed=7)
+    result = simulator.simulate(200, seed=7)
+
+    assert bool(jnp.all(result["lambda_1"] >= 0.0))
+    assert bool(jnp.all(result["lambda_1"] <= 3000.0))
+    assert bool(jnp.all(result["lambda_2"] >= 0.0))
+    assert bool(jnp.all(result["lambda_2"] <= 3000.0))
 
 
 def test_from_preset_rejects_unknown_preset_name() -> None:
@@ -146,7 +183,39 @@ def test_list_presets_returns_expected_packaged_names() -> None:
     assert "bbh_gwtc4" in preset_names
     assert "bbh_flat" in preset_names
     assert "bns_flat" in preset_names
+    assert "nsbh_flat" in preset_names
     assert "power_law_plus_peak" in preset_names
+
+
+def test_nsbh_flat_preset_loads_and_has_correct_source_type() -> None:
+    """The nsbh_flat preset loads without error and routes to the nsbh source type."""
+    simulator = GraphSimulator.from_preset("nsbh_flat", seed=0)
+
+    assert isinstance(simulator, GWPopSimulator)
+    assert simulator.source_type == "nsbh"
+    assert "lambda_1" in simulator.parameter_names
+    assert "lambda_2" in simulator.parameter_names
+
+
+def test_nsbh_flat_tidal_convention() -> None:
+    """nsbh_flat lambda_1 is always zero (BH primary) and lambda_2 is in [0, 3000] (NS secondary)."""
+    simulator = GraphSimulator.from_preset("nsbh_flat", seed=0)
+    result = simulator.simulate(200, seed=0)
+
+    np.testing.assert_array_equal(np.asarray(result["lambda_1"]), np.zeros(200))
+    assert bool(jnp.all(result["lambda_2"] >= 0.0))
+    assert bool(jnp.all(result["lambda_2"] <= 3000.0))
+
+
+def test_nsbh_flat_mass_ranges() -> None:
+    """nsbh_flat BH primary is in [3, 20] Msun and NS secondary is in [1, 3] Msun."""
+    simulator = GraphSimulator.from_preset("nsbh_flat", seed=1)
+    result = simulator.simulate(500, seed=1)
+
+    assert bool(jnp.all(result["detector_frame_mass_1"] >= 3.0))
+    assert bool(jnp.all(result["detector_frame_mass_1"] <= 20.0))
+    assert bool(jnp.all(result["detector_frame_mass_2"] >= 1.0))
+    assert bool(jnp.all(result["detector_frame_mass_2"] <= 3.0))
 
 
 def test_packaged_preset_resources_are_available_via_importlib_resources() -> None:
@@ -156,6 +225,7 @@ def test_packaged_preset_resources_are_available_via_importlib_resources() -> No
     assert "bbh_gwtc4.yaml" in resource_names
     assert "bbh_flat.yaml" in resource_names
     assert "bns_flat.yaml" in resource_names
+    assert "nsbh_flat.yaml" in resource_names
 
 
 def test_power_law_plus_peak_preset_passes_primary_mass_ks_check() -> None:

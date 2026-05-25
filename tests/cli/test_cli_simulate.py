@@ -37,6 +37,7 @@ _EXPECTED_BBH_COLUMNS = {
     "redshift",
     "f_ref",
 }
+_EXPECTED_BNS_COLUMNS = _EXPECTED_BBH_COLUMNS | {"lambda_1", "lambda_2"}
 
 
 def _minimal_graph_config(path: Path) -> None:
@@ -98,7 +99,7 @@ def test_simulate_command_writes_hdf5_from_bns_packaged_preset(tmp_path: Path) -
     with h5py.File(output_path, "r") as handle:
         dataset = handle["data"]
         assert dataset.shape == (64,)
-        assert set(dataset.dtype.names or ()) == _EXPECTED_BBH_COLUMNS
+        assert set(dataset.dtype.names or ()) == _EXPECTED_BNS_COLUMNS
         assert np.all(dataset["detector_frame_mass_1"] >= dataset["detector_frame_mass_2"])
         assert np.all(dataset["detector_frame_mass_1"] >= 1.0)
         assert np.all(dataset["detector_frame_mass_2"] >= 1.0)
