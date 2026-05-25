@@ -11,6 +11,8 @@ _CBC_PARAMETER_NAME_SEQUENCE = (
     "spin_2x",
     "spin_2y",
     "spin_2z",
+    "lambda_1",
+    "lambda_2",
     "eccentricity",
     "distance",
     "coa_phase",

@@ -86,3 +86,28 @@ def test_spin_magnitudes_respect_configured_low_spin_bounds() -> None:
 def test_public_import_surfaces_export_bns_prior_simulator() -> None:
     """The simulator is importable from the package and simulators namespace."""
     assert SimulatorsBNSPriorSimulator is BNSPriorSimulator
+
+
+def test_bns_prior_has_tidal_params_in_parameter_names() -> None:
+    """lambda_1 and lambda_2 appear in BNSPriorSimulator parameter_names."""
+    simulator = BNSPriorSimulator()
+    assert "lambda_1" in simulator.parameter_names
+    assert "lambda_2" in simulator.parameter_names
+
+
+def test_bns_prior_tidal_values_are_non_negative_and_within_default_bound() -> None:
+    """Sampled tidal params lie in [0, lambda_max] with the default bound of 3000."""
+    result = BNSPriorSimulator().simulate(1000, seed=5)
+    lambda_1 = np.asarray(result["lambda_1"])
+    lambda_2 = np.asarray(result["lambda_2"])
+    assert np.all(lambda_1 >= 0.0)
+    assert np.all(lambda_1 <= 3000.0)
+    assert np.all(lambda_2 >= 0.0)
+    assert np.all(lambda_2 <= 3000.0)
+
+
+def test_bns_prior_lambda_max_clamps_tidal_output() -> None:
+    """BNSPriorSimulator(lambda_max=500) produces tidal values at most 500."""
+    result = BNSPriorSimulator(lambda_max=500.0).simulate(1000, seed=6)
+    assert np.all(np.asarray(result["lambda_1"]) <= 500.0)
+    assert np.all(np.asarray(result["lambda_2"]) <= 500.0)

@@ -36,6 +36,8 @@ class TestBBHSimulator:
             "spin_2x",
             "spin_2y",
             "spin_2z",
+            "lambda_1",
+            "lambda_2",
             "eccentricity",
             "distance",
             "coa_phase",
@@ -78,7 +80,7 @@ class TestBBHSimulator:
     def test_parameter_names_has_expected_count(self) -> None:
         """Test that parameter_names has the expected number of parameters."""
         simulator = ConcreteBBHSimulator()
-        num_bbh_parameters = 21
+        num_bbh_parameters = 23
         assert len(simulator.parameter_names) == num_bbh_parameters
 
     def test_parameter_names_are_subset_of_cbc_parameter_names(self) -> None:

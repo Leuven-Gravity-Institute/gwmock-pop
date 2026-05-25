@@ -167,6 +167,8 @@ class CBCPriorSimulator(BBHSimulator):
             "spin_2x": spin_2x,
             "spin_2y": spin_2y,
             "spin_2z": spin_2z,
+            "lambda_1": jnp.zeros(n_samples),
+            "lambda_2": jnp.zeros(n_samples),
             "eccentricity": jnp.zeros(n_samples),
             "distance": distance,
             "coa_phase": jax.random.uniform(phase_key, shape=(n_samples,), minval=0.0, maxval=_TWO_PI),

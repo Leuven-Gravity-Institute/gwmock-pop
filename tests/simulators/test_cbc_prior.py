@@ -44,6 +44,13 @@ def test_simulate_returns_expected_shape_and_keys() -> None:
     assert all(array.shape == (1000,) for array in result.values())
 
 
+def test_bbh_tidal_params_are_zero() -> None:
+    """CBCPriorSimulator('bbh') returns lambda_1 and lambda_2 as arrays of zeros."""
+    result = CBCPriorSimulator("bbh").simulate(10, seed=0)
+    np.testing.assert_array_equal(np.asarray(result["lambda_1"]), np.zeros(10))
+    np.testing.assert_array_equal(np.asarray(result["lambda_2"]), np.zeros(10))
+
+
 def test_parameter_names_are_subset_of_cbc_parameter_names() -> None:
     """CBCPriorSimulator parameters stay within the public CBC contract."""
     simulator = CBCPriorSimulator()

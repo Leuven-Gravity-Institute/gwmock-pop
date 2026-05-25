@@ -87,3 +87,30 @@ def test_component_spin_magnitudes_respect_independent_bounds() -> None:
 def test_public_import_surfaces_export_nsbh_prior_simulator() -> None:
     """The simulator is importable from the package and simulators namespace."""
     assert SimulatorsNSBHPriorSimulator is NSBHPriorSimulator
+
+
+def test_nsbh_prior_has_tidal_params_in_parameter_names() -> None:
+    """lambda_1 and lambda_2 appear in NSBHPriorSimulator parameter_names."""
+    simulator = NSBHPriorSimulator()
+    assert "lambda_1" in simulator.parameter_names
+    assert "lambda_2" in simulator.parameter_names
+
+
+def test_nsbh_prior_bh_tidal_is_zero() -> None:
+    """BH primary tidal deformability (lambda_1) is always zero for NSBH."""
+    result = NSBHPriorSimulator().simulate(500, seed=10)
+    np.testing.assert_array_equal(np.asarray(result["lambda_1"]), np.zeros(500))
+
+
+def test_nsbh_prior_ns_tidal_is_non_negative_and_within_default_bound() -> None:
+    """NS secondary tidal deformability (lambda_2) is in [0, ns_lambda_max]."""
+    result = NSBHPriorSimulator().simulate(1000, seed=11)
+    lambda_2 = np.asarray(result["lambda_2"])
+    assert np.all(lambda_2 >= 0.0)
+    assert np.all(lambda_2 <= 3000.0)
+
+
+def test_nsbh_prior_ns_lambda_max_clamps_ns_tidal_output() -> None:
+    """NSBHPriorSimulator(ns_lambda_max=100) produces lambda_2 values at most 100."""
+    result = NSBHPriorSimulator(ns_lambda_max=100.0).simulate(1000, seed=12)
+    assert np.all(np.asarray(result["lambda_2"]) <= 100.0)
