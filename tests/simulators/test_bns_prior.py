@@ -111,3 +111,22 @@ def test_bns_prior_lambda_max_clamps_tidal_output() -> None:
     result = BNSPriorSimulator(lambda_max=500.0).simulate(1000, seed=6)
     assert np.all(np.asarray(result["lambda_1"]) <= 500.0)
     assert np.all(np.asarray(result["lambda_2"]) <= 500.0)
+
+
+def test_bns_prior_d_min_enforces_lower_distance_bound() -> None:
+    """Sampled distances respect d_min when set."""
+    sim = BNSPriorSimulator(d_min=100.0, d_max=500.0)
+    result = sim.simulate(2048, seed=11)
+    distance = np.asarray(result["distance"])
+    assert np.all(distance >= 100.0), f"min distance {distance.min():.2f} < 100"
+    assert np.all(distance <= 500.0), f"max distance {distance.max():.2f} > 500"
+
+
+def test_bns_prior_d_min_default_zero_preserves_behaviour() -> None:
+    """Default d_min=0 produces the same results as before."""
+    result_default = BNSPriorSimulator(d_max=1000.0).simulate(256, seed=42)
+    result_explicit = BNSPriorSimulator(d_min=0.0, d_max=1000.0).simulate(256, seed=42)
+    np.testing.assert_array_equal(
+        np.asarray(result_default["distance"]),
+        np.asarray(result_explicit["distance"]),
+    )

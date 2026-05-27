@@ -40,6 +40,7 @@ class CBCPriorSimulator(BBHSimulator):
             Defaults to ``"bbh"``.
         m_min: Lower bound for each component mass in solar masses.
         m_max: Upper bound for each component mass in solar masses.
+        d_min: Minimum luminosity distance in Mpc (default 0).
         d_max: Maximum luminosity distance in Mpc for the Euclidean-volume prior.
         chi_max: Maximum dimensionless spin magnitude.
         aligned_spins: If ``True``, only the ``z`` spin components are populated
@@ -63,6 +64,7 @@ class CBCPriorSimulator(BBHSimulator):
         *,
         m_min: float = 5.0,
         m_max: float = 100.0,
+        d_min: float = 0.0,
         d_max: float = 5_000.0,
         chi_max: float = 0.99,
         aligned_spins: bool = False,
@@ -78,6 +80,7 @@ class CBCPriorSimulator(BBHSimulator):
         self._source_type = source_type
         self._m_min = float(m_min)
         self._m_max = float(m_max)
+        self._d_min = float(d_min)
         self._d_max = float(d_max)
         self._chi_max = float(chi_max)
         self._aligned_spins = aligned_spins
@@ -93,13 +96,14 @@ class CBCPriorSimulator(BBHSimulator):
         """Return the routing key for the sampled source population."""
         return self._source_type
 
-    def _validate_configuration(self) -> None:
+    def _validate_configuration(self) -> None:  # noqa: PLR0912
         """Validate constructor arguments."""
         if not self._source_type.strip():
             raise ValueError("source_type must be a non-empty string.")
         for name, value in (
             ("m_min", self._m_min),
             ("m_max", self._m_max),
+            ("d_min", self._d_min),
             ("d_max", self._d_max),
             ("chi_max", self._chi_max),
             ("gps_start", self._gps_start),
@@ -114,8 +118,12 @@ class CBCPriorSimulator(BBHSimulator):
             raise ValueError("m_min must be positive.")
         if self._m_max <= self._m_min:
             raise ValueError("m_max must be greater than m_min.")
+        if self._d_min < 0.0:
+            raise ValueError("d_min must be non-negative.")
         if self._d_max <= 0.0:
             raise ValueError("d_max must be positive.")
+        if self._d_min >= self._d_max:
+            raise ValueError("d_min must be less than d_max.")
         if not (0.0 <= self._chi_max <= 1.0):
             raise ValueError("chi_max must be in [0, 1].")
         if self._gps_end <= self._gps_start:
@@ -229,9 +237,9 @@ class CBCPriorSimulator(BBHSimulator):
     def _sample_distance(self, key: Array, n_samples: int) -> Array:
         """Draw luminosity distance from the configured distance prior."""
         if self._accurate_cosmology:
-            return uniform_comoving_volume_distance(key=key, n_samples=n_samples, d_max=self._d_max)
+            return uniform_comoving_volume_distance(key=key, n_samples=n_samples, d_min=self._d_min, d_max=self._d_max)
         unit_uniform = jax.random.uniform(key, shape=(n_samples,))
-        return self._d_max * jnp.cbrt(unit_uniform)
+        return jnp.cbrt(unit_uniform * (self._d_max**3 - self._d_min**3) + self._d_min**3)
 
     @staticmethod
     def _sample_uniform(key: Array, n_samples: int, lower: float, upper: float) -> Array:
