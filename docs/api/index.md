@@ -47,12 +47,12 @@ Source paths are under `src/gwmock_pop/`.
 
 ## Simulation stack
 
-| Page                                       | Scope                                                                                               |
-| ------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| [Simulators overview](simulators/index.md) | `GraphSimulator`, `CBCSimulator`, mixture, CBC simulators, Poisson helper                           |
-| [Graph simulator](simulators/graph.md)     | Config-driven `GraphSimulator`                                                                      |
-| [Simulator base](simulators/simulator.md)  | `Simulator` ABC                                                                                     |
-| [CBC simulators](simulators/cbc.md)        | `CBCSimulator`, `BBHSimulator`, `BNSSimulator`, `NSBHSimulator` — graph-backed CBC prior simulators |
+| Page                                       | Scope                                                                                                                        |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| [Simulators overview](simulators/index.md) | `GraphSimulator`, `CBCSimulator`, `BBHSimulator`, `BNSSimulator`, `NSBHSimulator`, `MixtureSimulator`, `PoissonEventSampler` |
+| [Graph simulator](simulators/graph.md)     | Config-driven `GraphSimulator`                                                                                               |
+| [Simulator base](simulators/simulator.md)  | `Simulator` ABC                                                                                                              |
+| [CBC simulators](simulators/cbc.md)        | `CBCSimulator`, `BBHSimulator`, `BNSSimulator`, `NSBHSimulator` — graph-backed CBC prior simulators                          |
 
 ## Graph, transforms, samplers, distributions
 
