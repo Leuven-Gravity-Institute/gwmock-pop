@@ -27,12 +27,12 @@ from gwmock_pop.simulators.graph import GraphSimulator
 class _CBCGraphSimulator(GraphSimulator):
     """Base class for graph-backed CBC simulators.
 
-    Subclasses build a default ``parameters`` graph config and call
-    :meth:`_initialize`, which merges the user override, validates the resulting
-    graph, and hands it to :class:`GraphSimulator`.
+    Subclasses build a default ``parameters`` graph config from their physics
+    arguments and call ``super().__init__``, which merges the user override,
+    validates the resulting graph, and hands it to :class:`GraphSimulator`.
     """
 
-    def _initialize(
+    def __init__(
         self,
         *,
         default_config: GraphConfig,
@@ -132,7 +132,7 @@ class CBCSimulator(_CBCGraphSimulator):
             lambda_1_max=lambda_max,
             lambda_2_max=lambda_max,
         )
-        self._initialize(
+        super().__init__(
             default_config=default_config,
             parameters=parameters,
             source_type=source_type,
@@ -196,7 +196,7 @@ class BBHSimulator(_CBCGraphSimulator):
             lambda_1_max=None,
             lambda_2_max=None,
         )
-        self._initialize(
+        super().__init__(
             default_config=default_config,
             parameters=parameters,
             source_type="bbh",
@@ -263,7 +263,7 @@ class BNSSimulator(_CBCGraphSimulator):
             lambda_1_max=lambda_max,
             lambda_2_max=lambda_max,
         )
-        self._initialize(
+        super().__init__(
             default_config=default_config,
             parameters=parameters,
             source_type="bns",
@@ -337,7 +337,7 @@ class NSBHSimulator(_CBCGraphSimulator):
             lambda_1_max=None,
             lambda_2_max=ns_lambda_max,
         )
-        self._initialize(
+        super().__init__(
             default_config=default_config,
             parameters=parameters,
             source_type="nsbh",
