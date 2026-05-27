@@ -21,8 +21,9 @@ gravitational-wave sources.
 - **Graph-driven sampling:** `GraphSimulator` from a YAML/TOML `parameters`
   graph (packaged **presets** via `list_presets()` /
   `GraphSimulator.from_preset`).
-- **Lightweight CBC priors:** `CBCPriorSimulator`, `BNSPriorSimulator`,
-  `NSBHPriorSimulator`, and `BBHSimulator` for tests and baselines.
+- **Graph-backed CBC simulators:** `CBCSimulator`, `BBHSimulator`,
+  `BNSSimulator`, and `NSBHSimulator` — configurable priors built on the graph
+  engine; override any parameter's distribution via the `parameters=` argument.
 - **Composition:** `MixtureSimulator`, `PoissonEventSampler` (event-count helper
   used in mixture workflows).
 - **Catalogues:** `FilePopulationLoader` and `read_population_catalogue` /
@@ -104,9 +105,9 @@ gwmock-pop simulate --help
 ## Getting started (library)
 
 ```python
-from gwmock_pop import CBCPriorSimulator
+from gwmock_pop import CBCSimulator
 
-sim = CBCPriorSimulator(seed=42)
+sim = CBCSimulator(seed=42)
 population = sim.simulate(100)
 assert population["detector_frame_mass_1"].shape == (100,)
 ```

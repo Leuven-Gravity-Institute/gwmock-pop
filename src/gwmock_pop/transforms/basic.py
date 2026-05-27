@@ -67,11 +67,76 @@ def minimum(left: Array, right: Array) -> Array:
     return jnp.minimum(jnp.asarray(left), jnp.asarray(right))
 
 
+def identity(*, value: Array) -> Array:
+    """Return ``value`` unchanged.
+
+    Useful for aliasing one parameter to another in a graph config (e.g. setting
+    ``theta_jn`` equal to ``inclination`` for aligned-spin populations).
+
+    Args:
+        value: Array-like value to pass through.
+
+    Returns:
+        ``value`` as a JAX array.
+    """
+    return jnp.asarray(value)
+
+
+def take_row(*, matrix: Array, index: int) -> Array:
+    """Select one row from a 2-D array.
+
+    Used to split a jointly sampled ``(k, n_samples)`` array (e.g. a component
+    mass pair) into individual 1-D parameter columns.
+
+    Args:
+        matrix: Array whose leading axis is indexed.
+        index: Row index to select.
+
+    Returns:
+        The selected row as a 1-D array.
+    """
+    return jnp.asarray(matrix)[index]
+
+
 def isotropic_spin_orientation(*, key: Array, reference: Array | None = None, n_samples: int | None = None) -> Array:
     """Draw polar angles with ``cos(tilt)`` uniform on ``[-1, 1]``."""
     shape = _resolve_output_shape(reference=reference, n_samples=n_samples)
     cos_tilt = jax.random.uniform(key, shape=shape, minval=-1.0, maxval=1.0)
     return jnp.arccos(cos_tilt)
+
+
+def isotropic_declination(*, key: Array, reference: Array | None = None, n_samples: int | None = None) -> Array:
+    """Draw declinations with ``sin(declination)`` uniform on ``[-1, 1]``.
+
+    Produces an isotropic sky distribution in declination, i.e. angles in
+    ``[-pi/2, pi/2]`` with ``arcsin`` of a uniform variate.
+
+    Args:
+        key: JAX PRNG key.
+        reference: Optional array providing the output shape.
+        n_samples: Number of samples, used when ``reference`` is omitted.
+
+    Returns:
+        Declination angles in radians on ``[-pi/2, pi/2]``.
+    """
+    shape = _resolve_output_shape(reference=reference, n_samples=n_samples)
+    sin_declination = jax.random.uniform(key, shape=shape, minval=-1.0, maxval=1.0)
+    return jnp.arcsin(sin_declination)
+
+
+def spherical_to_cartesian_x(*, magnitude: Array, tilt: Array, azimuth: Array) -> Array:
+    """Project spherical coordinates onto the Cartesian ``x`` component."""
+    return jnp.asarray(magnitude) * jnp.sin(jnp.asarray(tilt)) * jnp.cos(jnp.asarray(azimuth))
+
+
+def spherical_to_cartesian_y(*, magnitude: Array, tilt: Array, azimuth: Array) -> Array:
+    """Project spherical coordinates onto the Cartesian ``y`` component."""
+    return jnp.asarray(magnitude) * jnp.sin(jnp.asarray(tilt)) * jnp.sin(jnp.asarray(azimuth))
+
+
+def spherical_to_cartesian_z(*, magnitude: Array, tilt: Array) -> Array:
+    """Project spherical coordinates onto the Cartesian ``z`` component."""
+    return jnp.asarray(magnitude) * jnp.cos(jnp.asarray(tilt))
 
 
 def gaussian_chi_eff(  # noqa: PLR0913

@@ -6,22 +6,19 @@ from importlib import import_module
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from .bbh.base import BBHSimulator
-    from .bns_prior import BNSPriorSimulator
-    from .cbc_prior import CBCPriorSimulator
+    from .cbc import BBHSimulator, BNSSimulator, CBCSimulator, NSBHSimulator
     from .graph import GraphSimulator
     from .mixture import MixtureSimulator
-    from .nsbh_prior import NSBHPriorSimulator
     from .poisson_event import PoissonEventSampler
     from .simulator import Simulator
 
 __all__ = [
     "BBHSimulator",
-    "BNSPriorSimulator",
-    "CBCPriorSimulator",
+    "BNSSimulator",
+    "CBCSimulator",
     "GraphSimulator",
     "MixtureSimulator",
-    "NSBHPriorSimulator",
+    "NSBHSimulator",
     "PoissonEventSampler",
     "Simulator",
 ]
@@ -30,12 +27,12 @@ __all__ = [
 def __getattr__(name: str) -> Any:
     """Lazily import simulator classes for package-level access."""
     module_map = {
-        "BBHSimulator": ".bbh.base",
-        "BNSPriorSimulator": ".bns_prior",
-        "CBCPriorSimulator": ".cbc_prior",
+        "BBHSimulator": ".cbc",
+        "BNSSimulator": ".cbc",
+        "CBCSimulator": ".cbc",
         "GraphSimulator": ".graph",
         "MixtureSimulator": ".mixture",
-        "NSBHPriorSimulator": ".nsbh_prior",
+        "NSBHSimulator": ".cbc",
         "PoissonEventSampler": ".poisson_event",
         "Simulator": ".simulator",
     }

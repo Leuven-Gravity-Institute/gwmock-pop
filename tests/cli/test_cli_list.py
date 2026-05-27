@@ -28,4 +28,4 @@ def test_list_command_prints_packaged_presets_and_public_simulator_classes() -> 
     assert "Talbot-Thrane-inspired BBH mass graph preset" in result.output
     assert "Simulator classes" in result.output
     assert "BBHSimulator" in result.output
-    assert "CBCPriorSimulator" in result.output
+    assert "CBCSimulator" in result.output

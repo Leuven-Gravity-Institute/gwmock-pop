@@ -6,12 +6,12 @@ import math
 
 import jax.numpy as jnp
 
-from gwmock_pop import CBCPriorSimulator, validate_sample
+from gwmock_pop import CBCSimulator, validate_sample
 
 
 def test_validate_sample_accepts_cbc_prior_output() -> None:
-    """CBCPriorSimulator outputs satisfy the physical-consistency checks."""
-    sample = CBCPriorSimulator(seed=0).simulate(1000)
+    """CBCSimulator outputs satisfy the physical-consistency checks."""
+    sample = CBCSimulator(seed=0).simulate(1000)
 
     assert validate_sample(sample) == []
 

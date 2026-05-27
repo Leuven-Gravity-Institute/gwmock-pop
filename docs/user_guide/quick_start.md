@@ -44,11 +44,32 @@ Simulators exposed from `gwmock_pop` implement **`GWPopSimulator`**: a non-empty
 returning a mapping of **1-D** `jax.Array` columns of length `n_samples`.
 
 ```python
-from gwmock_pop import CBCPriorSimulator
+from gwmock_pop import CBCSimulator
 
-simulator = CBCPriorSimulator(seed=42)
+simulator = CBCSimulator(seed=42)
 population = simulator.simulate(5)
 print(population["detector_frame_mass_1"].shape)  # (5,)
+
+# Override the distribution of any single parameter via the graph config:
+simulator = CBCSimulator(
+    seed=42,
+    parameters={
+        "detector_frame_mass_1": {
+            "sampler": {
+                "function": "power_law_plus_peak",
+                "arguments": {
+                    "alpha": 3.5,
+                    "minimum": 5.0,
+                    "maximum": 100.0,
+                    "lambda_peak": 0.1,
+                    "peak_mean": 35.0,
+                    "peak_sigma": 5.0,
+                    "peak_maximum": 100.0,
+                },
+            }
+        }
+    },
+)
 ```
 
 For graph-based populations:
