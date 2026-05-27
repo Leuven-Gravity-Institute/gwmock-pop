@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from gwmock_pop.samplers.joint_uniform_mass_pair import joint_uniform_mass_pair
 from gwmock_pop.samplers.log_uniform import log_uniform
 from gwmock_pop.samplers.mass_ratio_pairing import mass_ratio_pairing
 from gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks import (
@@ -13,6 +14,7 @@ from gwmock_pop.samplers.uniform import uniform
 from gwmock_pop.samplers.uniform_comoving_volume_distance import uniform_comoving_volume_distance
 
 __all__ = [
+    "joint_uniform_mass_pair",
     "log_uniform",
     "mass_ratio_pairing",
     "planck_tapered_broken_power_law_plus_two_peaks",

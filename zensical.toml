@@ -136,10 +136,7 @@ nav = [
       { "Overview" = "api/simulators/index.md" },
       { "Graph Simulator" = "api/simulators/graph.md" },
       { "Simulator Base" = "api/simulators/simulator.md" },
-      { "Binary Black Hole" = [
-        { "Overview" = "api/simulators/bbh/index.md" },
-        { "Base" = "api/simulators/bbh/base.md" },
-      ] },
+      { "CBC Simulators" = "api/simulators/cbc.md" },
     ] },
     { "Utilities" = [
       { "Overview" = "api/utils/index.md" },

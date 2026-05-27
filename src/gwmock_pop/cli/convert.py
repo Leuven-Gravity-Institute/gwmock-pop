@@ -9,13 +9,13 @@ from typing import Annotated
 import numpy as np
 import typer
 
+from gwmock_pop.constants import CBC_PARAMETER_NAMES
 from gwmock_pop.loaders.file_loader import (
     apply_population_column_map,
     infer_population_file_format,
     read_population_catalogue,
     write_population_catalogue,
 )
-from gwmock_pop.simulators.cbc_prior import CBCPriorSimulator
 from gwmock_pop.utils.yaml import read_yaml
 
 
@@ -39,7 +39,7 @@ def _load_column_map(path: Path) -> dict[str, str]:
 
 def _canonical_parameter_names() -> set[str]:
     """Return the canonical gwmock-pop parameter names accepted by the converter."""
-    return set(CBCPriorSimulator().parameter_names)
+    return set(CBC_PARAMETER_NAMES)
 
 
 def _validate_column_map_targets(column_map: dict[str, str], canonical_names: set[str]) -> None:
