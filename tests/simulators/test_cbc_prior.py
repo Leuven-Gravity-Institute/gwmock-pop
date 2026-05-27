@@ -104,8 +104,9 @@ def test_accurate_cosmology_mode_uses_lookup_sampler_and_transform(monkeypatch: 
     """Accurate cosmology mode delegates to the new sampler and transform nodes."""
     calls = {"sampler": 0, "transform": 0}
 
-    def fake_sampler(*, key, n_samples: int, d_max: float):
+    def fake_sampler(*, key, n_samples: int, d_min: float, d_max: float):
         calls["sampler"] += 1
+        assert d_min == 0.0
         assert d_max == 5_000.0
         return jnp.full((n_samples,), 1234.5)
 
