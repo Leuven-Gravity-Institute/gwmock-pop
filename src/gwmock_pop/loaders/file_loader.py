@@ -220,11 +220,12 @@ class FilePopulationLoader:
         """Return loader metadata, including remote cache details when relevant."""
         return self._metadata
 
-    def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, Array]:
+    def simulate(self, n_samples: int | None = None, **kwargs: Any) -> Mapping[str, Array]:
         """Sample catalogue rows without replacement.
 
         Args:
-            n_samples: Number of catalogue rows to draw.
+            n_samples: Number of catalogue rows to draw.  Pass ``None`` to
+                return all rows in the catalogue.
             **kwargs: Optional backend-agnostic random-state hints. Supported
                 keys include ``seed``, ``key``, and ``rng`` (in that priority).
 
@@ -237,6 +238,8 @@ class FilePopulationLoader:
                 rows in the loaded catalogue.
         """
         catalogue_size = len(next(iter(self._catalogue.values())))
+        if n_samples is None:
+            n_samples = catalogue_size
         if n_samples < 0:
             raise ValueError(f"n_samples must be >= 0, got {n_samples}.")
         if n_samples > catalogue_size:

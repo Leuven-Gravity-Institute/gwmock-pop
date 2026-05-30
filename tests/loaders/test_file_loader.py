@@ -193,3 +193,48 @@ def test_unsupported_format_raises(tmp_path: Path) -> None:
 
     with pytest.raises(PopulationValidationError, match=r"Supported suffixes: \.csv, \.h5, \.hdf5"):
         FilePopulationLoader("bbh", path)
+
+
+def test_simulate_none_returns_all_rows(tmp_path: Path) -> None:
+    """simulate(n_samples=None) returns arrays whose length equals catalogue size."""
+    n_rows = 15
+    path = tmp_path / "catalogue.csv"
+    _write_csv_catalogue(path, _catalogue_columns(n_rows=n_rows))
+
+    loader = FilePopulationLoader("bbh", path)
+    result = loader.simulate(n_samples=None)
+
+    assert all(len(array) == n_rows for array in result.values())
+
+
+def test_simulate_none_returns_all_columns(tmp_path: Path) -> None:
+    """simulate(n_samples=None) returns all parameter_names keys."""
+    path = tmp_path / "catalogue.csv"
+    _write_csv_catalogue(path, _catalogue_columns(n_rows=10))
+
+    loader = FilePopulationLoader("bbh", path)
+    result = loader.simulate(n_samples=None)
+
+    assert set(result.keys()) == set(loader.parameter_names)
+
+
+def test_simulate_zero_returns_empty(tmp_path: Path) -> None:
+    """simulate(n_samples=0) returns empty arrays without raising."""
+    path = tmp_path / "catalogue.csv"
+    _write_csv_catalogue(path, _catalogue_columns(n_rows=10))
+
+    loader = FilePopulationLoader("bbh", path)
+    result = loader.simulate(n_samples=0)
+
+    assert all(len(array) == 0 for array in result.values())
+
+
+def test_simulate_negative_still_raises(tmp_path: Path) -> None:
+    """simulate(n_samples=-1) still raises ValueError after the signature change."""
+    path = tmp_path / "catalogue.csv"
+    _write_csv_catalogue(path, _catalogue_columns(n_rows=10))
+
+    loader = FilePopulationLoader("bbh", path)
+
+    with pytest.raises(ValueError, match=r"n_samples must be >= 0"):
+        loader.simulate(n_samples=-1)
