@@ -421,7 +421,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.13.4" },
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "ruyaml", specifier = ">=0.91.0" },
-    { name = "typer", specifier = ">=0.26.5" },
+    { name = "typer", specifier = ">=0.26.6" },
 ]
 
 [package.metadata.requires-dev]
