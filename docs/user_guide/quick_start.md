@@ -72,6 +72,40 @@ simulator = CBCSimulator(
 )
 ```
 
+To sample **source redshifts** from the Madau-Dickinson rate-weighted
+distribution instead of drawing luminosity distance uniformly in comoving
+volume, sample `redshift` directly and derive `distance` with
+[`redshift_to_luminosity_distance`](../api/transforms/index.md):
+
+```python
+simulator = CBCSimulator(
+    seed=42,
+    parameters={
+        "redshift": {
+            "sampler": {
+                "function": "madau_dickinson_redshift",
+                "arguments": {
+                    "z_max": 3.0,
+                },
+            }
+        },
+        "distance": {
+            "transform": {
+                "function": "redshift_to_luminosity_distance",
+                "arguments": {
+                    "redshift": "@redshift",
+                },
+            }
+        },
+    },
+)
+```
+
+The same `sampler` / `transform` blocks work in YAML graph configs. See
+[Madau-Dickinson](../api/distributions/madau_dickinson.md) and
+[Madau-Dickinson Redshift](../api/samplers/madau_dickinson_redshift.md) for
+parameters and defaults.
+
 For graph-based populations:
 
 ```python
