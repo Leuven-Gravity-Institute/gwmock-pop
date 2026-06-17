@@ -11,6 +11,7 @@ from gwmock_pop.cosmology.flat_lambda_cdm import (
     DEFAULT_MAX_REDSHIFT,
     PLANCK18_H0_KM_S_MPC,
     PLANCK18_OMEGA_M,
+    build_distance_lookup,
     compute_redshift_from_luminosity_distance,
 )
 
@@ -261,3 +262,36 @@ def luminosity_distance_to_redshift(
         max_redshift=max_redshift,
         n_grid=n_grid,
     )
+
+
+def redshift_to_luminosity_distance(
+    redshift: Array,
+    *,
+    hubble_constant: float = PLANCK18_H0_KM_S_MPC,
+    omega_m: float = PLANCK18_OMEGA_M,
+    max_redshift: float = DEFAULT_MAX_REDSHIFT,
+    n_grid: int = DEFAULT_LOOKUP_GRID_SIZE,
+) -> Array:
+    """Convert redshift to luminosity distance with a flat-ΛCDM lookup.
+
+    Inverse of :func:`luminosity_distance_to_redshift`; lets a graph sample
+    redshift directly (e.g. via ``madau_dickinson_redshift``) and derive the
+    luminosity distance the signal pipeline needs.
+
+    Args:
+        redshift: Redshift.
+        hubble_constant: Hubble constant in km / s / Mpc.
+        omega_m: Matter density.
+        max_redshift: Largest redshift supported by the lookup table.
+        n_grid: Number of tabulation points.
+
+    Returns:
+        Luminosity distance in Mpc inferred from ``redshift``.
+    """
+    redshift_grid, _, luminosity_distance_grid = build_distance_lookup(
+        hubble_constant=hubble_constant,
+        omega_m=omega_m,
+        max_redshift=max_redshift,
+        n_grid=n_grid,
+    )
+    return jnp.interp(jnp.asarray(redshift), redshift_grid, luminosity_distance_grid)

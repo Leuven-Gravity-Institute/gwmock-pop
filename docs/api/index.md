@@ -60,9 +60,9 @@ Source paths are under `src/gwmock_pop/`.
 | --------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | [Graph utilities](graph/index.md)       | Build, sampler/transform dependency extraction; see also [config validation](graph/validation.md) |
 | [Graph build](graph/build.md)           | `build_dependency_graph`                                                                          |
-| [Transforms](transforms/index.md)       | `luminosity_distance_to_redshift`, `multiply`, …                                                  |
-| [Samplers](samplers/index.md)           | JAX sampling functions used in graph configs                                                      |
-| [Distributions](distributions/index.md) | PDFs / CDFs used by samplers                                                                      |
+| [Transforms](transforms/index.md)       | `luminosity_distance_to_redshift`, `redshift_to_luminosity_distance`, `multiply`, …               |
+| [Samplers](samplers/index.md)           | JAX sampling functions used in graph configs (e.g. `madau_dickinson_redshift`)                    |
+| [Distributions](distributions/index.md) | PDFs / CDFs used by samplers (e.g. [Madau-Dickinson](distributions/madau_dickinson.md))           |
 
 ## Other modules
 

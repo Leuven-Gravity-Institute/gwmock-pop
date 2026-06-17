@@ -91,6 +91,7 @@ nav = [
     { "Distributions" = [
       { "Overview" = "api/distributions/index.md" },
       { "Broken Power Law" = "api/distributions/broken_power_law.md" },
+      { "Madau-Dickinson" = "api/distributions/madau_dickinson.md" },
       { "Planck-Tapered Broken Power Law Plus Two Peaks" = "api/distributions/planck_tapered_broken_power_law_plus_two_peaks.md" },
       { "Planck-Tapered Conditional Ratio Power Law" = "api/distributions/planck_tapered_conditional_ratio_power_law.md" },
       { "Smoothing" = "api/distributions/smoothing.md" },
@@ -117,6 +118,7 @@ nav = [
     ] },
     { "Samplers" = [
       { "Overview" = "api/samplers/index.md" },
+      { "Madau-Dickinson Redshift" = "api/samplers/madau_dickinson_redshift.md" },
       { "Planck-Tapered Broken Power Law Plus Two Peaks" = "api/samplers/planck_tapered_broken_power_law_plus_two_peaks.md" },
       { "Planck-Tapered Conditional Ratio Power Law" = "api/samplers/planck_tapered_conditional_ratio_power_law.md" },
     ] },

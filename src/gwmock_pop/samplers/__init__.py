@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from gwmock_pop.samplers.joint_uniform_mass_pair import joint_uniform_mass_pair
 from gwmock_pop.samplers.log_uniform import log_uniform
+from gwmock_pop.samplers.madau_dickinson_redshift import madau_dickinson_redshift
 from gwmock_pop.samplers.mass_ratio_pairing import mass_ratio_pairing
 from gwmock_pop.samplers.planck_tapered_broken_power_law_plus_two_peaks import (
     planck_tapered_broken_power_law_plus_two_peaks,
@@ -16,6 +17,7 @@ from gwmock_pop.samplers.uniform_comoving_volume_distance import uniform_comovin
 __all__ = [
     "joint_uniform_mass_pair",
     "log_uniform",
+    "madau_dickinson_redshift",
     "mass_ratio_pairing",
     "planck_tapered_broken_power_law_plus_two_peaks",
     "planck_tapered_conditional_ratio_power_law",
