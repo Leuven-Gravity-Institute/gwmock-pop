@@ -2,7 +2,7 @@ cff-version: 1.2.0
 title:
     'gwmock-pop: A Python package for simulating populations of gravitational
     wave sources'
-license: 'MIT'
+license: 'BSD-3-Clause'
 type: software
 authors:
     - given-names: Isaac C. F.
