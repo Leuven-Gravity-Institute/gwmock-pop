@@ -50,6 +50,7 @@ def cleanup_logger() -> None:
     """Clean up logger state before and after each test."""
     logger = logging.getLogger("gwmock_pop")
     logger.handlers.clear()
+    logger.propagate = True
     logger.setLevel(logging.NOTSET)
 
 
