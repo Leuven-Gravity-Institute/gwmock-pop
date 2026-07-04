@@ -29,6 +29,26 @@ def test_import_main_package():
     assert gwmock_pop.__version__ is not None
 
 
+def test_catalogue_io_exported_at_top_level():
+    """Regression: the README documents these as top-level exports.
+
+    In v0.10.2 they were only importable from the private
+    ``gwmock_pop.loaders.file_loader`` module.
+    """
+    from gwmock_pop import read_population_catalogue, write_population_catalogue
+    from gwmock_pop.loaders import (
+        read_population_catalogue as loaders_read,
+    )
+    from gwmock_pop.loaders import (
+        write_population_catalogue as loaders_write,
+    )
+
+    assert read_population_catalogue is loaders_read
+    assert write_population_catalogue is loaders_write
+    assert "read_population_catalogue" in gwmock_pop.__all__
+    assert "write_population_catalogue" in gwmock_pop.__all__
+
+
 @pytest.mark.parametrize("module_name", get_all_submodules(gwmock_pop))
 def test_import_submodule(module_name):
     """Test that all submodules can be imported."""
