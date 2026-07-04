@@ -6,7 +6,7 @@ from gwmock_pop.coercion import coerce_to_numpy
 from gwmock_pop.configs import list_presets
 from gwmock_pop.constants import CBC_PARAMETER_NAMES
 from gwmock_pop.exceptions import PopulationError, PopulationFetchError, PopulationValidationError
-from gwmock_pop.loaders import FilePopulationLoader
+from gwmock_pop.loaders import FilePopulationLoader, read_population_catalogue, write_population_catalogue
 from gwmock_pop.protocols import ExternalPopulationLoader, GWPopSimulator
 from gwmock_pop.simulators import (
     BBHSimulator,
@@ -38,5 +38,7 @@ __all__ = [
     "__version__",
     "coerce_to_numpy",
     "list_presets",
+    "read_population_catalogue",
     "validate_sample",
+    "write_population_catalogue",
 ]
