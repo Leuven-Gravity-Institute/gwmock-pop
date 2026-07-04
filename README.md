@@ -40,6 +40,16 @@ Public re-exports live in `gwmock_pop.__all__`; full module reference is in the
 - Python `>=3.12` (tested on 3.12–3.14)
 - Linux, macOS, or Windows
 
+## Floating-point precision
+
+Importing `gwmock_pop` enables 64-bit JAX floats (`jax_enable_x64`). GPS-scale
+parameters such as `coa_time` (~1.6 × 10⁹ s) are unusable in JAX's 32-bit
+default, where the float32 spacing at that magnitude is 128 s. The flag is
+global JAX state, so it also affects arrays your own code creates after the
+import. To keep JAX's 32-bit default (e.g. for GPU-throughput studies that do
+not sample absolute times), set `GWMOCK_POP_DISABLE_X64=1` in the environment
+before importing the package.
+
 ## Installation
 
 Install from PyPI:

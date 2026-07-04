@@ -1886,15 +1886,17 @@ class TestGraphSimulatorProtocolConformance:
     def test_gwtc4_mass1_mean_regression(self) -> None:
         """Mass-1 mean from GWTC-4 config matches golden value to 3 significant figures.
 
-        Golden values computed with key=jax.random.key(42) and n_samples=1000:
-            mean ≈ 18.14, std ≈ 11.28
+        Golden values computed with key=jax.random.key(42), n_samples=1000, and
+        the package's float64 default (x64 enabled on import); the same key
+        yields a different draw stream in float32:
+            mean ≈ 18.26, std ≈ 13.27
         """
         sim = GraphSimulator(config=_GWTC4_MASS1_CONFIG, source_type="bbh")
         result = sim.simulate(n_samples=1000)
         mass_1 = result["mass_1"]
-        assert abs(float(jnp.mean(mass_1)) - 18.141) / 18.141 < 5e-3, (
-            f"mass_1 mean regression failed: got {float(jnp.mean(mass_1)):.4f}, expected ~18.141"
+        assert abs(float(jnp.mean(mass_1)) - 18.2629) / 18.2629 < 5e-3, (
+            f"mass_1 mean regression failed: got {float(jnp.mean(mass_1)):.4f}, expected ~18.2629"
         )
-        assert abs(float(jnp.std(mass_1)) - 11.284) / 11.284 < 5e-3, (
-            f"mass_1 std regression failed: got {float(jnp.std(mass_1)):.4f}, expected ~11.284"
+        assert abs(float(jnp.std(mass_1)) - 13.2743) / 13.2743 < 5e-3, (
+            f"mass_1 std regression failed: got {float(jnp.std(mass_1)):.4f}, expected ~13.2743"
         )
