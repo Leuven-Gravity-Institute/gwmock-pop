@@ -414,7 +414,7 @@ build = [{ name = "hatch", specifier = ">=1.17.0" }]
 dev = [
     { name = "astropy", specifier = ">=8.0.0" },
     { name = "hypothesis", specifier = ">=6.156.1" },
-    { name = "prek", specifier = ">=0.4.6" },
+    { name = "prek", specifier = ">=0.4.8" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-cov", specifier = ">=7.1.0" },
     { name = "pytest-github-actions-annotate-failures", specifier = ">=0.4.2" },
