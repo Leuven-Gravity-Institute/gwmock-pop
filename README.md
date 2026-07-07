@@ -125,6 +125,17 @@ assert population["detector_frame_mass_1"].shape == (100,)
 Use `GraphSimulator.from_config_file(...)` or `GraphSimulator.from_preset(...)`
 for full graph configs (see `examples/` and `gwmock_pop.simulators.graph`).
 
+Sample from a packaged preset (run `gwmock-pop list` or `list_presets()` for the
+available names):
+
+```python
+from gwmock_pop import GraphSimulator, list_presets
+
+print(list_presets())                 # e.g. ["gwtc4", ...]
+sim = GraphSimulator.from_preset("gwtc4")
+catalogue = sim.simulate(1000)
+```
+
 `FilePopulationLoader` also accepts `http://`, `https://`, `s3://`, and
 `zenodo://<record>/<file>` sources. Remote catalogues are cached under
 `${GWMOCK_POP_CACHE_DIR}` or `${XDG_CACHE_HOME:-~/.cache}/gwmock-pop`, and CBC
