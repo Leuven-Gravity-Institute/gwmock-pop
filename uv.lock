@@ -412,7 +412,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 build = [{ name = "hatch", specifier = ">=1.17.0" }]
 dev = [
-    { name = "astropy", specifier = ">=8.0.0" },
+    { name = "astropy", specifier = ">=8.0.1" },
     { name = "hypothesis", specifier = ">=6.156.1" },
     { name = "prek", specifier = ">=0.4.8" },
     { name = "pytest", specifier = ">=9.1.1" },
