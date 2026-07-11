@@ -20,13 +20,13 @@ classifiers = [
 requires-python = ">=3.12"
 dynamic = ["version"]
 dependencies = [
-  "typer>=0.26.8",
-  "jax>=0.10.2",
-  "PyYAML>=6.0.3",
+  "typer>=0.13.0",
+  "jax>=0.5.0",
+  "PyYAML>=6.0",
   "ruyaml>=0.91.0",
-  "pydantic>=2.13.4",
-  "h5py>=3.16.0",
-  "networkx>=3.6.1",
+  "pydantic>=2.9.0",
+  "h5py>=3.12.1",
+  "networkx>=3.4",
 ]
 
 [dependency-groups]
@@ -52,6 +52,10 @@ Source = "https://github.com/Leuven-Gravity-Institute/gwmock-pop"
 Tracker = "https://github.com/Leuven-Gravity-Institute/gwmock-pop/issues"
 Home = "https://github.com/Leuven-Gravity-Institute/gwmock-pop"
 "Release Notes" = "https://github.com/Leuven-Gravity-Institute/gwmock-pop/releases"
+
+[tool.dependency-support-policy]
+policy = "spec0"
+lock = "minimal"
 
 [tool.uv-dynamic-versioning]
 vcs = "git"      # default
