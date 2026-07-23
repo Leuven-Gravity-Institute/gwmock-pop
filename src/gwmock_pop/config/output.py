@@ -16,7 +16,7 @@ class OutputConfiguration(BaseModel):
     format: Literal["hdf5", "npz", "csv"] = Field(default="hdf5", description="Storage format.")
     """Storage format."""
 
-    compression: None | Literal["gzip", "lzf", "szip"] = Field(default="gzip", description="Compression filter.")
+    compression: Literal["gzip", "lzf", "szip"] | None = Field(default="gzip", description="Compression filter.")
     """Compression filter."""
 
     overwrite: bool = Field(default=False, description="Whether or not to overwrite existing files.")
