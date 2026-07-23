@@ -32,7 +32,7 @@ dependencies = [
 [dependency-groups]
 dev = [
   "astropy>=8.0.1",
-  "hypothesis>=6.157.0",
+  "hypothesis>=6.157.1",
   "prek>=0.4.10",
   "pytest-cov>=7.1.0",
   "pytest-mock>=3.15.1",
