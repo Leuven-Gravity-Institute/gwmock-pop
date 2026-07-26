@@ -130,7 +130,7 @@ class TestYAMLUtils:
         test_file = tmp_path / "empty.yaml"
         test_file.write_text("")
 
-        with pytest.raises(ValueError, match="Expected a YAML mapping at the top level of"):
+        with pytest.raises(TypeError, match="Expected a YAML mapping at the top level of"):
             _result = read_yaml(test_file)
 
     def test_write_yaml_empty_data(self, tmp_path: Path) -> None:

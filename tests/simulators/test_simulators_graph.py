@@ -1331,7 +1331,7 @@ lambda_1 = 0.586
 
         simulator = GraphSimulator(config=config)
         # Test with string transform - should raise ValueError
-        with pytest.raises(ValueError, match="String transform expressions are not supported"):
+        with pytest.raises(TypeError, match="String transform expressions are not supported"):
             simulator._execute_transform("@mass_1 * 2")  # type: ignore[arg-type]
 
     def test_execute_transform_with_none_arguments(self) -> None:
