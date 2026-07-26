@@ -219,10 +219,10 @@ class TestRNGManager:
         assert jnp.array_equal(key_before, rng.key)
 
     def test_key_setter_with_invalid_type(self) -> None:
-        """Test key setter raises ValueError with invalid type."""
+        """Test key setter raises TypeError with invalid type."""
         rng = RNGManager(seed=789)
 
-        with pytest.raises(ValueError, match=r"value has to be jax.Array."):
+        with pytest.raises(TypeError, match=r"value has to be jax.Array."):
             rng.key = "invalid"
 
     def test_key_data_property_getter(self) -> None:
