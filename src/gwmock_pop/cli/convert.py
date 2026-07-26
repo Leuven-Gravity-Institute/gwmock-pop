@@ -31,7 +31,7 @@ def _load_column_map(path: Path) -> dict[str, str]:
         raise ValueError(f"Unsupported column-map format for {path}. Supported suffixes: .json, .yaml, .yml.")
 
     if not isinstance(data, dict):
-        raise ValueError(f"Column map {path} must contain a top-level mapping.")
+        raise TypeError(f"Column map {path} must contain a top-level mapping.")
     if any(not isinstance(key, str) or not isinstance(value, str) for key, value in data.items()):
         raise ValueError(f"Column map {path} must map string source columns to string canonical names.")
     return data

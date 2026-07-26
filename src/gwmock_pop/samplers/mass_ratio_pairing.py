@@ -8,7 +8,7 @@ from jax import Array
 from jax.experimental import checkify
 
 
-def mass_ratio_pairing(  # noqa: PLR0913
+def mass_ratio_pairing(  # noqa: PLR0913, PLR0917
     key: Array,
     primary_mass: Array,
     beta: float,

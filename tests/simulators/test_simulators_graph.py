@@ -1191,7 +1191,7 @@ lambda_1 = 0.586
 
         # Manually remove _rng_manager to test reset without it
         if hasattr(simulator, "_rng_manager"):
-            delattr(simulator, "_rng_manager")
+            del simulator._rng_manager
 
         # Reset should not raise error
         simulator.reset()

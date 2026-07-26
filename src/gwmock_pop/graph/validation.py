@@ -124,7 +124,7 @@ def load_parameters_config(config_path: str | Path, encoding: str = "utf-8") -> 
         config = config["parameters"]
 
     if not isinstance(config, dict):
-        raise ValueError("Graph config must define a mapping of parameters.")
+        raise TypeError("Graph config must define a mapping of parameters.")
 
     return config
 

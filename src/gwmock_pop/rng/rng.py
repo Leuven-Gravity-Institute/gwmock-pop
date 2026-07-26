@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import secrets
 from pathlib import Path
+from typing import Self
 
 import jax
 import jax.numpy as jnp
@@ -36,7 +37,7 @@ class RNGManager:
         """
         return f"RNGManager(seed={self._seed})"
 
-    def __enter__(self) -> RNGManager:
+    def __enter__(self) -> Self:
         """Enter the context manager.
 
         Use the context manager when keeping the initial state of the RNG is preferred.
@@ -76,7 +77,7 @@ class RNGManager:
 
         """
         if not isinstance(value, Array):
-            raise ValueError("value has to be jax.Array.")
+            raise TypeError("value has to be jax.Array.")
         value_dtype_str = str(value.dtype)
         if value_dtype_str.startswith("key<"):
             self._key = value

@@ -274,7 +274,7 @@ class FilePopulationLoader:
                 expected_length: int | None = None
                 for child_name, child_object in hdf5_object.items():
                     if not isinstance(child_object, h5py.Dataset):
-                        raise ValueError(f"HDF5 group '{dataset_name}' contains non-dataset member '{child_name}'.")
+                        raise TypeError(f"HDF5 group '{dataset_name}' contains non-dataset member '{child_name}'.")
                     column = np.atleast_1d(child_object[()])
                     if column.ndim != 1:
                         raise ValueError(f"HDF5 group dataset '{dataset_name}/{child_name}' must be a 1-D array.")

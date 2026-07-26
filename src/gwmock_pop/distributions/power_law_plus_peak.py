@@ -64,7 +64,7 @@ def _truncated_normal_cdf(mass: Array, mean: float, sigma: float, minimum: float
     return jnp.where(mass < minimum, 0.0, jnp.where(mass > maximum, 1.0, cdf))
 
 
-def power_law_plus_peak_pdf(  # noqa: PLR0913
+def power_law_plus_peak_pdf(  # noqa: PLR0913, PLR0917
     mass: Array,
     alpha: float,
     minimum: float,
@@ -92,7 +92,7 @@ def power_law_plus_peak_pdf(  # noqa: PLR0913
     return (1.0 - lambda_peak) * power_law_component + lambda_peak * peak_component
 
 
-def power_law_plus_peak_cdf(  # noqa: PLR0913
+def power_law_plus_peak_cdf(  # noqa: PLR0913, PLR0917
     mass: Array,
     alpha: float,
     minimum: float,

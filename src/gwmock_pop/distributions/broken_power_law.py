@@ -6,7 +6,7 @@ import jax
 import jax.numpy as jnp
 
 
-def broken_power_law_unnormalized_logpdf(  # noqa: PLR0913
+def broken_power_law_unnormalized_logpdf(  # noqa: PLR0913, PLR0917
     x: jax.Array,
     x_min: float,
     x_max: float,
@@ -75,7 +75,7 @@ def broken_power_law_log_normalization_constant(
     )
 
 
-def broken_power_law_logpdf(  # noqa: PLR0913
+def broken_power_law_logpdf(  # noqa: PLR0913, PLR0917
     x: jax.Array, x_min: float, x_max: float, transition: float, alpha_1: float, alpha_2: float
 ) -> jax.Array:
     """Log probability density function of a broken power law distribution.

@@ -42,7 +42,7 @@ def read_yaml(filename: str | Path, encoding: str = "utf-8") -> dict[str, Any]:
     with Path(filename).open("r", encoding=encoding) as f:
         data = yaml.safe_load(f)
     if not isinstance(data, dict):
-        raise ValueError(f"Expected a YAML mapping at the top level of '{filename}', got {type(data).__name__!r}.")
+        raise TypeError(f"Expected a YAML mapping at the top level of '{filename}', got {type(data).__name__!r}.")
     return data
 
 
