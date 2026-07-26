@@ -111,7 +111,7 @@ class GraphSimulator(RandomMixin, Simulator):
     @staticmethod
     def _include_in_output(spec: dict[str, Any]) -> bool:
         """Determine whether a parameter should be included in the final output."""
-        return not bool(spec.get("exclude", False) or spec.get("intermediate", False))
+        return not bool(spec.get("exclude") or spec.get("intermediate"))
 
     def _build_graph(self) -> None:
         """Build the dependency graph from the configuration."""
@@ -186,7 +186,7 @@ class GraphSimulator(RandomMixin, Simulator):
             Transformed array.
         """
         if isinstance(transform_spec, str):
-            raise ValueError("String transform expressions are not supported by GraphSimulator yet.")
+            raise TypeError("String transform expressions are not supported by GraphSimulator yet.")
 
         function_name = transform_spec.get("function", "")
         arguments = transform_spec.get("arguments")

@@ -8,7 +8,7 @@ from jax import Array
 from jax.experimental import checkify
 
 
-def power_law_plus_peak(  # noqa: PLR0913
+def power_law_plus_peak(  # noqa: PLR0913, PLR0917
     key: Array,
     n_samples: int,
     alpha: float,
@@ -53,7 +53,7 @@ def _sample_power_law(key: Array, n_samples: int, alpha: float, minimum: float, 
     return (lower + uniform * (upper - lower)) ** (1.0 / exponent)
 
 
-def _sample_truncated_normal(  # noqa: PLR0913
+def _sample_truncated_normal(  # noqa: PLR0913, PLR0917
     key: Array,
     n_samples: int,
     mean: float,

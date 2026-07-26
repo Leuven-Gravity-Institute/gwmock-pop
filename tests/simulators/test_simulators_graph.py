@@ -1191,7 +1191,7 @@ lambda_1 = 0.586
 
         # Manually remove _rng_manager to test reset without it
         if hasattr(simulator, "_rng_manager"):
-            delattr(simulator, "_rng_manager")
+            del simulator._rng_manager
 
         # Reset should not raise error
         simulator.reset()
@@ -1331,7 +1331,7 @@ lambda_1 = 0.586
 
         simulator = GraphSimulator(config=config)
         # Test with string transform - should raise ValueError
-        with pytest.raises(ValueError, match="String transform expressions are not supported"):
+        with pytest.raises(TypeError, match="String transform expressions are not supported"):
             simulator._execute_transform("@mass_1 * 2")  # type: ignore[arg-type]
 
     def test_execute_transform_with_none_arguments(self) -> None:

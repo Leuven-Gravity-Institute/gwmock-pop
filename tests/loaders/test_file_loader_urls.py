@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from io import BytesIO
 from pathlib import Path
+from typing import Self
 from urllib.error import HTTPError
 
 import pytest
@@ -19,7 +20,7 @@ class _MockResponse(BytesIO):
         super().__init__(payload)
         self.headers = headers or {}
 
-    def __enter__(self) -> _MockResponse:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, exc_type, exc, exc_tb) -> bool:

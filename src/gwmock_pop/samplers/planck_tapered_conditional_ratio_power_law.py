@@ -11,7 +11,7 @@ from gwmock_pop.distributions.planck_tapered_conditional_ratio_power_law import 
 )
 
 
-def planck_tapered_conditional_ratio_power_law(  # noqa: PLR0913
+def planck_tapered_conditional_ratio_power_law(  # noqa: PLR0913, PLR0917
     key: Array,
     n_samples: int,
     denominator: Array,

@@ -124,7 +124,7 @@ def load_parameters_config(config_path: str | Path, encoding: str = "utf-8") -> 
         config = config["parameters"]
 
     if not isinstance(config, dict):
-        raise ValueError("Graph config must define a mapping of parameters.")
+        raise TypeError("Graph config must define a mapping of parameters.")
 
     return config
 
@@ -151,7 +151,7 @@ def _read_graph_config_file(config_path: str | Path, encoding: str = "utf-8") ->
     config_path = Path(config_path)
     try:
         config = read_data_file(config_path, encoding=encoding)
-    except ValueError as error:
+    except (ValueError, TypeError) as error:
         message = str(error)
         if "Suffix of filename=" in message:
             raise ValueError(

@@ -13,7 +13,7 @@ from gwmock_pop.distributions.smoothing import log_planck_tapering_function
 from gwmock_pop.integrators.trapezoid import log_trapezoidal_cumsum
 
 
-def planck_tapered_broken_power_law_plus_two_peaks_unnormalized_logpdf(  # noqa: PLR0913
+def planck_tapered_broken_power_law_plus_two_peaks_unnormalized_logpdf(  # noqa: PLR0913, PLR0917
     x: Array,
     alpha_1: float,
     alpha_2: float,
@@ -72,7 +72,7 @@ def planck_tapered_broken_power_law_plus_two_peaks_unnormalized_logpdf(  # noqa:
     return logsumexp(a=stacked_logpdf, b=weights[:, None], axis=0) + log_smoothing
 
 
-def planck_tapered_broken_power_law_plus_two_peaks_cdf(  # noqa: PLR0913
+def planck_tapered_broken_power_law_plus_two_peaks_cdf(  # noqa: PLR0913, PLR0917
     alpha_1: float,
     alpha_2: float,
     transition: float,

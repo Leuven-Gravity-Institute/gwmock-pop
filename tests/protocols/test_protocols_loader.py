@@ -122,7 +122,7 @@ class TestExternalPopulationLoaderStructure:
     )
     def test_unsupported_file_format_raises_value_error(
         self,
-        loader_class: type[_MinimalHDF5Loader] | type[_MinimalCSVLoader],
+        loader_class: type[_MinimalHDF5Loader | _MinimalCSVLoader],
         file_format: str,
     ) -> None:
         """Test that unsupported formats raise a clear ``ValueError``."""

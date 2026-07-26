@@ -11,7 +11,7 @@ from gwmock_pop.distributions.planck_tapered_broken_power_law_plus_two_peaks imp
 )
 
 
-def planck_tapered_broken_power_law_plus_two_peaks(  # noqa: PLR0913
+def planck_tapered_broken_power_law_plus_two_peaks(  # noqa: PLR0913, PLR0917
     key: Array,
     n_samples: int,
     alpha_1: float,
