@@ -32,14 +32,14 @@ dependencies = [
 [dependency-groups]
 dev = [
   "astropy>=8.0.1",
-  "hypothesis>=6.163.1",
+  "hypothesis>=6.164.0",
   "prek>=0.4.11",
   "pytest-cov>=7.1.0",
   "pytest-mock>=3.15.1",
   "pytest>=9.1.1",
   "pytest-github-actions-annotate-failures>=0.4.2",
 ]
-docs = ["zensical>=0.0.51", "mkdocstrings-python>=2.0.5"]
+docs = ["zensical>=0.0.52", "mkdocstrings-python>=2.0.5"]
 build = ["hatch>=1.17.1"]
 release = ["git-cliff>=2.13.1"]
 
