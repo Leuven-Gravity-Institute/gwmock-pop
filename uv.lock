@@ -461,7 +461,7 @@ requires-dist = [
 build = [{ name = "hatch", specifier = ">=1.18.0" }]
 dev = [
     { name = "astropy", specifier = ">=8.0.1" },
-    { name = "hypothesis", specifier = ">=6.165.4" },
+    { name = "hypothesis", specifier = ">=6.165.5" },
     { name = "prek", specifier = ">=0.4.13" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-cov", specifier = ">=7.1.0" },
