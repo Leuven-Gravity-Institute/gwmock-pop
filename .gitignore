@@ -133,3 +133,8 @@ dmypy.json
 
 # Node.js
 node_modules/
+
+# mutmut
+mutants/
+mutmut-stats.json
+.mutmut-cache
