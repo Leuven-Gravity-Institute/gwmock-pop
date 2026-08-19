@@ -4,14 +4,16 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 import numpy as np
 import typer
-from jax import Array
 
 from gwmock_pop.cli.common import resolve_simulator
 from gwmock_pop.protocols import GWPopSimulator
+
+if TYPE_CHECKING:
+    from jax import Array
 
 
 @dataclass(frozen=True)

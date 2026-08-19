@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 import numpy as np
-from jax import Array
 
+if TYPE_CHECKING:
+    from jax import Array
+
+# Annotation-only alias: PEP 695 aliases evaluate lazily, so this is never
+# resolved at runtime and does not need ``Array`` in the module namespace.
 type PopulationArray = np.ndarray | Array
 
 

@@ -7,13 +7,14 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Mapping
 from functools import wraps
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import h5py
-import jax.numpy as jnp
 import networkx as nx
 import numpy as np
-from jax import Array
+
+if TYPE_CHECKING:
+    from jax import Array
 
 
 class Simulator(ABC):
@@ -144,6 +145,8 @@ class Simulator(ABC):
             metadata: Optional metadata to store alongside the samples.
 
         """
+        import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
+
         output_path = Path(output_path)
 
         if file_format is None:
@@ -184,6 +187,8 @@ class Simulator(ABC):
             Loaded data as numpy array.
 
         """
+        import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
+
         input_path = Path(input_path)
 
         suffix = input_path.suffix.lstrip(".")
@@ -231,6 +236,8 @@ class Simulator(ABC):
             Loaded data as numpy array.
 
         """
+        import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
+
         with h5py.File(path, "r") as f:
             data_obj = f["data"]
             if not isinstance(data_obj, h5py.Dataset):
@@ -247,6 +254,8 @@ class Simulator(ABC):
             ValueError: If output is invalid.
 
         """
+        import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
+
         expected_keys = list(self.parameter_names)
         actual_keys = list(result.keys())
         if set(actual_keys) != set(expected_keys):
@@ -271,6 +280,8 @@ class Simulator(ABC):
 
     def _to_array_for_persistence(self, data: Mapping[str, Array] | Array) -> Array:
         """Convert mapping outputs to a deterministic 2D array for saving."""
+        import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
+
         if isinstance(data, Mapping):
             ordered_columns = [jnp.asarray(data[name]) for name in self.parameter_names]
             return jnp.column_stack(ordered_columns)

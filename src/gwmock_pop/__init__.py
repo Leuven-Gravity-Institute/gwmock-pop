@@ -27,6 +27,27 @@ from gwmock_pop.version import __version__
 # enough. Opt out with GWMOCK_POP_DISABLE_X64=1.
 enable_x64_by_default()
 
+# Invariant: importing gwmock_pop must not import jax.
+#
+# `import jax` costs about 240 ms of the ~490 ms it used to take to import
+# gwmock_pop.cli.main, and it is what puts a process on the road to XLA. The
+# thread pools themselves start later, on the first JAX computation — 16
+# `tf_XLAEigen`, 16 `tf_foreach` and 10 `llvm-worker-*` on a 24-core host — and
+# from that point the process can no longer be forked safely: the child gets one
+# thread and every lock the others held, held by nobody, so it blocks forever on
+# the first one it needs. A process that reads a population file, or runs
+# `gwmock-pop --help`, does neither of those things, and should not be dragged
+# down that road by an import.
+#
+# So modules in the import closure of this package import jax inside the
+# functions that use it, and take `jax.Array` under `typing.TYPE_CHECKING`
+# (annotations are strings here, courtesy of `from __future__ import
+# annotations`). Modules outside that closure — the samplers, distributions and
+# transforms, reached on demand through gwmock_pop.utils.import_utils — still
+# import jax at module scope: they are JAX kernels and nothing else.
+#
+# tests/test_lazy_jax_import.py enforces the invariant.
+
 __all__ = [
     "CBC_PARAMETER_NAMES",
     "BBHSimulator",

@@ -6,12 +6,9 @@ import inspect
 import secrets
 from importlib.resources import as_file
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import jax
-import jax.numpy as jnp
 import networkx as nx
-from jax import Array
 
 from gwmock_pop.configs import get_packaged_preset, get_packaged_preset_resource
 from gwmock_pop.graph.build import build_dependency_graph
@@ -19,6 +16,9 @@ from gwmock_pop.graph.validation import load_validated_parameters_config
 from gwmock_pop.mixins.random import RandomMixin
 from gwmock_pop.simulators.simulator import Simulator
 from gwmock_pop.utils.import_utils import import_from_string
+
+if TYPE_CHECKING:
+    from jax import Array
 
 
 class GraphSimulator(RandomMixin, Simulator):
@@ -224,6 +224,8 @@ class GraphSimulator(RandomMixin, Simulator):
         expected_n_samples: int | None,
     ) -> tuple[Array, int]:
         """Convert a sampled value into a validated output column."""
+        import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
+
         array = jnp.asarray(value)
         if array.ndim == 0:
             raise ValueError(f"Parameter '{parameter_name}' produced a scalar output, expected an array of samples.")
@@ -318,6 +320,8 @@ class GraphSimulator(RandomMixin, Simulator):
 
     def reset(self) -> None:
         """Reset the simulator state."""
+        import jax  # noqa: PLC0415  # deferred JAX import
+
         self._sampled_values = {}
         # Reset RNG by using a fresh key
         if hasattr(self, "_rng_manager"):
