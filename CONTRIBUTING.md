@@ -75,7 +75,8 @@ submitting a pull request—this guide will help you get started.
 
     Mutation testing checks that the tests actually fail when the code is wrong. It mutates a copy of
     the source under `mutants/` and is much slower than the unit suite, so run it on the code you
-    touched rather than the whole package:
+    touched rather than the whole package. Mutmut requires a system with fork support, so on Windows
+    run the commands below inside WSL:
 
     ```shell
     uv run mutmut run                     # whole package
