@@ -4,15 +4,14 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping, Sequence
-from typing import Any
-
-import jax
-import jax.numpy as jnp
-from jax import Array
+from typing import TYPE_CHECKING, Any
 
 from gwmock_pop.mixins.random import RandomMixin
 from gwmock_pop.protocols import GWPopSimulator
 from gwmock_pop.simulators.simulator import Simulator
+
+if TYPE_CHECKING:
+    from jax import Array
 
 
 class MixtureSimulator(RandomMixin, Simulator):
@@ -102,6 +101,9 @@ class MixtureSimulator(RandomMixin, Simulator):
         **kwargs: Any,
     ) -> Mapping[str, Array]:
         """Draw ``n_samples`` from the configured mixture."""
+        import jax  # noqa: PLC0415  # deferred JAX import
+        import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
+
         if n_samples < 0:
             raise ValueError(f"n_samples must be >= 0, got {n_samples}.")
         if n_samples == 0:

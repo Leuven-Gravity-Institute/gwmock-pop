@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import math
 from collections.abc import Callable, Mapping
+from typing import TYPE_CHECKING
 
-import jax.numpy as jnp
-from jax import Array
+if TYPE_CHECKING:
+    from jax import Array
 
 _MASS_1_KEYS = ("detector_frame_mass_1", "mass_1", "m1")
 _MASS_2_KEYS = ("detector_frame_mass_2", "mass_2", "m2")
@@ -25,6 +26,8 @@ def validate_sample(sample: Mapping[str, Array]) -> list[str]:
     keys are checked for positivity only, as their ordering is guaranteed by
     construction in the simulator pipeline.
     """
+    import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
+
     violations: list[str] = []
 
     _check_positive(violations, sample, label="m1", keys=_MASS_1_KEYS)
@@ -106,6 +109,8 @@ def _check_mass_ordering(violations: list[str], sample: Mapping[str, Array]) -> 
         )
         return
 
+    import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
+
     delta = mass_1_values - mass_2_values
     if bool(jnp.any(delta < 0.0)):
         violations.append(
@@ -147,6 +152,9 @@ def _get_values(sample: Mapping[str, Array], key: str) -> Array | None:
     """Normalize one sample entry to a flattened JAX array."""
     if key not in sample:
         return None
+
+    import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
+
     return jnp.ravel(jnp.asarray(sample[key]))
 
 
@@ -159,6 +167,8 @@ def _append_mask_violation(
     requirement: str,
 ) -> None:
     """Append a formatted violation when any values fail the mask."""
+    import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
+
     if bool(jnp.any(invalid_mask)):
         key, values = field
         invalid_values = values[invalid_mask]
@@ -167,6 +177,8 @@ def _append_mask_violation(
 
 def _format_range(values: Array) -> str:
     """Format the numeric range of the offending values."""
+    import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
+
     minimum = float(jnp.min(values))
     maximum = float(jnp.max(values))
     return f"[{minimum:.6g}, {maximum:.6g}]"

@@ -5,17 +5,17 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import h5py
-import jax
-import jax.numpy as jnp
 import numpy as np
-from jax import Array
 
 from gwmock_pop.exceptions import PopulationValidationError
 from gwmock_pop.loaders._fetch import resolve_population_path
 from gwmock_pop.loaders._validate import validate_population_catalogue
+
+if TYPE_CHECKING:
+    from jax import Array
 
 _HDF5_DATASET_NAME = "data"
 _SUPPORTED_CATALOGUE_SUFFIXES = {".csv": "csv", ".hdf5": "hdf5", ".h5": "hdf5"}
@@ -185,6 +185,8 @@ class FilePopulationLoader:
         except ValueError as exc:
             raise PopulationValidationError(str(exc)) from exc
 
+        import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
+
         self._catalogue = {name: jnp.asarray(values) for name, values in validated_catalogue.items()}
         if not self._catalogue:
             raise PopulationValidationError("Loaded catalogue is empty.")
@@ -244,6 +246,8 @@ class FilePopulationLoader:
             raise ValueError(f"n_samples must be >= 0, got {n_samples}.")
         if n_samples > catalogue_size:
             raise ValueError(f"Requested {n_samples} samples from a catalogue with only {catalogue_size} rows.")
+
+        import jax  # noqa: PLC0415  # deferred JAX import
 
         seed = kwargs.get("seed", kwargs.get("key", kwargs.get("rng")))
         key = jax.random.PRNGKey(0 if seed is None else int(seed))

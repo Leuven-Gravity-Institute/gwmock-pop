@@ -50,6 +50,22 @@ import. To keep JAX's 32-bit default (e.g. for GPU-throughput studies that do
 not sample absolute times), set `GWMOCK_POP_DISABLE_X64=1` in the environment
 before importing the package.
 
+The flag is requested by setting `JAX_ENABLE_X64=1` in `os.environ`, so that
+importing `gwmock_pop` does not have to import JAX (see below). Two consequences
+worth knowing: child processes started afterwards inherit the same precision,
+and `GWMOCK_POP_DISABLE_X64` takes precedence over `JAX_ENABLE_X64` whoever set
+it. Call `jax.config.update("jax_enable_x64", True)` yourself if you want 64-bit
+floats while opting out of this package's default.
+
+## Import cost
+
+Importing `gwmock_pop` does not import JAX. The samplers, distributions and
+transforms are JAX code and import it when they are loaded, but reading a
+population catalogue, resolving a configuration or running `gwmock-pop --help`
+does not reach them — and so does not pay for JAX's import (about 240 ms) or
+start XLA's thread pools, which is also what keeps such a process safe to
+`fork()`.
+
 ## Installation
 
 Install from PyPI:

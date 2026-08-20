@@ -5,11 +5,10 @@ from __future__ import annotations
 import logging
 import secrets
 from pathlib import Path
-from typing import Self
+from typing import TYPE_CHECKING, Self
 
-import jax
-import jax.numpy as jnp
-from jax import Array
+if TYPE_CHECKING:
+    from jax import Array
 
 logger = logging.getLogger("gwmock_pop")
 
@@ -24,6 +23,8 @@ class RNGManager:
             seed: Random seed. If None, draw a random integer between [0, 2**63).
 
         """
+        import jax  # noqa: PLC0415  # deferred JAX import
+
         self._seed = seed
         self._key = jax.random.key(secrets.randbelow(2**63) if seed is None else seed)
         self._saved_keys: list[Array] = []
@@ -76,7 +77,9 @@ class RNGManager:
             TypeError: If the value is not a jax.Array or has an unsupported dtype.
 
         """
-        if not isinstance(value, Array):
+        import jax  # noqa: PLC0415  # deferred JAX import
+
+        if not isinstance(value, jax.Array):
             raise TypeError("value has to be jax.Array.")
         value_dtype_str = str(value.dtype)
         if value_dtype_str.startswith("key<"):
@@ -96,6 +99,8 @@ class RNGManager:
             Key data.
 
         """
+        import jax  # noqa: PLC0415  # deferred JAX import
+
         return jax.random.key_data(self._key)
 
     @key_data.setter
@@ -106,6 +111,8 @@ class RNGManager:
             value: Key data.
 
         """
+        import jax  # noqa: PLC0415  # deferred JAX import
+
         self._key = jax.random.wrap_key_data(value)
 
     @property
@@ -116,6 +123,8 @@ class RNGManager:
             A new key.
 
         """
+        import jax  # noqa: PLC0415  # deferred JAX import
+
         self._key, sub_key = jax.random.split(key=self._key)
         return sub_key
 
@@ -131,6 +140,8 @@ class RNGManager:
             logger.warning(f"The suffix of path={path} is not '.npy'.")
             path = path.with_suffix(".npy")
             logger.warning(f"The path is updated to {path}.")
+        import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
+
         jnp.save(file=path, arr=self.key_data)
 
     def load_key(self, path: str | Path) -> None:
@@ -145,5 +156,7 @@ class RNGManager:
             logger.warning(f"The suffix of path={path} is not '.npy'.")
             path = path.with_suffix(".npy")
             logger.warning(f"The path is updated to {path}.")
+        import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
+
         key_data = jnp.load(path)
         self.key_data = key_data

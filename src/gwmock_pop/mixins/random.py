@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-from jax import Array
+from typing import TYPE_CHECKING
 
 from gwmock_pop.rng.rng import RNGManager
+
+if TYPE_CHECKING:
+    from jax import Array
 
 
 class RandomMixin:
