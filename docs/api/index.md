@@ -35,6 +35,7 @@ Source paths are under `src/gwmock_pop/`.
 | [GWPopSimulator](protocols/simulator.md)        | Population simulator protocol                          |
 | [ExternalPopulationLoader](protocols/loader.md) | File-backed loader protocol                            |
 | [Loaders](loaders/index.md)                     | `FilePopulationLoader`, `read_population_catalogue`, … |
+| [Provenance](provenance/index.md)               | Catalogue provenance records and run replay            |
 | [Population validation](validation.md)          | `validate_sample` and catalogue checks                 |
 | [Graph validation](graph/validation.md)         | `validate_graph_config`, `ValidationReport`            |
 
@@ -43,6 +44,7 @@ Source paths are under `src/gwmock_pop/`.
 | Page                                      | Scope                                                                 |
 | ----------------------------------------- | --------------------------------------------------------------------- |
 | [Configuration overview](config/index.md) | Pydantic run/population/output models                                 |
+| [Simulation target](config/simulation.md) | Resolving a preset name or config file into run settings              |
 | [Presets](configs.md)                     | Packaged YAML/TOML presets (`list_presets`, `get_packaged_preset`, …) |
 
 ## Simulation stack

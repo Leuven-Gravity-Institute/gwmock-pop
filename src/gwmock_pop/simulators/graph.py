@@ -3,17 +3,19 @@
 from __future__ import annotations
 
 import inspect
-import secrets
-from importlib.resources import as_file
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import networkx as nx
 
-from gwmock_pop.configs import get_packaged_preset, get_packaged_preset_resource
+from gwmock_pop.config.simulation import (
+    SimulationTarget,
+    simulation_target_from_file,
+    simulation_target_from_preset,
+)
 from gwmock_pop.graph.build import build_dependency_graph
-from gwmock_pop.graph.validation import load_validated_parameters_config
 from gwmock_pop.mixins.random import RandomMixin
+from gwmock_pop.provenance import graph_simulation_origin, resolved_configuration_payload
 from gwmock_pop.simulators.simulator import Simulator
 from gwmock_pop.utils.import_utils import import_from_string
 
@@ -84,6 +86,7 @@ class GraphSimulator(RandomMixin, Simulator):
         self._source_type: str | None = source_type
         self._sampled_values: dict[str, Any] = {}
         self._parameter_names = [name for name, spec in config.items() if self._include_in_output(spec)]
+        self._target: SimulationTarget | None = None
         self._build_graph()
 
     @property
@@ -295,6 +298,28 @@ class GraphSimulator(RandomMixin, Simulator):
         return output_mapping
 
     @classmethod
+    def from_target(cls, target: SimulationTarget, **kwargs: Any) -> GraphSimulator:
+        """Create a simulator from an already-resolved simulation target.
+
+        The target is kept, so the simulator can describe the configuration it
+        was built from when a catalogue is written.
+
+        Args:
+            target: Resolved preset or configuration file.
+            **kwargs: Additional arguments passed to __init__. A ``source_type``
+                given here wins over the one the target declares.
+
+        Returns:
+            Configured simulator instance.
+        """
+        options = dict(kwargs)
+        if target.source_type is not None:
+            options.setdefault("source_type", target.source_type)
+        simulator = cls(config=target.graph_config, **options)
+        simulator._target = target
+        return simulator
+
+    @classmethod
     def from_config_file(cls, config_path: str | Path, encoding: str = "utf-8", **kwargs: Any) -> GraphSimulator:
         """Create simulator from configuration file.
 
@@ -306,27 +331,42 @@ class GraphSimulator(RandomMixin, Simulator):
         Returns:
             Configured simulator instance.
         """
-        config, _ = load_validated_parameters_config(config_path=config_path, encoding=encoding)
-        return cls(config=config, **kwargs)
+        return cls.from_target(simulation_target_from_file(config_path, encoding=encoding), **kwargs)
 
     @classmethod
     def from_preset(cls, preset_name: str, **kwargs: Any) -> GraphSimulator:
         """Create a graph simulator from a packaged preset."""
-        preset = get_packaged_preset(preset_name)
-        options = dict(kwargs)
-        options.setdefault("source_type", preset.source_type)
-        with as_file(get_packaged_preset_resource(preset_name)) as config_path:
-            return cls.from_config_file(config_path, **options)
+        return cls.from_target(simulation_target_from_preset(preset_name), **kwargs)
+
+    def _provenance_origin(self) -> dict[str, Any]:
+        """Return the origin block for a run of this parameter graph.
+
+        Returns:
+            An origin block carrying the parameter graph with its defaults filled
+            in, so the run can be reconstructed from the record alone.
+        """
+        from gwmock_pop.config.main import MainConfiguration  # noqa: PLC0415  # avoids an import cycle
+
+        configuration = MainConfiguration() if self._target is None else self._target.configuration
+        config_path = (
+            None if self._target is None or self._target.config_path is None else str(self._target.config_path)
+        )
+        return graph_simulation_origin(
+            graph_config=self._config,
+            configuration=resolved_configuration_payload(configuration),
+            preset=None if self._target is None else self._target.preset,
+            config_path=config_path,
+        )
 
     def reset(self) -> None:
-        """Reset the simulator state."""
+        """Reset the simulator state.
+
+        The random stream is rewound to the seed the simulator was built with,
+        including a seed that was drawn rather than requested. Anything else
+        would make the state after a reset undescribable.
+        """
         import jax  # noqa: PLC0415  # deferred JAX import
 
         self._sampled_values = {}
-        # Reset RNG by using a fresh key
         if hasattr(self, "_rng_manager"):
-            seed = getattr(self._rng_manager, "_seed", None)
-            if seed is not None:
-                self._rng_manager.key = jax.random.key(seed)
-            else:
-                self._rng_manager.key = jax.random.key(secrets.randbelow(2**63))
+            self._rng_manager.key = jax.random.key(self._rng_manager.resolved_seed)

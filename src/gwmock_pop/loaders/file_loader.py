@@ -13,12 +13,29 @@ import numpy as np
 from gwmock_pop.exceptions import PopulationValidationError
 from gwmock_pop.loaders._fetch import resolve_population_path
 from gwmock_pop.loaders._validate import validate_population_catalogue
+from gwmock_pop.provenance import (
+    EngineDescription,
+    external_engine_origin,
+    provenance_sidecar_path,
+    read_provenance,
+    write_hdf5_provenance,
+    write_provenance_sidecar,
+)
 
 if TYPE_CHECKING:
     from jax import Array
 
 _HDF5_DATASET_NAME = "data"
 _SUPPORTED_CATALOGUE_SUFFIXES = {".csv": "csv", ".hdf5": "hdf5", ".h5": "hdf5"}
+
+
+def supported_population_formats() -> frozenset[str]:
+    """Return the catalogue formats this package reads and writes.
+
+    Returns:
+        The format names, as reported by :func:`infer_population_file_format`.
+    """
+    return frozenset(_SUPPORTED_CATALOGUE_SUFFIXES.values())
 
 
 def infer_population_file_format(path: str | os.PathLike) -> str:
@@ -81,34 +98,100 @@ def _population_structured_array(
 
 
 def _write_population_csv(
-    output_path: Path, population: Mapping[str, Array | np.ndarray], columns: Sequence[str], n_rows: int
+    *,
+    output_path: Path,
+    population: Mapping[str, Array | np.ndarray],
+    columns: Sequence[str],
+    n_rows: int,
+    provenance: Mapping[str, Any] | None = None,
 ) -> None:
-    """Persist a population as a header-based CSV file."""
+    """Persist a population as a header-based CSV file with an optional sidecar record."""
     matrix = _population_matrix(population=population, columns=columns, n_rows=n_rows)
     np.savetxt(output_path, matrix, delimiter=",", header=",".join(columns), comments="")
+    if provenance is not None:
+        write_provenance_sidecar(output_path, dict(provenance))
 
 
-def _write_population_hdf5(
-    output_path: Path, population: Mapping[str, Array | np.ndarray], columns: Sequence[str], n_rows: int
+def _write_population_hdf5(  # noqa: PLR0913  # one writer, one place: every knob the format has
+    *,
+    output_path: Path,
+    population: Mapping[str, Array | np.ndarray],
+    columns: Sequence[str],
+    n_rows: int,
+    provenance: Mapping[str, Any] | None = None,
+    compression: str | None = None,
 ) -> None:
-    """Persist a population as a structured HDF5 dataset named ``data``."""
+    """Persist a population as a structured HDF5 dataset named ``data``.
+
+    An optional provenance record is embedded in a sibling ``metadata`` group,
+    which the catalogue readers ignore.
+    """
     structured = _population_structured_array(population=population, columns=columns, n_rows=n_rows)
+    # A chunked dataset cannot have a zero-length chunk, so an empty catalogue is
+    # written uncompressed rather than refused.
+    dataset_compression = compression if n_rows > 0 else None
     with h5py.File(output_path, "w") as handle:
-        handle.create_dataset(_HDF5_DATASET_NAME, data=structured)
+        handle.create_dataset(_HDF5_DATASET_NAME, data=structured, compression=dataset_compression)
+        if provenance is not None:
+            write_hdf5_provenance(handle, dict(provenance))
 
 
-def write_population_catalogue(output_path: str | os.PathLike, population: Mapping[str, Array | np.ndarray]) -> None:
-    """Persist a population mapping using named-column CSV/HDF5 conventions."""
+def write_population_catalogue(
+    output_path: str | os.PathLike,
+    population: Mapping[str, Array | np.ndarray],
+    *,
+    provenance: Mapping[str, Any] | None = None,
+    compression: str | None = None,
+) -> None:
+    """Persist a population mapping using named-column CSV/HDF5 conventions.
+
+    This is the only catalogue writer in the package, so every file it produces
+    can carry the same record and none of them can drift into a private layout.
+
+    Args:
+        output_path: Destination ``.csv``, ``.h5``, or ``.hdf5`` file.
+        population: Mapping from parameter name to a 1-D column. Insertion order
+            is the output column order.
+        provenance: Record describing how the catalogue was produced, built by
+            :func:`gwmock_pop.provenance.build_provenance_record`. HDF5 files
+            carry it internally; CSV files get a JSON sidecar next to them.
+        compression: Optional HDF5 compression filter, such as ``"gzip"``.
+            Ignored for CSV.
+
+    Raises:
+        ValueError: If the destination suffix names an unsupported format.
+    """
     destination = Path(output_path)
     columns = _population_columns(population)
     n_rows = _population_size(population=population, columns=columns)
     file_format = infer_population_file_format(destination)
 
+    if provenance is None:
+        # A catalogue written without a record must not inherit the record of
+        # whatever it replaced. An HDF5 rewrite truncates the embedded record,
+        # but a sidecar sits beside the file and would survive -- and
+        # read_provenance falls back to it -- so it would resurface as a
+        # description of samples that are no longer there.
+        provenance_sidecar_path(destination).unlink(missing_ok=True)
+
     if file_format == "csv":
-        _write_population_csv(output_path=destination, population=population, columns=columns, n_rows=n_rows)
+        _write_population_csv(
+            output_path=destination,
+            population=population,
+            columns=columns,
+            n_rows=n_rows,
+            provenance=provenance,
+        )
         return
     if file_format == "hdf5":
-        _write_population_hdf5(output_path=destination, population=population, columns=columns, n_rows=n_rows)
+        _write_population_hdf5(
+            output_path=destination,
+            population=population,
+            columns=columns,
+            n_rows=n_rows,
+            provenance=provenance,
+            compression=compression,
+        )
         return
 
     raise ValueError(f"Unsupported format {file_format!r}.")
@@ -221,6 +304,37 @@ class FilePopulationLoader:
     def metadata(self) -> dict[str, Any]:
         """Return loader metadata, including remote cache details when relevant."""
         return self._metadata
+
+    @property
+    def provenance(self) -> dict[str, Any] | None:
+        """Return the provenance record the loaded catalogue carries, if any.
+
+        Returns:
+            The record found in or beside the input file, or ``None`` when the
+            catalogue arrived undocumented.
+        """
+        return read_provenance(self._path)
+
+    def provenance_origin(self, engine: EngineDescription) -> dict[str, Any]:
+        """Describe this loaded catalogue as the origin of a new one.
+
+        The fetch details the loader already recorded for a remote catalogue --
+        URL, cache key and ETag -- are folded in rather than restated, and the
+        record the input file carried is chained rather than dropped.
+
+        Args:
+            engine: Identity of the engine that produced the input catalogue,
+                including a pointer to that engine's own run record.
+
+        Returns:
+            An origin block for :func:`gwmock_pop.provenance.build_provenance_record`.
+        """
+        return external_engine_origin(
+            engine=engine,
+            input_path=self._metadata["original_path"],
+            fetch=self._metadata["fetch"],
+            upstream=self.provenance,
+        )
 
     def simulate(self, n_samples: int | None = None, **kwargs: Any) -> Mapping[str, Array]:
         """Sample catalogue rows without replacement.

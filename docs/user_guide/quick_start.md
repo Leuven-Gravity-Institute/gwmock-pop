@@ -23,10 +23,68 @@ gwmock-pop simulate --config examples/gwtc4/bbh_population.yaml --n 500 --output
 Options:
 
 - **`--config`**: preset identifier or path to `.yaml` / `.yml` / `.toml`.
-- **`--n`**: number of samples (events).
-- **`--output`**: destination `.csv`, `.h5`, or `.hdf5` (must not already
-  exist).
-- **`--seed`**: optional integer for reproducibility.
+- **`--n`**: number of samples (events). Optional when the configuration sets
+  `run.n_samples`.
+- **`--output`**: destination `.csv`, `.h5`, or `.hdf5` (must not already exist,
+  unless the configuration sets `run.output.overwrite`).
+- **`--seed`**: optional integer for reproducibility. Falls back to a configured
+  `run.seed`, and failing that a seed is drawn and recorded.
+
+## Provenance
+
+Every catalogue `simulate` writes carries a machine-readable record of the run
+behind it, so the catalogue can be reconstructed later without the config file
+that produced it:
+
+- the package version, and the commit and dirty flag when running from a
+  checkout;
+- the **complete resolved** configuration — every sampler argument, including
+  the defaults the config file never wrote down;
+- the RNG seed **as actually used**, so a run started without `--seed` is still
+  repeatable;
+- the source type, the row count and the column names in output order;
+- the creation time and the code that wrote the file.
+
+HDF5 files carry the record in a `metadata` group beside `data`; CSV files get a
+`<name>.csv.provenance.json` sidecar. Prefer HDF5 for anything you publish: a
+sidecar is a separate file, and a CSV catalogue that arrives without it arrives
+without its provenance.
+
+```python
+from gwmock_pop.provenance import read_provenance, replay_catalogue
+
+record = read_provenance("outputs/population.h5")
+print(record["run"]["seed"], record["tool"]["version"])
+
+# Redraw the same catalogue from the record alone.
+catalogue = replay_catalogue(record)
+```
+
+Set `run.output.save_metadata` to `false` to write the samples on their own.
+
+## Configuration file
+
+A configuration file may carry the `run` and `output` blocks alongside its
+`parameters` graph, and `simulate` honours them:
+
+```yaml
+run:
+    name: gwtc4-rerun
+    seed: 1234
+    n_samples: 5000
+    output:
+        overwrite: true
+        compression: gzip
+        save_metadata: true
+parameters:
+    # ... the parameter graph
+```
+
+Command-line options win over the file. `run.seed`, `run.n_samples`,
+`output.directory`, `output.format` and `output.compression` apply only when the
+file states them, because each of their schema defaults would otherwise override
+what `--output` on its own asks for; a declared `output.format` that contradicts
+the `--output` suffix is an error rather than a silent choice between them.
 
 Other useful commands:
 

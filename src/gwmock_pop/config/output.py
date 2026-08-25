@@ -23,4 +23,12 @@ class OutputConfiguration(BaseModel):
     """Whether or not to overwrite existing files."""
 
     save_metadata: bool = Field(default=True, description="Whether or not to save metadata.")
-    """Whether or not to save metadata."""
+    """Whether or not to save the provenance record alongside the catalogue.
+
+    When true -- the default -- a written catalogue carries the record of the run
+    that produced it: package version and checkout state, the complete resolved
+    configuration, the seed as actually used, and the column list in output
+    order. HDF5 files carry it in a ``metadata`` group, CSV files in a JSON
+    sidecar. Turn it off only for throwaway output: a catalogue without the
+    record cannot be reconstructed, so it cannot be published.
+    """

@@ -26,7 +26,10 @@ class RNGManager:
         import jax  # noqa: PLC0415  # deferred JAX import
 
         self._seed = seed
-        self._key = jax.random.key(secrets.randbelow(2**63) if seed is None else seed)
+        # A drawn seed is kept, not discarded: it is the only description of a
+        # run started without one, and without it that run cannot be repeated.
+        self._resolved_seed = secrets.randbelow(2**63) if seed is None else seed
+        self._key = jax.random.key(self._resolved_seed)
         self._saved_keys: list[Array] = []
 
     def __repr__(self) -> str:
@@ -53,6 +56,30 @@ class RNGManager:
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Exit the context manager."""
         self._key = self._saved_keys.pop()
+
+    @property
+    def requested_seed(self) -> int | None:
+        """Get the seed the caller asked for.
+
+        Returns:
+            The requested seed, or None if the caller left the choice open.
+
+        """
+        return self._seed
+
+    @property
+    def resolved_seed(self) -> int:
+        """Get the seed this generator was actually initialized with.
+
+        This is the value to record when describing a run: it equals
+        :attr:`requested_seed` when one was given, and the drawn value when it
+        was not.
+
+        Returns:
+            The seed in use.
+
+        """
+        return self._resolved_seed
 
     @property
     def key(self) -> Array:
