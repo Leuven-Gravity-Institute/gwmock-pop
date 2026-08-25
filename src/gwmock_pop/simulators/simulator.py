@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
-import json
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from functools import wraps
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import h5py
 import networkx as nx
 import numpy as np
+
+from gwmock_pop.loaders.file_loader import infer_population_file_format, write_population_catalogue
+from gwmock_pop.provenance import build_provenance_record, run_metadata, simulator_origin
 
 if TYPE_CHECKING:
     from jax import Array
@@ -123,126 +124,123 @@ class Simulator(ABC):
         """
         return self.simulate(*args, **kwargs)
 
-    def save(
+    def save_catalogue(
         self,
         output_path: str | Path,
-        file_format: str | None = None,
-        data: Mapping[str, Array] | Array | None = None,
+        *,
+        data: Mapping[str, Array] | None = None,
+        provenance: Mapping[str, Any] | None = None,
         compression: str | None = None,
-        metadata: dict[str, Any] | None = None,
     ) -> None:
-        """Save the simulated data to a file.
+        """Persist a simulated population as a named-column catalogue.
+
+        Persistence goes through :func:`~gwmock_pop.loaders.write_population_catalogue`,
+        the one writer in this package, so a file written here is one the
+        package's own readers accept and it carries the same provenance record
+        as a file written by the CLI.
 
         Args:
-            output_path: Path to save the file.
-            file_format: File format (npy, npz, csv, hdf5). If None, infers from extension.
-            data: Data to save. If None, uses last simulated data. Mapping inputs
-                are converted to a 2D array with columns ordered by
-                ``parameter_names``.
-            compression: Optional compression setting for supported formats.
-                For HDF5, this specifies the compression filter (e.g., "gzip").
-                For NPZ, any non-None value enables default zlib compression.
-            metadata: Optional metadata to store alongside the samples.
-
-        """
-        import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
-
-        output_path = Path(output_path)
-
-        if file_format is None:
-            file_format = output_path.suffix.lstrip(".")
-
-        if data is None:
-            if self._last_data is None:
-                raise ValueError("No data provided and no last simulated data available.")
-            data = self._last_data
-
-        data_array = self._to_array_for_persistence(data)
-
-        if file_format == "npy":
-            jnp.save(output_path, data_array)
-        elif file_format == "npz":
-            if metadata:
-                payload = {"data": np.asarray(data_array), "__metadata__": np.array(json.dumps(metadata))}
-            else:
-                payload = {"data": np.asarray(data_array)}
-            if compression is None:
-                np.savez(output_path, **payload)
-            else:
-                np.savez_compressed(output_path, **payload)
-        elif file_format == "csv":
-            np.savetxt(output_path, data_array, delimiter=",")
-        elif file_format == "hdf5":
-            self._save_hdf5(output_path, data_array, compression=compression, metadata=metadata)
-        else:
-            raise ValueError(f"Unsupported format: {file_format}")
-
-    def load(self, input_path: str | Path) -> Array:
-        """Load data from a file.
-
-        Args:
-            input_path: Path to load the file from.
-
-        Returns:
-            Loaded data as numpy array.
-
-        """
-        import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
-
-        input_path = Path(input_path)
-
-        suffix = input_path.suffix.lstrip(".")
-
-        if suffix == "npy":
-            return jnp.load(input_path)
-        elif suffix == "npz":
-            with np.load(input_path) as loaded:
-                return jnp.array(loaded["data"])
-        elif suffix == "csv":
-            return jnp.array(np.loadtxt(input_path, delimiter=","))
-        elif suffix == "hdf5":
-            return self._load_hdf5(input_path)
-        else:
-            raise ValueError(f"Unsupported format: {suffix}")
-
-    @staticmethod
-    def _save_hdf5(
-        path: Path, data: Array, compression: str | None = None, metadata: dict[str, Any] | None = None
-    ) -> None:
-        """Save data to HDF5 format.
-
-        Args:
-            path: Path to save the file.
-            data: Data to save.
+            output_path: Destination ``.csv``, ``.h5``, or ``.hdf5`` file.
+            data: Population to write. Defaults to the last simulated population.
+            provenance: Record to store with the catalogue. Defaults to the one
+                this simulator can describe itself with.
             compression: Optional HDF5 compression filter.
-            metadata: Optional metadata to store in the file.
 
+        Raises:
+            ValueError: If no population is given and none has been simulated.
+            TypeError: If the population is not a mapping of named columns.
         """
-        with h5py.File(path, "w") as f:
-            f.create_dataset("data", data=data, compression=compression)
-            if metadata:
-                metadata_group = f.create_group("metadata")
-                for key, value in metadata.items():
-                    metadata_group.attrs[key] = json.dumps(value)
+        population = self._last_data if data is None else data
+        if population is None:
+            raise ValueError("No data provided and no last simulated data available.")
+        if not isinstance(population, Mapping):
+            raise TypeError("A catalogue is written from a mapping of parameter names to columns.")
 
-    @staticmethod
-    def _load_hdf5(path: Path) -> Array:
-        """Load data from HDF5 format.
+        ordered = {name: population[name] for name in self.parameter_names}
+        n_samples = 0 if not ordered else int(np.asarray(next(iter(ordered.values()))).shape[0])
+        record = (
+            self.build_provenance_record(
+                n_samples=n_samples,
+                file_format=infer_population_file_format(output_path),
+                writer=f"{type(self).__module__}.{type(self).__qualname__}.save_catalogue",
+            )
+            if provenance is None
+            else dict(provenance)
+        )
+        write_population_catalogue(
+            output_path=output_path, population=ordered, provenance=record, compression=compression
+        )
+
+    def build_provenance_record(
+        self,
+        *,
+        n_samples: int,
+        file_format: str,
+        parameter_names: Sequence[str] | None = None,
+        run: Mapping[str, Any] | None = None,
+        writer: str | None = None,
+    ) -> dict[str, Any]:
+        """Build the provenance record describing a catalogue from this simulator.
+
+        This is the single record builder behind both persistence paths: the CLI
+        calls it with the run settings it resolved, and :meth:`save_catalogue`
+        calls it with what the simulator knows about itself. Neither assembles a
+        record of its own, so the two cannot drift apart.
 
         Args:
-            path: Path to load the file from.
+            n_samples: Number of rows being written.
+            file_format: Format the catalogue is written in.
+            parameter_names: Column names in output order. Defaults to this
+                simulator's parameter names.
+            run: Block from :func:`gwmock_pop.provenance.run_metadata`. Defaults
+                to what the simulator's own generator reports.
+            writer: Import path of the code writing the file.
 
         Returns:
-            Loaded data as numpy array.
-
+            The record.
         """
-        import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
+        return build_provenance_record(
+            origin=self._provenance_origin(),
+            source_type=self._provenance_source_type(),
+            parameter_names=self.parameter_names if parameter_names is None else parameter_names,
+            n_samples=n_samples,
+            file_format=file_format,
+            writer=writer or f"{type(self).__module__}.{type(self).__qualname__}.save_catalogue",
+            run=self._provenance_run() if run is None else run,
+        )
 
-        with h5py.File(path, "r") as f:
-            data_obj = f["data"]
-            if not isinstance(data_obj, h5py.Dataset):
-                raise TypeError('f["data"] is not a h5py.Dataset instance.')
-            return jnp.array(data_obj[()])
+    def _provenance_source_type(self) -> str | None:
+        """Return the source type to record, or ``None`` when it is not configured.
+
+        Returns:
+            The simulator's source type when it has one.
+        """
+        try:
+            return self.source_type  # ty:ignore[unresolved-attribute]
+        except (AttributeError, RuntimeError, ValueError):
+            return None
+
+    def _provenance_origin(self) -> dict[str, Any]:
+        """Return the origin block describing how this simulator produced its data.
+
+        Returns:
+            An origin block. The base class can name the code that ran but not
+            the configuration that drove it, so the record it yields is not
+            replayable; subclasses that know their configuration override this.
+        """
+        return simulator_origin(component=f"{type(self).__module__}.{type(self).__qualname__}")
+
+    def _provenance_run(self) -> dict[str, Any] | None:
+        """Return the block describing the run, when the seed in use is knowable.
+
+        Returns:
+            The run block, or ``None`` for a simulator with no seeded generator.
+        """
+        rng_manager = getattr(self, "rng_manager", None)
+        if rng_manager is None:
+            return None
+        seed_source = "library" if rng_manager.requested_seed is not None else "drawn"
+        return run_metadata(name=None, seed=rng_manager.resolved_seed, seed_source=seed_source)
 
     def _validate_output(self, result: Mapping[str, Array]) -> None:
         """Validate the output of simulate().
@@ -277,12 +275,3 @@ class Simulator(ABC):
                 raise ValueError(
                     f"Parameter '{parameter_name}' has {parameter_n_samples} samples, expected {n_samples}."
                 )
-
-    def _to_array_for_persistence(self, data: Mapping[str, Array] | Array) -> Array:
-        """Convert mapping outputs to a deterministic 2D array for saving."""
-        import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
-
-        if isinstance(data, Mapping):
-            ordered_columns = [jnp.asarray(data[name]) for name in self.parameter_names]
-            return jnp.column_stack(ordered_columns)
-        return jnp.asarray(data)

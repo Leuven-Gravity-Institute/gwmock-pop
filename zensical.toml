@@ -79,6 +79,7 @@ nav = [
       { "Post Processing" = "api/config/post_processing.md" },
       { "Run" = "api/config/run.md" },
       { "Selection" = "api/config/selection.md" },
+      { "Simulation Target" = "api/config/simulation.md" },
     ] },
     { "Presets" = "api/configs.md" },
     { "Conversion" = [
@@ -130,6 +131,13 @@ nav = [
       { "Overview" = "api/transforms/index.md" },
     ] },
     { "Population Validation" = "api/validation.md" },
+    { "Provenance" = [
+      { "Overview" = "api/provenance/index.md" },
+      { "Record" = "api/provenance/record.md" },
+      { "Storage" = "api/provenance/io.md" },
+      { "Replay" = "api/provenance/replay.md" },
+      { "Configuration payload" = "api/provenance/configuration.md" },
+    ] },
     { "Protocols" = [
       { "Overview" = "api/protocols/index.md" },
       { "GWPopSimulator" = "api/protocols/simulator.md" },

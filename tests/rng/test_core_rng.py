@@ -284,3 +284,40 @@ class TestRNGManager:
 
         with pytest.raises(Exception, match=r"This file contains pickled"):
             rng.load_key(corrupted_path)
+
+
+class TestResolvedSeed:
+    """Tests for retaining the seed actually used.
+
+    Without a seed the manager drew one and threw it away, so a run started
+    with no seed could not be described, let alone repeated.
+    """
+
+    def test_reports_the_requested_seed_when_one_was_given(self) -> None:
+        """An explicit seed is both the requested and the resolved seed."""
+        rng = RNGManager(seed=42)
+
+        assert rng.requested_seed == 42
+        assert rng.resolved_seed == 42
+
+    def test_retains_the_drawn_seed_when_none_was_given(self) -> None:
+        """A drawn seed is kept, so the run it produced can be described."""
+        rng = RNGManager(seed=None)
+
+        assert rng.requested_seed is None
+        assert isinstance(rng.resolved_seed, int)
+        assert 0 <= rng.resolved_seed < 2**63
+
+    def test_the_drawn_seed_is_the_one_the_key_came_from(self) -> None:
+        """Re-seeding with the resolved seed reproduces the drawn state."""
+        drawn = RNGManager(seed=None)
+
+        replayed = RNGManager(seed=drawn.resolved_seed)
+
+        assert jnp.array_equal(drawn.key_data, replayed.key_data)
+
+    def test_successive_managers_draw_different_seeds(self) -> None:
+        """The drawn seed is a fresh draw, not a fixed fallback."""
+        seeds = {RNGManager(seed=None).resolved_seed for _ in range(4)}
+
+        assert len(seeds) == 4

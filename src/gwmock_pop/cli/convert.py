@@ -16,7 +16,10 @@ from gwmock_pop.loaders.file_loader import (
     read_population_catalogue,
     write_population_catalogue,
 )
+from gwmock_pop.provenance import build_provenance_record, converted_catalogue_origin, read_provenance
 from gwmock_pop.utils.yaml import read_yaml
+
+_WRITER = "gwmock_pop.cli.convert.convert_command"
 
 
 def _load_column_map(path: Path) -> dict[str, str]:
@@ -139,7 +142,22 @@ def convert_command(
         raise typer.Exit(1)
 
     try:
-        write_population_catalogue(output_path=output_path, population=converted)
+        # A conversion extends the chain rather than truncating it: the record the
+        # input carried is embedded in the new one, so a converted file still says
+        # where its numbers came from.
+        record = build_provenance_record(
+            origin=converted_catalogue_origin(
+                input_path=str(input_path),
+                column_map=loaded_column_map,
+                upstream=read_provenance(input_path),
+            ),
+            source_type=None,
+            parameter_names=list(converted),
+            n_samples=len(next(iter(converted.values()))),
+            file_format=infer_population_file_format(output_path),
+            writer=_WRITER,
+        )
+        write_population_catalogue(output_path=output_path, population=converted, provenance=record)
     except Exception as error:
         logger.error("%s", error)
         raise typer.Exit(1) from error

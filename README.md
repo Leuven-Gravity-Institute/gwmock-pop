@@ -30,6 +30,9 @@ gravitational-wave sources.
   `write_population_catalogue` for CSV and HDF5 (structured or group-of-datasets
   layouts), including remote URL loading with local caching and CBC
   canonicalization in the loader.
+- **Provenance:** `gwmock_pop.provenance` — every written catalogue carries a
+  machine-readable record of the run behind it, and `replay_catalogue` redraws
+  that run from the record alone.
 - **Quality checks:** `validate_sample` for arrays returned by simulators.
 
 Public re-exports live in `gwmock_pop.__all__`; full module reference is in the
@@ -114,6 +117,11 @@ gwmock-pop simulate --config gwtc4 --n 1000 --output population.csv --seed 42
 gwmock-pop simulate --config examples/gwtc4/bbh_population.yaml --n 500 --output out.h5
 ```
 
+A config file may also carry the `run` and `output` blocks that
+`MainConfiguration` describes, and `simulate` honours them: `run.seed`,
+`run.n_samples`, `run.name` and `run.output.*`. Command-line options win over
+the file.
+
 Other commands:
 
 | Command               | Purpose                                                                          |
@@ -151,6 +159,29 @@ print(list_presets())                 # e.g. ["gwtc4", ...]
 sim = GraphSimulator.from_preset("gwtc4")
 catalogue = sim.simulate(1000)
 ```
+
+## Provenance
+
+Every catalogue written by `gwmock-pop simulate` — and by
+`Simulator.save_catalogue` — carries a machine-readable record of the run that
+produced it: the package version and, from a checkout, the commit and dirty
+flag; the **complete resolved** configuration with sampler defaults filled in;
+the RNG seed **as actually used**, so a run started without `--seed` is still
+repeatable; the source type, row count and column names in output order; and the
+creation time and writing tool.
+
+HDF5 files carry the record in a `metadata` group beside `data`. CSV files get a
+`<name>.csv.provenance.json` sidecar — which is why HDF5 is the format to
+publish in: a sidecar can be separated from the catalogue it describes.
+
+```python
+from gwmock_pop.provenance import read_provenance, replay_catalogue
+
+record = read_provenance("population.h5")
+catalogue = replay_catalogue(record)  # the same samples, from the record alone
+```
+
+Set `run.output.save_metadata` to `false` to write the samples on their own.
 
 `FilePopulationLoader` also accepts `http://`, `https://`, `s3://`, and
 `zenodo://<record>/<file>` sources. Remote catalogues are cached under

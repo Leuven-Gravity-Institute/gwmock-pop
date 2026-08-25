@@ -11,6 +11,8 @@ import numpy as np
 import pytest
 from jax import Array
 
+from gwmock_pop import read_population_catalogue
+from gwmock_pop.provenance import read_provenance
 from gwmock_pop.simulators.simulator import Simulator
 
 
@@ -178,120 +180,84 @@ class TestSimulator:
         assert all(value.shape == (10,) for value in result.values())
         assert all(jnp.all(value == 1.0) for value in result.values())
 
-    @pytest.mark.parametrize("file_format", ["npy", "npz", "csv", "hdf5"])
-    def test_save(self, simulator: ConcreteSimulator, tmp_path: Path, file_format: str) -> None:
-        """Test save method with different formats."""
-        data = jnp.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
-        simulator._last_data = data
+    @pytest.mark.parametrize("suffix", ["csv", "hdf5", "h5"])
+    def test_save_catalogue_round_trips_through_the_package_reader(
+        self, simulator: ConcreteSimulator, tmp_path: Path, suffix: str
+    ) -> None:
+        """A saved catalogue is one this package's own reader accepts."""
+        expected = simulator.simulate()
+        output_path = tmp_path / f"population.{suffix}"
 
-        output_path = tmp_path / f"test.{file_format}"
-        simulator.save(output_path)
+        simulator.save_catalogue(output_path)
 
-        assert output_path.exists()
+        catalogue = read_population_catalogue(output_path)
+        assert list(catalogue) == simulator.parameter_names
+        for name, values in catalogue.items():
+            assert np.allclose(values, np.asarray(expected[name]), atol=0.0)
 
-        if file_format == "npy":
-            loaded = jnp.load(output_path)
-            assert jnp.allclose(loaded, data)
-        elif file_format == "npz":
-            loaded = simulator.load(output_path)
-            assert jnp.allclose(loaded, data)
-        elif file_format == "csv":
-            loaded = np.loadtxt(output_path, delimiter=",")
-            assert np.allclose(loaded, data)
-        elif file_format == "hdf5":
-            with h5py.File(output_path, "r") as f:
-                loaded = jnp.array(f["data"])
-            assert jnp.allclose(loaded, data)
+    def test_save_catalogue_writes_columns_in_parameter_order(
+        self, simulator: ConcreteSimulator, tmp_path: Path
+    ) -> None:
+        """Column order follows ``parameter_names``, whatever order the data arrives in."""
+        shuffled = {name: jnp.full((4,), index + 1.0) for index, name in enumerate(reversed(simulator.parameter_names))}
+        output_path = tmp_path / "population.hdf5"
 
-    def test_save_with_explicit_data(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
-        """Test save method with explicit data argument."""
-        data = jnp.array([[7.0, 8.0, 9.0]])
-        output_path = tmp_path / "test.npy"
-        simulator.save(output_path, data=data)
+        simulator.save_catalogue(output_path, data=shuffled)
 
-        loaded = jnp.load(output_path)
-        assert jnp.allclose(loaded, data)
+        assert list(read_population_catalogue(output_path)) == simulator.parameter_names
 
-    def test_save_explicit_file_format(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
-        """Test save method with explicit file_format (bypasses extension inference)."""
-        data = jnp.array([[1.0, 2.0], [3.0, 4.0]])
-        simulator._last_data = data
-        # Use a path without extension, but specify format explicitly
-        output_path = tmp_path / "testfile"
-        simulator.save(output_path, file_format="csv")
+    def test_save_catalogue_carries_a_provenance_record(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
+        """A saved catalogue says which code produced it and with which seed."""
+        simulator.simulate()
+        output_path = tmp_path / "population.hdf5"
 
-        loaded = np.loadtxt(output_path, delimiter=",")
-        assert np.allclose(loaded, data)
+        simulator.save_catalogue(output_path)
 
-    def test_save_no_last_data(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
-        """Test save method raises error when no data available."""
-        simulator._last_data = None
-        output_path = tmp_path / "test.npy"
+        record = read_provenance(output_path)
+        assert record is not None
+        assert record["catalogue"]["parameter_names"] == simulator.parameter_names
+        assert record["catalogue"]["n_samples"] == 10
+        assert record["origin"]["kind"] == "simulator"
+        assert record["origin"]["engine"]["component"].endswith("ConcreteSimulator")
 
+    def test_save_catalogue_stores_a_supplied_record_unchanged(
+        self, simulator: ConcreteSimulator, tmp_path: Path
+    ) -> None:
+        """A caller who has already built a record gets that one stored."""
+        simulator.simulate()
+        output_path = tmp_path / "population.hdf5"
+        record = {"schema_version": "1.0", "marker": "supplied"}
+
+        simulator.save_catalogue(output_path, provenance=record)
+
+        assert read_provenance(output_path) == record
+
+    def test_save_catalogue_compresses_when_asked(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
+        """The compression filter reaches the dataset."""
+        simulator.simulate()
+        output_path = tmp_path / "population.hdf5"
+
+        simulator.save_catalogue(output_path, compression="gzip")
+
+        with h5py.File(output_path, "r") as handle:
+            assert handle["data"].compression == "gzip"
+
+    def test_save_catalogue_without_data(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
+        """Saving before simulating is an error, not an empty file."""
         with pytest.raises(ValueError, match="No data provided and no last simulated data available"):
-            simulator.save(output_path)
+            simulator.save_catalogue(tmp_path / "population.hdf5")
 
-    def test_save_unsupported_format(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
-        """Test save method raises error for unsupported format."""
-        data = jnp.array([[1.0, 2.0, 3.0]])
-        simulator._last_data = data
-        output_path = tmp_path / "test.txt"
+    def test_save_catalogue_rejects_unnamed_data(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
+        """A bare array has no column names, so it is not a catalogue."""
+        with pytest.raises(TypeError, match="mapping of parameter names"):
+            simulator.save_catalogue(tmp_path / "population.hdf5", data=jnp.ones((3, 3)))
 
-        with pytest.raises(ValueError, match="Unsupported format: txt"):
-            simulator.save(output_path)
+    def test_save_catalogue_rejects_an_unsupported_suffix(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
+        """Only the catalogue formats this package can read back are written."""
+        simulator.simulate()
 
-    def test_save_npz_with_metadata(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
-        """Test save method with npz format and metadata."""
-        data = jnp.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
-        simulator._last_data = data
-        output_path = tmp_path / "test.npz"
-        metadata = {"key1": "value1", "key2": "value2"}
-
-        simulator.save(output_path, metadata=metadata)
-
-        assert output_path.exists()
-        loaded = simulator.load(output_path)
-        assert jnp.allclose(loaded, data)
-
-    def test_save_npz_with_compression(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
-        """Test save method with npz format and compression."""
-        data = jnp.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
-        simulator._last_data = data
-        output_path = tmp_path / "test.npz"
-
-        simulator.save(output_path, compression="zlib")
-
-        assert output_path.exists()
-        loaded = simulator.load(output_path)
-        assert jnp.allclose(loaded, data)
-
-    def test_load(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
-        """Test load method with different formats."""
-        original_data = jnp.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
-
-        for file_format in ["npy", "npz", "csv", "hdf5"]:
-            output_path = tmp_path / f"test_load.{file_format}"
-
-            if file_format == "npy":
-                jnp.save(output_path, original_data)
-            elif file_format == "npz":
-                np.savez(output_path, data=np.asarray(original_data))
-            elif file_format == "csv":
-                np.savetxt(output_path, original_data, delimiter=",")
-            elif file_format == "hdf5":
-                with h5py.File(output_path, "w") as f:
-                    f.create_dataset("data", data=original_data)
-
-            loaded = simulator.load(output_path)
-            assert jnp.allclose(loaded, original_data)
-
-    def test_load_unsupported_format(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
-        """Test load method raises error for unsupported format."""
-        output_path = tmp_path / "test.txt"
-        output_path.touch()
-
-        with pytest.raises(ValueError, match="Unsupported format: txt"):
-            simulator.load(output_path)
+        with pytest.raises(ValueError, match="Unsupported population-file format"):
+            simulator.save_catalogue(tmp_path / "population.npy")
 
     def test_validate_output_valid(self, simulator: ConcreteSimulator) -> None:
         """Test _validate_output with valid mapping output."""
@@ -318,46 +284,3 @@ class TestSimulator:
 
         with pytest.raises(ValueError, match="Expected keys"):
             simulator._validate_output(invalid_data)
-
-    def test_save_hdf5_static(self, tmp_path: Path) -> None:
-        """Test _save_hdf5 static method."""
-        data = jnp.array([[1.0, 2.0], [3.0, 4.0]])
-        path = tmp_path / "test.h5"
-
-        Simulator._save_hdf5(path, data)
-
-        with h5py.File(path, "r") as f:
-            loaded = jnp.array(f["data"])
-            assert jnp.allclose(loaded, data)
-
-    def test_load_hdf5_static(self, tmp_path: Path) -> None:
-        """Test _load_hdf5 static method."""
-        data = jnp.array([[5.0, 6.0], [7.0, 8.0]])
-        path = tmp_path / "test2.h5"
-
-        with h5py.File(path, "w") as f:
-            f.create_dataset("data", data=data)
-
-        loaded = Simulator._load_hdf5(path)
-        assert jnp.allclose(loaded, data)
-
-    def test_save_hdf5_with_metadata(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
-        """Test save stores metadata in HDF5 files."""
-        data = jnp.array([[1.0, 2.0, 3.0]])
-        output_path = tmp_path / "test_metadata.hdf5"
-
-        simulator.save(output_path, data=data, metadata={"parameter_names": ["mass", "spin", "redshift"]})
-
-        with h5py.File(output_path, "r") as file_handle:
-            assert "metadata" in file_handle
-            assert "parameter_names" in file_handle["metadata"].attrs
-
-    def test_load_hdf5_invalid_dataset(self, tmp_path: Path) -> None:
-        """Test _load_hdf5 raises error for non-dataset object."""
-        path = tmp_path / "test3.h5"
-
-        with h5py.File(path, "w") as f:
-            f.create_group("data")
-
-        with pytest.raises(TypeError, match=r'f\["data"\] is not a h5py\.Dataset instance'):
-            Simulator._load_hdf5(path)
