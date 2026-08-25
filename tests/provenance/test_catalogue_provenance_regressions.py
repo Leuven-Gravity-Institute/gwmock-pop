@@ -31,8 +31,14 @@ import numpy as np
 import pytest
 from typer.testing import CliRunner
 
-import gwmock_pop
-from gwmock_pop import read_population_catalogue, write_population_catalogue
+from gwmock_pop import (
+    BBHSimulator,
+    FilePopulationLoader,
+    GraphSimulator,
+    __version__,
+    read_population_catalogue,
+    write_population_catalogue,
+)
 from gwmock_pop.cli.main import app
 from gwmock_pop.provenance import (
     HDF5_PROVENANCE_PATH,
@@ -81,7 +87,7 @@ def test_cli_hdf5_catalogue_carries_a_provenance_record(tmp_path: Path) -> None:
     assert record["schema_version"] == PROVENANCE_SCHEMA_VERSION
     assert record["created_utc"]
     assert record["tool"]["name"] == "gwmock-pop"
-    assert record["tool"]["version"] == gwmock_pop.__version__
+    assert record["tool"]["version"] == __version__
     assert record["catalogue"] == {
         "source_type": "bbh",
         "n_samples": 8,
@@ -148,7 +154,7 @@ def test_simulator_persistence_goes_through_the_shared_named_column_writer(tmp_p
     and a header-less file for CSV, so ``read_population_catalogue`` could not
     read back anything the simulator had written.
     """
-    simulator = gwmock_pop.GraphSimulator.from_preset("bbh_flat", seed=3)
+    simulator = GraphSimulator.from_preset("bbh_flat", seed=3)
     simulator.simulate(6)
     output_path = tmp_path / "population.hdf5"
 
@@ -165,7 +171,7 @@ def test_simulator_persistence_goes_through_the_shared_named_column_writer(tmp_p
 
 def test_a_library_written_catalogue_replays_from_its_own_record(tmp_path: Path) -> None:
     """The library path is publication-grade too, not only the CLI one."""
-    simulator = gwmock_pop.BBHSimulator(seed=5)
+    simulator = BBHSimulator(seed=5)
     simulator.simulate(4)
     output_path = tmp_path / "population.hdf5"
 
@@ -318,7 +324,7 @@ def test_loader_reports_the_record_the_input_catalogue_carried(tmp_path: Path) -
     source = tmp_path / "source.hdf5"
     _simulate("--config", "bbh_flat", "--n", "4", "--output", str(source), "--seed", "2")
 
-    loader = gwmock_pop.FilePopulationLoader("bbh", source)
+    loader = FilePopulationLoader("bbh", source)
 
     assert loader.provenance == read_provenance(source)
 
@@ -327,7 +333,7 @@ def test_loader_origin_folds_in_the_fetch_payload_and_chains_the_record(tmp_path
     """An externally derived catalogue names its engine without restating the fetch details."""
     source = tmp_path / "source.hdf5"
     _simulate("--config", "bbh_flat", "--n", "4", "--output", str(source), "--seed", "2")
-    loader = gwmock_pop.FilePopulationLoader("bbh", source)
+    loader = FilePopulationLoader("bbh", source)
 
     origin = loader.provenance_origin(
         EngineDescription(name="some-engine", version="1.2.3", run_record="https://example.invalid/runs/9")
@@ -407,8 +413,13 @@ def test_same_seed_reproduces_the_catalogue_and_every_reconstruction_input(tmp_p
     second_record = read_provenance(second)
     assert first_record is not None
     assert second_record is not None
-    assert first_record.pop("created_utc") != ""
-    assert second_record.pop("created_utc") != ""
+    # Dropped before the comparison, and outside the assertions: the timestamps
+    # are the one field two runs are meant to disagree on, and an assert that
+    # mutates would stop doing so under `python -O`.
+    first_created = first_record.pop("created_utc")
+    second_created = second_record.pop("created_utc")
+    assert first_created
+    assert second_created
     assert first_record == second_record
 
 
