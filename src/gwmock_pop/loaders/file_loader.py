@@ -16,6 +16,7 @@ from gwmock_pop.loaders._validate import validate_population_catalogue
 from gwmock_pop.provenance import (
     EngineDescription,
     external_engine_origin,
+    provenance_sidecar_path,
     read_provenance,
     write_hdf5_provenance,
     write_provenance_sidecar,
@@ -164,6 +165,14 @@ def write_population_catalogue(
     columns = _population_columns(population)
     n_rows = _population_size(population=population, columns=columns)
     file_format = infer_population_file_format(destination)
+
+    if provenance is None:
+        # A catalogue written without a record must not inherit the record of
+        # whatever it replaced. An HDF5 rewrite truncates the embedded record,
+        # but a sidecar sits beside the file and would survive -- and
+        # read_provenance falls back to it -- so it would resurface as a
+        # description of samples that are no longer there.
+        provenance_sidecar_path(destination).unlink(missing_ok=True)
 
     if file_format == "csv":
         _write_population_csv(

@@ -97,6 +97,22 @@ class TestReconstructRun:
         with pytest.raises(ValueError, match="parameter_names"):
             reconstruct_run(record)
 
+    def test_rejects_a_record_with_no_sample_count(self) -> None:
+        """A record without a row count cannot describe a run, and says so as documented."""
+        record = _record()
+        del record["catalogue"]["n_samples"]
+
+        with pytest.raises(ValueError, match="sample count"):
+            reconstruct_run(record)
+
+    def test_rejects_a_record_with_no_catalogue_block(self) -> None:
+        """Every guard in this function promises ValueError; none may leak a KeyError."""
+        record = _record()
+        del record["catalogue"]
+
+        with pytest.raises(ValueError, match="sample count"):
+            reconstruct_run(record)
+
     def test_rejects_a_record_with_no_seed(self) -> None:
         """Without the seed actually used there is nothing to replay."""
         record = _record()

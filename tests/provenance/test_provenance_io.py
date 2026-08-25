@@ -139,6 +139,50 @@ class TestCsvProvenance:
         assert read_provenance(output_path) is None
 
 
+class TestStaleRecordRemoval:
+    """A catalogue written without a record must not inherit an old one.
+
+    Overwriting the samples while leaving the previous sidecar in place is the
+    exact failure this package exists to prevent: ``read_provenance`` would then
+    hand back a record describing data that is no longer in the file.
+    """
+
+    def test_csv_rewritten_without_a_record_drops_the_old_sidecar(self, tmp_path: Path) -> None:
+        """The sidecar of the replaced CSV catalogue does not survive."""
+        output_path = tmp_path / "c.csv"
+        write_population_catalogue(output_path=output_path, population=_population(), provenance=_RECORD)
+
+        write_population_catalogue(output_path=output_path, population=_population())
+
+        assert not provenance_sidecar_path(output_path).exists()
+        assert read_provenance(output_path) is None
+
+    def test_hdf5_rewritten_without_a_record_drops_a_sidecar_too(self, tmp_path: Path) -> None:
+        """An HDF5 rewrite truncates the embedded record, and the sidecar goes with it.
+
+        ``read_provenance`` falls back to a sidecar when a file carries no
+        embedded record, so a lingering one would resurface after the rewrite.
+        """
+        output_path = tmp_path / "c.hdf5"
+        write_population_catalogue(output_path=output_path, population=_population())
+        write_provenance_sidecar(output_path, _RECORD)
+
+        write_population_catalogue(output_path=output_path, population=_population())
+
+        assert not provenance_sidecar_path(output_path).exists()
+        assert read_provenance(output_path) is None
+
+    def test_a_supplied_record_replaces_the_previous_one(self, tmp_path: Path) -> None:
+        """Rewriting with a new record leaves the new record, not a merge of both."""
+        output_path = tmp_path / "c.csv"
+        write_population_catalogue(output_path=output_path, population=_population(), provenance=_RECORD)
+
+        replacement = {"schema_version": "1.0", "note": "the second run"}
+        write_population_catalogue(output_path=output_path, population=_population(), provenance=replacement)
+
+        assert read_provenance(output_path) == replacement
+
+
 class TestReadProvenance:
     """Tests for locating a record."""
 

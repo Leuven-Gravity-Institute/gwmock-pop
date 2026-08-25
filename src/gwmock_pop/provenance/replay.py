@@ -72,6 +72,10 @@ def reconstruct_run(record: Mapping[str, Any]) -> tuple[GraphSimulator, int]:
         seed=int(run["seed"]),
     )
 
+    n_samples = catalogue.get("n_samples")
+    if n_samples is None:
+        raise ValueError("The record carries no catalogue sample count, so the run cannot be reconstructed.")
+
     recorded_names = catalogue.get("parameter_names")
     if recorded_names is not None and list(recorded_names) != simulator.parameter_names:
         raise ValueError(
@@ -79,7 +83,7 @@ def reconstruct_run(record: Mapping[str, Any]) -> tuple[GraphSimulator, int]:
             f"the record lists {list(recorded_names)} but the graph yields {simulator.parameter_names}."
         )
 
-    return simulator, int(catalogue["n_samples"])
+    return simulator, int(n_samples)
 
 
 def replay_catalogue(record: Mapping[str, Any]) -> dict[str, Array]:
