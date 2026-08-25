@@ -385,7 +385,9 @@ def test_simulate_honours_the_configured_output_directory(
 ) -> None:
     """A declared ``output.directory`` places a relative ``--output`` under it."""
     destination = tmp_path / "catalogues"
-    config_path = write_graph_config(preamble=f"run:\n  output:\n    directory: {destination}\n")
+    # A POSIX-style path is written into the YAML because a Windows path would put
+    # backslashes into a plain scalar; Windows accepts forward slashes either way.
+    config_path = write_graph_config(preamble=f"run:\n  output:\n    directory: {destination.as_posix()}\n")
 
     _simulate("--config", str(config_path), "--n", "4", "--output", "population.hdf5", "--seed", "5")
 
