@@ -155,7 +155,7 @@ available names):
 ```python
 from gwmock_pop import GraphSimulator, list_presets
 
-print(list_presets())                 # e.g. ["gwtc4", ...]
+print(list_presets())  # e.g. ["gwtc4", ...]
 sim = GraphSimulator.from_preset("gwtc4")
 catalogue = sim.simulate(1000)
 ```
