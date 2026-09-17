@@ -82,6 +82,28 @@ def test_pinned_fetch_downloads_and_verifies(monkeypatch: pytest.MonkeyPatch, tm
     assert cached.path == result.path
 
 
+def test_pinned_fetch_keys_the_cache_by_digest(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Two pins for one URL keep separate cache entries instead of colliding."""
+    first_payload = _payload("first-pin-bytes")
+    second_payload = _payload("second-pin-bytes")
+    responses = iter([first_payload, second_payload])
+    monkeypatch.setattr(_fetch, "urlopen", lambda request, *, timeout: _MockResponse(next(responses)))
+
+    first = _fetch.resolve_digest_pinned_path(_URL, sha256=_digest(first_payload), cache_dir=tmp_path)
+    second = _fetch.resolve_digest_pinned_path(_URL, sha256=_digest(second_payload), cache_dir=tmp_path)
+
+    assert first.path != second.path
+    assert first.path.read_bytes() == first_payload
+    assert second.path.read_bytes() == second_payload
+
+    def fail_urlopen(request, *, timeout: int) -> _MockResponse:
+        raise AssertionError("the network must not be reached for a matching cache")
+
+    monkeypatch.setattr(_fetch, "urlopen", fail_urlopen)
+    cached_first = _fetch.resolve_digest_pinned_path(_URL, sha256=_digest(first_payload), cache_dir=tmp_path)
+    assert cached_first.path.read_bytes() == first_payload
+
+
 def test_pinned_fetch_rejects_a_wrong_digest(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Bytes that do not match the pin are refused and never cached."""
     payload = _payload()

@@ -159,7 +159,9 @@ def resolve_digest_pinned_path(  # noqa: PLR0913  # one knob per cache/fetch dec
     ``sha256`` on every call, so a truncated download or a file overwritten
     since it was cached is re-fetched rather than used. The identity of the
     bytes is the digest, not the URL, which is what makes an unversioned
-    document-server URL safe to pin against.
+    document-server URL safe to pin against. The cache key is the URL and the
+    expected digest together, so one URL pinned at two digests keeps a separate
+    cache entry per pin rather than the two colliding.
 
     The digest is checked **before** the network is touched: a cache entry whose
     digest already matches is returned without a request, so the common path
@@ -209,7 +211,7 @@ def resolve_digest_pinned_path(  # noqa: PLR0913  # one knob per cache/fetch dec
     resolved_url = _resolve_remote_url(parsed)
     cache_root = _resolve_cache_dir(cache_dir)
     cache_root.mkdir(parents=True, exist_ok=True)
-    cache_key = hashlib.sha256(original_path.encode("utf-8")).hexdigest()
+    cache_key = hashlib.sha256(f"{original_path}\0{expected_sha256}".encode()).hexdigest()
     cache_path = cache_root / f"{cache_key}{_pinned_cache_suffix(resolved_url, filename)}"
     cache_metadata_path = cache_root / f"{cache_key}.json"
     base_metadata = {
