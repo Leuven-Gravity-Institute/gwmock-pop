@@ -249,6 +249,7 @@ def composition_summary(
     draws: Sequence[CatalogueDraw],
     *,
     f_low: float = 5.0,
+    black_hole_rate_split: Mapping[str, float] | None = None,
 ) -> BandComposition:
     """Summarise the composition of several draws of the same population.
 
@@ -256,13 +257,20 @@ def composition_summary(
         draws: Draws to summarise. All must share a band and a ledger; the
             seeds must not be empty.
         f_low: Observed low-frequency cutoff, for the in-band duration.
+        black_hole_rate_split: Fraction of the black-hole catalogue's annual
+            rate each mutually exclusive black-hole-derived class takes, keyed
+            by class label (for example ``{"BBH": 0.9847, "IMBH": 0.0153}``).
+            Pass the fractions measured from the full catalogue when they are
+            available; omit them to split the rate by the draw's own labelled
+            counts. Either way the classes partition the black-hole rate.
 
     Returns:
         The composition and the draw-to-draw spread.
 
     Raises:
-        ValueError: If no draws are given, or they disagree on the band edge or
-            the intermediate-mass threshold.
+        ValueError: If no draws are given, they disagree on the band edge or the
+            intermediate-mass threshold, or ``black_hole_rate_split`` names a
+            class that is not black-hole-derived or does not sum to one.
     """
     if not draws:
         raise ValueError("At least one draw is needed to measure a composition.")
@@ -274,6 +282,7 @@ def composition_summary(
         raise ValueError("Every draw in a composition must share the same intermediate-mass threshold.")
 
     classes = _present_classes(draws)
+    _validate_black_hole_rate_split(black_hole_rate_split)
     pooled_drawn = dict.fromkeys(classes, 0)
     pooled_in_band = dict.fromkeys(classes, 0)
     per_draw_shares: dict[str, list[float]] = {name: [] for name in classes}
@@ -319,25 +328,73 @@ def composition_summary(
             for name in classes
         },
         redshift_reach=float(np.max(first.parameters["redshift"])) if first.n_rows else None,
-        drawn_rate_per_year={name: _class_rate(name, draw=first, pooled_drawn=pooled_drawn) for name in classes},
+        drawn_rate_per_year={
+            name: _class_rate(
+                name,
+                draw=first,
+                pooled_drawn=pooled_drawn,
+                black_hole_rate_split=black_hole_rate_split,
+            )
+            for name in classes
+        },
         in_band_duration_quantiles=_duration_quantiles(first, f_low=f_low),
     )
 
 
-def _class_rate(name: str, *, draw: CatalogueDraw, pooled_drawn: Mapping[str, int]) -> float:
+def _validate_black_hole_rate_split(split: Mapping[str, float] | None) -> None:
+    """Refuse a black-hole rate split that does not partition the rate.
+
+    The rates are reported per mutually exclusive class, so the fractions handed
+    in must be for black-hole-derived classes and sum to one. A split that sums
+    to less than one would silently leave part of the black-hole rate
+    unattributed -- the same double-counting the split exists to remove, in the
+    other direction.
+
+    A black-hole class named by the split but absent from the draws is allowed:
+    the catalogue cut can hold rows the draw did not produce, and its rate is
+    simply not reported.
+
+    Args:
+        split: Fraction of the black-hole rate per class, or ``None``.
+
+    Raises:
+        ValueError: If the split names a class that is not black-hole-derived,
+            or does not sum to one.
+    """
+    if split is None:
+        return
+    unknown = sorted(set(split) - {BBH_CLASS, IMBH_CLASS})
+    if unknown:
+        raise ValueError(f"black_hole_rate_split names classes that are not black-hole-derived: {', '.join(unknown)}.")
+    total = sum(float(value) for value in split.values())
+    if not np.isclose(total, 1.0, rtol=0.0, atol=1e-9):
+        raise ValueError(f"black_hole_rate_split must sum to 1 over the black-hole classes, got {total}.")
+
+
+def _class_rate(
+    name: str,
+    *,
+    draw: CatalogueDraw,
+    pooled_drawn: Mapping[str, int],
+    black_hole_rate_split: Mapping[str, float] | None = None,
+) -> float:
     """Return the annual rate a class was drawn at.
 
     The Poisson mean is ``n_rows * span / year * multiplier``, so dividing it by
     the span in years recovers the annual rate -- the catalogue's own row count
     times the multiplier, independent of the span. The intermediate-mass label
-    is a cut of the black-hole catalogue and has no rate of its own, so its rate
-    is the black-hole rate times the cut's fraction, measured from the pooled
-    drawn rows and reported as an estimate.
+    is a cut of the black-hole catalogue, so ``BBH`` and ``IMBH`` share the one
+    black-hole rate rather than each taking it: their fractions of it come from
+    ``black_hole_rate_split`` when the caller measured them on the full
+    catalogue, and otherwise from the draw's own labelled counts. Either way the
+    mutually exclusive classes partition the black-hole catalogue's rate.
 
     Args:
         name: Class label.
         draw: A draw from the set, supplying the span and the expectations.
         pooled_drawn: Rows drawn per class, pooled across the set.
+        black_hole_rate_split: Fraction of the black-hole rate per
+            black-hole-derived class, or ``None`` to use the draw's counts.
 
     Returns:
         The annual rate for the class, or zero when the class is absent.
@@ -345,13 +402,16 @@ def _class_rate(name: str, *, draw: CatalogueDraw, pooled_drawn: Mapping[str, in
     if draw.span_seconds <= 0.0:
         return 0.0
     span_years = draw.span_seconds / SECONDS_PER_YEAR
-    if name == IMBH_CLASS:
-        black_holes = pooled_drawn.get(BBH_CLASS, 0)
-        if black_holes == 0:
-            return 0.0
-        black_hole_rate = draw.expected_per_class.get(BBH_CLASS, 0.0) / span_years
-        return black_hole_rate * pooled_drawn.get(IMBH_CLASS, 0) / black_holes
-    return draw.expected_per_class.get(name, 0.0) / span_years
+    if name not in (BBH_CLASS, IMBH_CLASS):
+        return draw.expected_per_class.get(name, 0.0) / span_years
+
+    black_hole_rate = draw.expected_per_class.get(BBH_CLASS, 0.0) / span_years
+    if black_hole_rate_split is not None:
+        return black_hole_rate * float(black_hole_rate_split.get(name, 0.0))
+    black_holes = pooled_drawn.get(BBH_CLASS, 0) + pooled_drawn.get(IMBH_CLASS, 0)
+    if black_holes == 0:
+        return 0.0
+    return black_hole_rate * pooled_drawn.get(name, 0) / black_holes
 
 
 @dataclass(frozen=True, slots=True)

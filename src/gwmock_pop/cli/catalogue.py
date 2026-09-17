@@ -16,14 +16,22 @@ from gwmock_pop.catalogue.composition import (
     composition_summary,
 )
 from gwmock_pop.catalogue.manifest import (
-    CATALOGUE_CITATION,
+    CATALOGUE_SOURCE_CITATION,
+    CITATION_ROLES,
     COBA_CATALOGUES,
+    SCIENCE_REFERENCE_CITATION,
     TDS_CATALOGUE_DOCUMENT,
     TDS_CATALOGUE_RECORD,
     TDS_SENSITIVITY_DOCUMENT,
     TDS_SENSITIVITY_RECORD,
 )
-from gwmock_pop.catalogue.population import PARAMETER_NAMES, CatalogueDraw, draw_catalogue_population_many
+from gwmock_pop.catalogue.population import (
+    BBH_CLASS,
+    IMBH_CLASS,
+    PARAMETER_NAMES,
+    CatalogueDraw,
+    draw_catalogue_population_many,
+)
 from gwmock_pop.loaders.file_loader import infer_population_file_format, write_population_catalogue
 from gwmock_pop.provenance import build_provenance_record, catalogue_draw_origin, run_metadata
 
@@ -83,13 +91,29 @@ def _draw_configuration(draw: CatalogueDraw) -> dict[str, Any]:
 def _catalogue_block() -> dict[str, Any]:
     """Return the published-catalogue identity for a provenance record.
 
+    Every citation is listed with the role it plays, so the source paper that
+    publishes the catalogue files cannot be read as the reference for the
+    detector configuration the draw serves, or the reverse.
+
     Returns:
-        The record id, document code, sensitivity references and citation.
+        The record id, document code, role-labelled citations and sensitivity
+        references.
     """
     return {
         "record": TDS_CATALOGUE_RECORD,
         "document": TDS_CATALOGUE_DOCUMENT,
-        "citation": CATALOGUE_CITATION,
+        "citations": [
+            {
+                "reference": CATALOGUE_SOURCE_CITATION,
+                "role": "catalogue_source_paper",
+                "role_description": CITATION_ROLES["catalogue_source_paper"],
+            },
+            {
+                "reference": SCIENCE_REFERENCE_CITATION,
+                "role": "science_reference",
+                "role_description": CITATION_ROLES["science_reference"],
+            },
+        ],
         "sensitivity_record": TDS_SENSITIVITY_RECORD,
         "sensitivity_document": TDS_SENSITIVITY_DOCUMENT,
     }
@@ -134,6 +158,30 @@ def _anchor_payload(anchor: CatalogueBandAnchor) -> dict[str, Any]:
             for counts in anchor.class_counts
         ],
     }
+
+
+def _black_hole_rate_split(anchor: CatalogueBandAnchor) -> dict[str, float] | None:
+    """Return the exact split of the black-hole rate between BBH and IMBH.
+
+    The split is measured over every black-hole catalogue row, so the reported
+    BBH and IMBH rates partition the black-hole rate exactly instead of the
+    IMBH figure being a noisy per-draw fraction. Returns ``None`` when the
+    catalogues hold no black-hole class, leaving the draw's own split in place.
+
+    Args:
+        anchor: The full-catalogue counts.
+
+    Returns:
+        The fraction of the black-hole rate per black-hole-derived class, or
+        ``None`` when no black-hole class is present.
+    """
+    black_hole_classes = [
+        counts for counts in anchor.class_counts if counts.name in (BBH_CLASS, IMBH_CLASS) and counts.drawn > 0
+    ]
+    total = sum(counts.drawn for counts in black_hole_classes)
+    if total == 0:
+        return None
+    return {counts.name: counts.drawn / total for counts in black_hole_classes}
 
 
 def _render_composition(composition: BandComposition, anchor: CatalogueBandAnchor | None = None) -> str:
@@ -347,12 +395,16 @@ def catalogue_command(  # noqa: PLR0913, PLR0917  # the draw's settings, surface
         raise typer.Exit(1) from error
 
     try:
-        composition = composition_summary(all_draws, f_low=f_low)
         archived = all_draws[0]
         anchor = catalogue_band_anchor(
             archived.resolved,
             band_detector_frame_chirp_mass=band_detector_frame_chirp_mass,
             imbh_total_mass_threshold=imbh_total_mass_threshold,
+        )
+        composition = composition_summary(
+            all_draws,
+            f_low=f_low,
+            black_hole_rate_split=_black_hole_rate_split(anchor),
         )
     except Exception as error:
         logger.error("%s", error)

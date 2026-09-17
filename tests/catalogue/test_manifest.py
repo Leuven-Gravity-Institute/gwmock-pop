@@ -41,3 +41,14 @@ def test_catalogue_url_lookup_rejects_unknown_name() -> None:
     """An unknown catalogue name is refused rather than silently defaulted."""
     with pytest.raises(KeyError):
         manifest.catalogue_url("does-not-exist")
+
+
+def test_both_citations_are_recorded_with_distinct_roles() -> None:
+    """The catalogue's source paper and the configuration reference are distinct."""
+    assert manifest.CATALOGUE_SOURCE_CITATION != manifest.SCIENCE_REFERENCE_CITATION
+    assert "2303.15923" in manifest.CATALOGUE_SOURCE_CITATION
+    assert "2503.12263" in manifest.SCIENCE_REFERENCE_CITATION
+    assert set(manifest.CITATION_ROLES) == {"catalogue_source_paper", "science_reference"}
+    for role, description in manifest.CITATION_ROLES.items():
+        assert role
+        assert description

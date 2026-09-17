@@ -12,7 +12,7 @@ from gwmock_pop.catalogue.composition import (
     composition_summary,
     wilson_lower_bound,
 )
-from gwmock_pop.catalogue.population import PARAMETER_NAMES, CatalogueDraw
+from gwmock_pop.catalogue.population import PARAMETER_NAMES, SECONDS_PER_YEAR, CatalogueDraw
 from tests.catalogue._fixtures import resolved_catalogue, write_catalogue
 
 
@@ -24,6 +24,8 @@ def _synthetic_draw(  # noqa: PLR0913  # every field the test sets is a knob
     seed: int = 0,
     band: float = 5.0,
     threshold: float = 100.0,
+    span_seconds: float = 1.0,
+    expected_per_class: dict[str, float] | None = None,
 ) -> CatalogueDraw:
     """Build a draw with explicit classes and band membership.
 
@@ -34,6 +36,8 @@ def _synthetic_draw(  # noqa: PLR0913  # every field the test sets is a knob
         seed: The draw's seed.
         band: The band edge.
         threshold: The intermediate-mass threshold.
+        span_seconds: Observation span the draw covers.
+        expected_per_class: Poisson means per source class.
 
     Returns:
         A draw carrying the given rows.
@@ -44,7 +48,7 @@ def _synthetic_draw(  # noqa: PLR0913  # every field the test sets is a knob
     label_array = np.asarray(classes, dtype=object)
     return CatalogueDraw(
         seed=seed,
-        span_seconds=1.0,
+        span_seconds=span_seconds,
         rate_multiplier=1.0,
         band_detector_frame_chirp_mass=band,
         imbh_total_mass_threshold=threshold,
@@ -54,7 +58,7 @@ def _synthetic_draw(  # noqa: PLR0913  # every field the test sets is a knob
         detector_frame_chirp_mass=np.asarray(chirp_masses, dtype=float),
         source_frame_chirp_mass=np.asarray(chirp_masses, dtype=float),
         in_band=np.asarray(in_band, dtype=bool),
-        expected_per_class={"BNS": 100.0, "BBH": 50.0},
+        expected_per_class=expected_per_class or {"BNS": 100.0, "BBH": 50.0},
         drawn_per_class=dict.fromkeys(classes, 1),
         resolved=(),
     )
@@ -122,6 +126,56 @@ def test_composition_refuses_mismatched_bands() -> None:
     second = _synthetic_draw(classes=["BNS"], in_band=[True], chirp_masses=[6.0], band=4.0)
     with pytest.raises(ValueError, match="band edge"):
         composition_summary([first, second])
+
+
+def test_black_hole_classes_partition_the_black_hole_rate() -> None:
+    """BBH and IMBH share the one black-hole rate instead of both taking it."""
+    draw = _synthetic_draw(
+        classes=["BNS", "BBH", "BBH", "IMBH"],
+        in_band=[True, True, True, True],
+        chirp_masses=[6.0, 10.0, 20.0, 200.0],
+        span_seconds=SECONDS_PER_YEAR,
+        expected_per_class={"BNS": 100.0, "BBH": 118_119.0},
+    )
+
+    rates = composition_summary([draw]).drawn_rate_per_year
+
+    assert rates["BBH"] + rates["IMBH"] == pytest.approx(118_119.0)
+    assert rates["BBH"] == pytest.approx(118_119.0 * 2 / 3)
+    assert rates["IMBH"] == pytest.approx(118_119.0 * 1 / 3)
+
+
+def test_black_hole_rate_split_uses_the_catalogue_fractions() -> None:
+    """A catalogue-measured split overrides the draw's own labelled split."""
+    draw = _synthetic_draw(
+        classes=["BNS", "BBH", "BBH", "IMBH"],
+        in_band=[True, True, True, True],
+        chirp_masses=[6.0, 10.0, 20.0, 200.0],
+        span_seconds=SECONDS_PER_YEAR,
+        expected_per_class={"BNS": 100.0, "BBH": 118_119.0},
+    )
+    split = {"BBH": 116_306 / 118_119.0, "IMBH": 1813 / 118_119.0}
+
+    rates = composition_summary([draw], black_hole_rate_split=split).drawn_rate_per_year
+
+    assert rates["BBH"] == pytest.approx(116_306.0)
+    assert rates["IMBH"] == pytest.approx(1813.0)
+    assert rates["BBH"] + rates["IMBH"] == pytest.approx(118_119.0)
+
+
+def test_black_hole_rate_split_must_partition_the_rate() -> None:
+    """A split that does not sum to one, or names an absent class, is refused."""
+    draw = _synthetic_draw(
+        classes=["BBH", "IMBH"],
+        in_band=[True, True],
+        chirp_masses=[10.0, 200.0],
+        span_seconds=SECONDS_PER_YEAR,
+        expected_per_class={"BBH": 118_119.0},
+    )
+    with pytest.raises(ValueError, match="sum to 1"):
+        composition_summary([draw], black_hole_rate_split={"BBH": 0.9, "IMBH": 0.05})
+    with pytest.raises(ValueError, match="black-hole-derived"):
+        composition_summary([draw], black_hole_rate_split={"BBH": 1.0, "NSBH": 0.0})
 
 
 def test_catalogue_band_anchor_counts_every_catalogue_row(tmp_path: Path) -> None:

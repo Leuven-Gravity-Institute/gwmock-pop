@@ -17,10 +17,12 @@ from gwmock_pop.catalogue.composition import (
     composition_summary,
 )
 from gwmock_pop.catalogue.manifest import (
-    CATALOGUE_CITATION,
+    CATALOGUE_SOURCE_CITATION,
+    CITATION_ROLES,
     COBA_BBH,
     COBA_BNS,
     COBA_CATALOGUES,
+    SCIENCE_REFERENCE_CITATION,
     TDS_CATALOGUE_DOCUMENT,
     TDS_CATALOGUE_RECORD,
     CatalogueFile,
@@ -34,11 +36,13 @@ from gwmock_pop.catalogue.population import (
 from gwmock_pop.catalogue.source import ResolvedCatalogue, fetch_catalogue, fetch_catalogues
 
 __all__ = [
-    "CATALOGUE_CITATION",
+    "CATALOGUE_SOURCE_CITATION",
+    "CITATION_ROLES",
     "COBA_BBH",
     "COBA_BNS",
     "COBA_CATALOGUES",
     "PARAMETER_NAMES",
+    "SCIENCE_REFERENCE_CITATION",
     "TDS_CATALOGUE_DOCUMENT",
     "TDS_CATALOGUE_RECORD",
     "BandComposition",

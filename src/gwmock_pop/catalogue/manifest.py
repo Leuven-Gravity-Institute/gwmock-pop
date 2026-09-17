@@ -32,8 +32,26 @@ TDS_SENSITIVITY_RECORD = 18213
 #: Document code of the note that describes the sensitivity data vector.
 TDS_SENSITIVITY_DOCUMENT = "ET-0304B-22"
 
-#: Published reference for the population the catalogues encode.
-CATALOGUE_CITATION = "https://arxiv.org/abs/2303.15923"
+#: Paper that publishes the catalogue files this module pins.
+CATALOGUE_SOURCE_CITATION = "https://arxiv.org/abs/2303.15923"
+
+#: Public science reference for the 10 km detector configuration a draw serves.
+#:
+#: This is not the files' source paper: it is the reference that documents the
+#: configuration the draw is made for, and a record carries it so a reader can
+#: tell which citation establishes the data product and which establishes the
+#: detector configuration. The catalogue files themselves predate it.
+SCIENCE_REFERENCE_CITATION = "https://arxiv.org/abs/2503.12263"
+
+#: What each citation in a draw's provenance establishes.
+#:
+#: A record lists its citations by role so that neither can be read as standing
+#: for the other: the source paper publishes the data product, the science
+#: reference documents the configuration.
+CITATION_ROLES = {
+    "catalogue_source_paper": "publishes the catalogue files this module pins",
+    "science_reference": "public reference for the 10 km configuration a draw serves",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -124,11 +142,13 @@ def catalogue_url(name: str) -> str:
 
 
 __all__ = [
-    "CATALOGUE_CITATION",
+    "CATALOGUE_SOURCE_CITATION",
+    "CITATION_ROLES",
     "COBA_BBH",
     "COBA_BNS",
     "COBA_CATALOGUES",
     "COBA_CATALOGUES_BY_NAME",
+    "SCIENCE_REFERENCE_CITATION",
     "TDS_BASE_URL",
     "TDS_CATALOGUE_DOCUMENT",
     "TDS_CATALOGUE_RECORD",
