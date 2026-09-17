@@ -30,6 +30,11 @@ gravitational-wave sources.
   `write_population_catalogue` for CSV and HDF5 (structured or group-of-datasets
   layouts), including remote URL loading with local caching and CBC
   canonicalization in the loader.
+- **Catalogue draws:** `gwmock_pop.catalogue` draws a seeded population from a
+  published merger catalogue at real distances into injection parameters, with a
+  detector-frame band cut and the per-class band composition. The catalogues are
+  downloaded on demand and verified against a pinned SHA-256, so they are not
+  shipped with the package.
 - **Provenance:** `gwmock_pop.provenance` — every written catalogue carries a
   machine-readable record of the run behind it, and `replay_catalogue` redraws
   that run from the record alone.
@@ -124,12 +129,14 @@ the file.
 
 Other commands:
 
-| Command               | Purpose                                                                          |
-| --------------------- | -------------------------------------------------------------------------------- |
-| `gwmock-pop convert`  | Convert population files between CSV and HDF5; optional `--column-map` JSON/YAML |
-| `gwmock-pop validate` | Check a graph config without sampling                                            |
-| `gwmock-pop inspect`  | Summary statistics for a population file                                         |
-| `gwmock-pop list`     | List presets and public simulator classes                                        |
+| Command                | Purpose                                                                          |
+| ---------------------- | -------------------------------------------------------------------------------- |
+| `gwmock-pop simulate`  | Sample a packaged preset or graph config into a catalogue                        |
+| `gwmock-pop catalogue` | Draw the published population and report its detector-frame band composition     |
+| `gwmock-pop convert`   | Convert population files between CSV and HDF5; optional `--column-map` JSON/YAML |
+| `gwmock-pop validate`  | Check a graph config without sampling                                            |
+| `gwmock-pop inspect`   | Summary statistics for a population file                                         |
+| `gwmock-pop list`      | List presets and public simulator classes                                        |
 
 ```bash
 gwmock-pop --help

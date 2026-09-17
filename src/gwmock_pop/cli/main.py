@@ -94,12 +94,16 @@ def main(
 
 def register_commands() -> None:
     """Register CLI commands."""
+    from gwmock_pop.cli.catalogue import catalogue_command  # noqa: PLC0415
     from gwmock_pop.cli.convert import convert_command  # noqa: PLC0415
     from gwmock_pop.cli.inspect import inspect_command  # noqa: PLC0415
     from gwmock_pop.cli.list import list_command  # noqa: PLC0415
     from gwmock_pop.cli.simulate import simulate_command  # noqa: PLC0415
     from gwmock_pop.cli.validate import validate_command  # noqa: PLC0415
 
+    app.command("catalogue", help="Draw a published catalogue population and report its band composition.")(
+        catalogue_command
+    )
     app.command("convert", help="Convert named-column population catalogues.")(convert_command)
     app.command("inspect", help="Inspect populations with quick summary statistics.")(inspect_command)
     app.command("list", help="List packaged presets and public simulator classes.")(list_command)

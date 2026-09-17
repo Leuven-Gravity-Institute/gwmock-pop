@@ -57,6 +57,9 @@ EXTERNAL_ENGINE = "external_engine"
 # Origin kind for a catalogue derived from another catalogue file.
 CONVERTED_CATALOGUE = "converted_catalogue"
 
+# Origin kind for a seeded draw from a published merger catalogue.
+CATALOGUE_DRAW = "catalogue_draw"
+
 # How the seed of a run came to be chosen.
 SEED_SOURCES = ("cli", "config", "drawn", "library")
 
@@ -415,6 +418,41 @@ def converted_catalogue_origin(
         "kind": CONVERTED_CATALOGUE,
         "input": _input_block(input_path=input_path, fetch=fetch, upstream=upstream),
         "column_map": dict(column_map or {}),
+    }
+
+
+def catalogue_draw_origin(
+    *,
+    catalogue: Mapping[str, Any],
+    files: Sequence[Mapping[str, Any]],
+    configuration: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Return the origin block for a seeded draw from a published catalogue.
+
+    The block carries the identity of every input file -- its URL and the digest
+    the bytes were verified against -- so the draw can be repeated from the
+    published product even if the document server later serves a different
+    file. The draw settings are recorded next to the files rather than folded
+    into them, because a seed and a digest are different kinds of fact.
+
+    Args:
+        catalogue: Identity of the published catalogue, such as its document
+            server record, document code and citation.
+        files: One block per input file, each naming the file and the digest it
+            was verified against.
+        configuration: The draw settings, JSON-ready with every default filled
+            in.
+
+    Returns:
+        The origin block.
+    """
+    resolved_configuration = dict(configuration)
+    return {
+        "kind": CATALOGUE_DRAW,
+        "catalogue": dict(catalogue),
+        "files": [dict(file) for file in files],
+        "configuration": resolved_configuration,
+        "configuration_hash": configuration_hash(resolved_configuration),
     }
 
 

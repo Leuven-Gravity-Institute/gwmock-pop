@@ -21,6 +21,7 @@ from gwmock_pop.provenance.io import (
     write_provenance_sidecar,
 )
 from gwmock_pop.provenance.record import (
+    CATALOGUE_DRAW,
     CONVERTED_CATALOGUE,
     EXTERNAL_ENGINE,
     GRAPH_SIMULATION,
@@ -31,6 +32,7 @@ from gwmock_pop.provenance.record import (
     EngineDescription,
     GraphConfigResolution,
     build_provenance_record,
+    catalogue_draw_origin,
     configuration_hash,
     converted_catalogue_origin,
     external_engine_origin,
@@ -44,6 +46,7 @@ from gwmock_pop.provenance.record import (
 from gwmock_pop.provenance.replay import reconstruct_run, replay_catalogue
 
 __all__ = [
+    "CATALOGUE_DRAW",
     "CONVERTED_CATALOGUE",
     "EXTERNAL_ENGINE",
     "GRAPH_SIMULATION",
@@ -58,6 +61,7 @@ __all__ = [
     "EngineDescription",
     "GraphConfigResolution",
     "build_provenance_record",
+    "catalogue_draw_origin",
     "configuration_hash",
     "converted_catalogue_origin",
     "encode_provenance",
