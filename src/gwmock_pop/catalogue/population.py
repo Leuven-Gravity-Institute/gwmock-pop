@@ -291,7 +291,8 @@ def _draw_from_catalogue(
 
     Raises:
         PopulationValidationError: If the catalogue cannot be read, or any
-            emitted row holds a non-finite value in any catalogue column.
+            emitted row holds a non-numeric or non-finite value in any
+            catalogue column.
     """
     columns = read_catalogue_columns(resolved.path)
     n_catalogue = columns["m1_source"].shape[0]
@@ -304,7 +305,13 @@ def _draw_from_catalogue(
 
     selected = {name: values[indices] for name, values in columns.items()}
     for name, values in selected.items():
-        if not np.all(np.isfinite(values)):
+        try:
+            finite = np.isfinite(values)
+        except TypeError as error:
+            raise PopulationValidationError(
+                f"Catalogue {resolved.catalogue.filename} holds non-numeric {name} values."
+            ) from error
+        if not np.all(finite):
             raise PopulationValidationError(f"Catalogue {resolved.catalogue.filename} holds non-finite {name} values.")
 
     mass_1_source = selected["m1_source"]
