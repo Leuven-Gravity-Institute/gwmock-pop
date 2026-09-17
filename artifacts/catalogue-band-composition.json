@@ -58,9 +58,9 @@
             "IMBH": [174.74073567454403, 349.6261614032046]
         },
         "drawn_rate_per_year": {
-            "BBH": 118119.0,
+            "BBH": 116306.0,
             "BNS": 721341.0,
-            "IMBH": 2604.608599779493
+            "IMBH": 1813.0
         },
         "imbh_total_mass_threshold": 100.0,
         "in_band_duration_quantiles": {
@@ -130,7 +130,7 @@
         "n_rows": 695,
         "path": "artifacts/catalogue-draw-reference.h5",
         "seed": 42,
-        "sha256": "77514f05a725fd3be724cf3c648a20a59d7152550d8d7520606743b35951f42f"
+        "sha256": "e13fdad5e5e528d20b545fe420ef03bd2b993936c80547f2fa6807ac061b2724"
     },
     "inputs": [
         {
