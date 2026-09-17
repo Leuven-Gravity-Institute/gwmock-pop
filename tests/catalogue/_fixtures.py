@@ -15,8 +15,6 @@ import numpy as np
 from gwmock_pop.catalogue.manifest import CatalogueFile
 from gwmock_pop.catalogue.source import ResolvedCatalogue
 
-_DEFAULT_COLUMNS = ("m1_source", "m2_source", "chi1z", "chi2z", "dL", "ra", "dec", "psi", "iota", "Phicoal", "z")
-
 
 def write_catalogue(  # noqa: PLR0913  # the columns the published product carries
     path: Path,
