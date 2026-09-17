@@ -12,7 +12,9 @@ from gwmock_pop.catalogue.composition import (
     composition_summary,
     wilson_lower_bound,
 )
+from gwmock_pop.catalogue.manifest import CatalogueFile
 from gwmock_pop.catalogue.population import PARAMETER_NAMES, SECONDS_PER_YEAR, CatalogueDraw
+from gwmock_pop.catalogue.source import ResolvedCatalogue
 from tests.catalogue._fixtures import resolved_catalogue, write_catalogue
 
 
@@ -25,6 +27,8 @@ def _synthetic_draw(  # noqa: PLR0913  # every field the test sets is a knob
     band: float = 5.0,
     threshold: float = 100.0,
     span_seconds: float = 1.0,
+    rate_multiplier: float = 1.0,
+    resolved: tuple[ResolvedCatalogue, ...] = (),
     expected_per_class: dict[str, float] | None = None,
 ) -> CatalogueDraw:
     """Build a draw with explicit classes and band membership.
@@ -37,6 +41,8 @@ def _synthetic_draw(  # noqa: PLR0913  # every field the test sets is a knob
         band: The band edge.
         threshold: The intermediate-mass threshold.
         span_seconds: Observation span the draw covers.
+        rate_multiplier: Factor applied to every catalogue's annual rate.
+        resolved: The catalogue files the draw was made from.
         expected_per_class: Poisson means per source class.
 
     Returns:
@@ -49,7 +55,7 @@ def _synthetic_draw(  # noqa: PLR0913  # every field the test sets is a knob
     return CatalogueDraw(
         seed=seed,
         span_seconds=span_seconds,
-        rate_multiplier=1.0,
+        rate_multiplier=rate_multiplier,
         band_detector_frame_chirp_mass=band,
         imbh_total_mass_threshold=threshold,
         parameters=parameters,
@@ -60,8 +66,28 @@ def _synthetic_draw(  # noqa: PLR0913  # every field the test sets is a knob
         in_band=np.asarray(in_band, dtype=bool),
         expected_per_class=expected_per_class or {"BNS": 100.0, "BBH": 50.0},
         drawn_per_class=dict.fromkeys(classes, 1),
-        resolved=(),
+        resolved=resolved,
     )
+
+
+def _resolved_placeholder(name: str) -> tuple[ResolvedCatalogue, ...]:
+    """Return a resolved catalogue distinguishable only by its pinned identity.
+
+    Args:
+        name: Short catalogue name.
+
+    Returns:
+        A one-catalogue resolved tuple, with no file behind it.
+    """
+    catalogue = CatalogueFile(
+        name=name,
+        source_class="BNS",
+        filename=f"{name}.h5",
+        sha256="0" * 64,
+        size_bytes=1,
+        n_rows=1,
+    )
+    return (ResolvedCatalogue(catalogue=catalogue, path=Path(f"{name}.h5"), metadata={}),)
 
 
 def test_wilson_lower_bound_behaves_at_the_edges() -> None:
@@ -128,6 +154,32 @@ def test_composition_refuses_mismatched_bands() -> None:
         composition_summary([first, second])
 
 
+def test_composition_refuses_draws_of_different_spans() -> None:
+    """Draws covering different observation spans are not pooled."""
+    first = _synthetic_draw(classes=["BNS"], in_band=[True], chirp_masses=[6.0], span_seconds=1.0)
+    second = _synthetic_draw(classes=["BNS"], in_band=[True], chirp_masses=[6.0], seed=1, span_seconds=2.0)
+    with pytest.raises(ValueError, match="observation span"):
+        composition_summary([first, second])
+
+
+def test_composition_refuses_draws_at_different_rate_multipliers() -> None:
+    """Draws made at different rate multipliers are not pooled."""
+    first = _synthetic_draw(classes=["BNS"], in_band=[True], chirp_masses=[6.0], rate_multiplier=1.0)
+    second = _synthetic_draw(classes=["BNS"], in_band=[True], chirp_masses=[6.0], seed=1, rate_multiplier=2.0)
+    with pytest.raises(ValueError, match="rate multiplier"):
+        composition_summary([first, second])
+
+
+def test_composition_refuses_draws_from_different_catalogues() -> None:
+    """Draws sampling different populations are not pooled."""
+    first = _synthetic_draw(classes=["BNS"], in_band=[True], chirp_masses=[6.0], resolved=_resolved_placeholder("bns"))
+    second = _synthetic_draw(
+        classes=["BNS"], in_band=[True], chirp_masses=[6.0], seed=1, resolved=_resolved_placeholder("other")
+    )
+    with pytest.raises(ValueError, match="same catalogues"):
+        composition_summary([first, second])
+
+
 def test_black_hole_classes_partition_the_black_hole_rate() -> None:
     """BBH and IMBH share the one black-hole rate instead of both taking it."""
     draw = _synthetic_draw(
@@ -176,6 +228,23 @@ def test_black_hole_rate_split_must_partition_the_rate() -> None:
         composition_summary([draw], black_hole_rate_split={"BBH": 0.9, "IMBH": 0.05})
     with pytest.raises(ValueError, match="black-hole-derived"):
         composition_summary([draw], black_hole_rate_split={"BBH": 1.0, "NSBH": 0.0})
+
+
+def test_black_hole_rate_split_refuses_negative_or_non_finite_fractions() -> None:
+    """A split whose fractions are negative or not finite is refused."""
+    draw = _synthetic_draw(
+        classes=["BBH", "IMBH"],
+        in_band=[True, True],
+        chirp_masses=[10.0, 200.0],
+        span_seconds=SECONDS_PER_YEAR,
+        expected_per_class={"BBH": 118_119.0},
+    )
+    with pytest.raises(ValueError, match="finite and non-negative"):
+        composition_summary([draw], black_hole_rate_split={"BBH": -1.0, "IMBH": 2.0})
+    with pytest.raises(ValueError, match="finite and non-negative"):
+        composition_summary([draw], black_hole_rate_split={"BBH": float("nan")})
+    with pytest.raises(ValueError, match="finite and non-negative"):
+        composition_summary([draw], black_hole_rate_split={"BBH": float("inf"), "IMBH": 0.0})
 
 
 def test_catalogue_band_anchor_counts_every_catalogue_row(tmp_path: Path) -> None:
