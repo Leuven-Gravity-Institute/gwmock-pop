@@ -240,6 +240,30 @@ def _render_composition(composition: BandComposition, anchor: CatalogueBandAncho
     return "\n".join(lines)
 
 
+def _validate_persistence_options(*, output: Path | None, stamp: Path | None) -> None:
+    """Refuse persistence options that cannot describe a persisted draw.
+
+    The destination format and the relationship between the two destinations are
+    settled before the population is drawn, so a bad option costs no fetch and
+    no draw instead of failing once the work is already done.
+
+    Args:
+        output: Destination draw file, or ``None`` when no draw is archived.
+        stamp: Destination stamp file, or ``None``.
+
+    Raises:
+        ValueError: If ``output`` names a format the writer cannot produce, if
+            ``stamp`` is given without ``output``, or if the two name the same
+            file.
+    """
+    if output is not None:
+        infer_population_file_format(output)
+    if stamp is not None and output is None:
+        raise ValueError("--stamp needs --output: the stamp binds the draw's digest to its composition.")
+    if stamp is not None and output is not None and output.expanduser().resolve() == stamp.expanduser().resolve():
+        raise ValueError("--output and --stamp must name different files: the stamp is not the draw.")
+
+
 def _write_draw(
     *,
     output_path: Path,
@@ -369,12 +393,11 @@ def catalogue_command(  # noqa: PLR0913, PLR0917  # the draw's settings, surface
 
     logger = logging.getLogger("gwmock_pop")
 
-    if output is not None:
-        try:
-            infer_population_file_format(output)
-        except ValueError as error:
-            logger.error("%s", error)
-            raise typer.Exit(1) from error
+    try:
+        _validate_persistence_options(output=output, stamp=stamp)
+    except ValueError as error:
+        logger.error("%s", error)
+        raise typer.Exit(1) from error
 
     seeds = [seed + offset for offset in range(draws)]
     try:
@@ -423,8 +446,6 @@ def catalogue_command(  # noqa: PLR0913, PLR0917  # the draw's settings, surface
             )
             stamp.expanduser().parent.mkdir(parents=True, exist_ok=True)
             stamp.expanduser().write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        elif stamp is not None and output is None:
-            raise ValueError("--stamp needs --output: the stamp binds the draw's digest to its composition.")
     except Exception as error:
         logger.error("%s", error)
         raise typer.Exit(1) from error

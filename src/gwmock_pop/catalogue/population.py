@@ -290,8 +290,9 @@ def _draw_from_catalogue(
         Mapping from output parameter name to a 1-D array of drawn values.
 
     Raises:
-        PopulationValidationError: If the catalogue cannot be read or holds
-            non-finite mass, spin, distance or redshift values.
+        PopulationValidationError: If the catalogue cannot be read, or any
+            emitted row holds a non-numeric or non-finite value in any
+            catalogue column.
     """
     columns = read_catalogue_columns(resolved.path)
     n_catalogue = columns["m1_source"].shape[0]
@@ -302,30 +303,33 @@ def _draw_from_catalogue(
 
     indices = rng.choice(n_catalogue, size=count, replace=count > n_catalogue)
 
-    mass_1_source = columns["m1_source"][indices]
-    mass_2_source = columns["m2_source"][indices]
-    redshift = columns["z"][indices]
-    for name, values in (
-        ("m1_source", mass_1_source),
-        ("m2_source", mass_2_source),
-        ("z", redshift),
-    ):
-        if not np.all(np.isfinite(values)):
+    selected = {name: values[indices] for name, values in columns.items()}
+    for name, values in selected.items():
+        try:
+            finite = np.isfinite(values)
+        except TypeError as error:
+            raise PopulationValidationError(
+                f"Catalogue {resolved.catalogue.filename} holds non-numeric {name} values."
+            ) from error
+        if not np.all(finite):
             raise PopulationValidationError(f"Catalogue {resolved.catalogue.filename} holds non-finite {name} values.")
 
+    mass_1_source = selected["m1_source"]
+    mass_2_source = selected["m2_source"]
+    redshift = selected["z"]
     one_plus_redshift = 1.0 + redshift
     coa_time = rng.uniform(0.0, span_seconds, size=count)
     return {
         "detector_frame_mass_1": mass_1_source * one_plus_redshift,
         "detector_frame_mass_2": mass_2_source * one_plus_redshift,
-        "spin_1z": columns["chi1z"][indices],
-        "spin_2z": columns["chi2z"][indices],
-        "distance": columns["dL"][indices] * _GPC_TO_MPC,
-        "right_ascension": columns["ra"][indices],
-        "declination": columns["dec"][indices],
-        "inclination": columns["iota"][indices],
-        "coa_phase": columns["Phicoal"][indices],
-        "polarization_angle": columns["psi"][indices],
+        "spin_1z": selected["chi1z"],
+        "spin_2z": selected["chi2z"],
+        "distance": selected["dL"] * _GPC_TO_MPC,
+        "right_ascension": selected["ra"],
+        "declination": selected["dec"],
+        "inclination": selected["iota"],
+        "coa_phase": selected["Phicoal"],
+        "polarization_angle": selected["psi"],
         "coa_time": coa_time,
         "redshift": redshift,
     }
@@ -359,8 +363,9 @@ def draw_catalogue_population(  # noqa: PLR0913  # the draw's settings, named at
         catalogues: Pinned catalogues to draw from, in draw order. Defaults to
             the catalogues of ``resolved`` when those are given, otherwise to
             the design-comparison pair.
-        resolved: Already-resolved catalogue files, in the same order. When
-            given, no fetch is performed.
+        resolved: Already-resolved catalogue files, in the same order and each
+            an instance of its configured pin. When given, no fetch is
+            performed.
         rate_multiplier: Factor applied to every catalogue's annual rate.
         band_detector_frame_chirp_mass: Lower edge of the searched band, in the
             detector frame.
@@ -375,7 +380,8 @@ def draw_catalogue_population(  # noqa: PLR0913  # the draw's settings, named at
         The draw, its parameters and its class labels.
 
     Raises:
-        PopulationValidationError: If the settings are out of range, or a
+        PopulationValidationError: If the settings are out of range, a supplied
+            resolved catalogue does not match its configured pin, or a
             catalogue is malformed.
         PopulationFetchError: If a catalogue cannot be fetched or does not match
             its pinned digest.
@@ -398,6 +404,12 @@ def draw_catalogue_population(  # noqa: PLR0913  # the draw's settings, named at
         raise PopulationValidationError(
             f"Received {len(resolved_catalogues)} resolved catalogues for {len(catalogues)} configured ones."
         )
+    for configured, supplied in zip(catalogues, resolved_catalogues, strict=True):
+        if supplied.catalogue != configured:
+            raise PopulationValidationError(
+                f"Resolved catalogue {supplied.catalogue.name!r} does not match the configured catalogue "
+                f"{configured.name!r}."
+            )
 
     rng = np.random.default_rng(seed)
     expected_per_class: dict[str, float] = {}

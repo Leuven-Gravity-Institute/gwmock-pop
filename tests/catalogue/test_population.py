@@ -8,6 +8,7 @@ import h5py
 import numpy as np
 import pytest
 
+from gwmock_pop.catalogue.manifest import CatalogueFile
 from gwmock_pop.catalogue.population import (
     PARAMETER_NAMES,
     SECONDS_PER_YEAR,
@@ -196,3 +197,80 @@ def test_draw_uses_a_supplied_resolved_catalogue_without_fetching(tmp_path: Path
 
     assert draw.n_rows > 0
     assert set(draw.source_class.tolist()) == {"BBH"}
+
+
+def _overwrite_column_with_nan(path: Path, column: str) -> None:
+    """Set every value of one catalogue column to NaN in place.
+
+    Args:
+        path: Catalogue file to edit.
+        column: Column to poison.
+    """
+    with h5py.File(path, "a") as handle:
+        values = np.asarray(handle[column], dtype=float)
+        values[:] = np.nan
+        handle[column][...] = values
+
+
+@pytest.mark.parametrize("column", ["chi1z", "chi2z", "dL", "ra", "dec", "psi", "iota", "Phicoal"])
+def test_draw_rejects_non_finite_catalogue_columns(tmp_path: Path, column: str) -> None:
+    """A non-finite value in any emitted catalogue column is refused."""
+    path = tmp_path / "bns.h5"
+    write_catalogue(
+        path,
+        mass_1=np.asarray([1.2, 1.4, 1.6]),
+        mass_2=np.asarray([1.1, 1.3, 1.5]),
+        redshift=np.asarray([0.05, 0.1, 0.2]),
+    )
+    _overwrite_column_with_nan(path, column)
+    resolved = resolved_catalogue(path, name="bns", source_class="BNS")
+
+    with pytest.raises(PopulationValidationError, match=column):
+        draw_catalogue_population(
+            seed=0,
+            span_seconds=SECONDS_PER_YEAR * 100.0,
+            resolved=(resolved,),
+        )
+
+
+def test_draw_rejects_non_numeric_catalogue_columns(tmp_path: Path) -> None:
+    """A non-numeric catalogue column is refused as malformed, not as a NumPy error."""
+    path = tmp_path / "bns.h5"
+    write_catalogue(
+        path,
+        mass_1=np.asarray([1.2, 1.4, 1.6]),
+        mass_2=np.asarray([1.1, 1.3, 1.5]),
+        redshift=np.asarray([0.05, 0.1, 0.2]),
+    )
+    with h5py.File(path, "a") as handle:
+        del handle["chi1z"]
+        handle.create_dataset("chi1z", data=["a", "b", "c"], dtype=h5py.string_dtype())
+    resolved = resolved_catalogue(path, name="bns", source_class="BNS")
+
+    with pytest.raises(PopulationValidationError, match="non-numeric chi1z"):
+        draw_catalogue_population(
+            seed=0,
+            span_seconds=SECONDS_PER_YEAR * 100.0,
+            resolved=(resolved,),
+        )
+
+
+def test_draw_rejects_resolved_catalogues_that_do_not_match_the_configured_pins(tmp_path: Path) -> None:
+    """A resolved file whose pinned identity differs from the configured one is refused."""
+    bns, _ = make_pair(tmp_path)
+    mismatched = CatalogueFile(
+        name="other",
+        source_class="BNS",
+        filename="other.h5",
+        sha256="1" * 64,
+        size_bytes=1,
+        n_rows=1,
+    )
+
+    with pytest.raises(PopulationValidationError, match="match"):
+        draw_catalogue_population(
+            seed=0,
+            span_seconds=SECONDS_PER_YEAR,
+            catalogues=(mismatched,),
+            resolved=(bns,),
+        )

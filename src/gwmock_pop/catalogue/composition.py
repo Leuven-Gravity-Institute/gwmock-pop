@@ -31,6 +31,7 @@ from typing import Any
 
 import numpy as np
 
+from gwmock_pop.catalogue.manifest import CatalogueFile
 from gwmock_pop.catalogue.population import (
     BBH_CLASS,
     BNS_CLASS,
@@ -195,6 +196,22 @@ def _present_classes(draws: Sequence[CatalogueDraw]) -> tuple[str, ...]:
     return tuple(ordered)
 
 
+def _catalogue_identity(draw: CatalogueDraw) -> tuple[CatalogueFile, ...]:
+    """Return the pinned catalogue identity a draw's rows were sampled from.
+
+    The identity of the population is the pinned catalogues, not the filesystem
+    location or the fetch metadata: two resolutions of the same pins are the
+    same population even when one was a cache hit and the other a download.
+
+    Args:
+        draw: The draw to describe.
+
+    Returns:
+        The pinned catalogue of each resolved input, in draw order.
+    """
+    return tuple(resolved.catalogue for resolved in draw.resolved)
+
+
 def _pooled_counts(draw: CatalogueDraw, name: str) -> tuple[int, int]:
     """Return a class's drawn and in-band counts in one draw.
 
@@ -254,7 +271,9 @@ def composition_summary(
     """Summarise the composition of several draws of the same population.
 
     Args:
-        draws: Draws to summarise. All must share a band and a ledger; the
+        draws: Draws to summarise. All must sample the same population under the
+            same settings -- the band, the intermediate-mass threshold, the
+            observation span, the rate multiplier and the pinned catalogues; the
             seeds must not be empty.
         f_low: Observed low-frequency cutoff, for the in-band duration.
         black_hole_rate_split: Fraction of the black-hole catalogue's annual
@@ -268,9 +287,11 @@ def composition_summary(
         The composition and the draw-to-draw spread.
 
     Raises:
-        ValueError: If no draws are given, they disagree on the band edge or the
-            intermediate-mass threshold, or ``black_hole_rate_split`` names a
-            class that is not black-hole-derived or does not sum to one.
+        ValueError: If no draws are given, they disagree on the band edge, the
+            intermediate-mass threshold, the observation span, the rate
+            multiplier or the pinned catalogues, or ``black_hole_rate_split``
+            names a class that is not black-hole-derived, does not sum to one,
+            or holds a negative or non-finite fraction.
     """
     if not draws:
         raise ValueError("At least one draw is needed to measure a composition.")
@@ -280,6 +301,15 @@ def composition_summary(
         raise ValueError("Every draw in a composition must share the same band edge.")
     if any(draw.imbh_total_mass_threshold != threshold for draw in draws):
         raise ValueError("Every draw in a composition must share the same intermediate-mass threshold.")
+    span = draws[0].span_seconds
+    if any(draw.span_seconds != span for draw in draws):
+        raise ValueError("Every draw in a composition must share the same observation span.")
+    rate_multiplier = draws[0].rate_multiplier
+    if any(draw.rate_multiplier != rate_multiplier for draw in draws):
+        raise ValueError("Every draw in a composition must share the same rate multiplier.")
+    identity = _catalogue_identity(draws[0])
+    if any(_catalogue_identity(draw) != identity for draw in draws):
+        raise ValueError("Every draw in a composition must be drawn from the same catalogues.")
 
     classes = _present_classes(draws)
     _validate_black_hole_rate_split(black_hole_rate_split)
@@ -359,13 +389,17 @@ def _validate_black_hole_rate_split(split: Mapping[str, float] | None) -> None:
 
     Raises:
         ValueError: If the split names a class that is not black-hole-derived,
-            or does not sum to one.
+            holds a negative or non-finite fraction, or does not sum to one.
     """
     if split is None:
         return
     unknown = sorted(set(split) - {BBH_CLASS, IMBH_CLASS})
     if unknown:
         raise ValueError(f"black_hole_rate_split names classes that are not black-hole-derived: {', '.join(unknown)}.")
+    for name, value in split.items():
+        fraction = float(value)
+        if not np.isfinite(fraction) or fraction < 0.0:
+            raise ValueError(f"black_hole_rate_split fractions must be finite and non-negative, got {name}={value!r}.")
     total = sum(float(value) for value in split.values())
     if not np.isclose(total, 1.0, rtol=0.0, atol=1e-9):
         raise ValueError(f"black_hole_rate_split must sum to 1 over the black-hole classes, got {total}.")
