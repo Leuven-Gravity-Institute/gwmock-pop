@@ -63,6 +63,7 @@ nav = [
       { "Overview" = "api/cli/index.md" },
       { "Main" = "api/cli/main.md" },
       { "Simulate" = "api/cli/simulate.md" },
+      { "Catalogue" = "api/cli/catalogue.md" },
       { "Convert" = "api/cli/convert.md" },
       { "Validate" = "api/cli/validate.md" },
       { "Inspect" = "api/cli/inspect.md" },
@@ -126,6 +127,9 @@ nav = [
     ] },
     { "Loaders" = [
       { "Overview" = "api/loaders/index.md" },
+    ] },
+    { "Catalogue Draws" = [
+      { "Overview" = "api/catalogue/index.md" },
     ] },
     { "Transforms" = [
       { "Overview" = "api/transforms/index.md" },

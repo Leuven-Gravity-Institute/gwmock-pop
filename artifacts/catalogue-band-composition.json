@@ -1,0 +1,159 @@
+{
+    "catalogue_anchor": {
+        "band_detector_frame_chirp_mass": 5.0,
+        "class_counts": [
+            {
+                "drawn": 721341,
+                "in_band": 273537,
+                "in_band_fraction": 0.3792062283996057,
+                "name": "BNS",
+                "share_of_band": 0.6984113609902568
+            },
+            {
+                "drawn": 116306,
+                "in_band": 116306,
+                "in_band_fraction": 1.0,
+                "name": "BBH",
+                "share_of_band": 0.2969595767714525
+            },
+            {
+                "drawn": 1813,
+                "in_band": 1813,
+                "in_band_fraction": 1.0,
+                "name": "IMBH",
+                "share_of_band": 0.0046290622382907445
+            }
+        ],
+        "redshift_reach": 13.9993
+    },
+    "composition": {
+        "band_detector_frame_chirp_mass": 5.0,
+        "bns_share_of_band_lower_90": 0.699463984956541,
+        "class_counts": [
+            {
+                "drawn": 5965,
+                "in_band": 2268,
+                "in_band_fraction": 0.38021793797150044,
+                "name": "BNS",
+                "share_of_band": 0.7098591549295775
+            },
+            {
+                "drawn": 907,
+                "in_band": 907,
+                "in_band_fraction": 1.0,
+                "name": "BBH",
+                "share_of_band": 0.2838810641627543
+            },
+            {
+                "drawn": 20,
+                "in_band": 20,
+                "in_band_fraction": 1.0,
+                "name": "IMBH",
+                "share_of_band": 0.006259780907668232
+            }
+        ],
+        "detector_frame_chirp_mass_range": {
+            "BBH": [8.899055284446726, 369.00424506741933],
+            "BNS": [5.006758621550219, 13.085015444876474],
+            "IMBH": [174.74073567454403, 349.6261614032046]
+        },
+        "drawn_rate_per_year": {
+            "BBH": 116306.0,
+            "BNS": 721341.0,
+            "IMBH": 1813.0
+        },
+        "imbh_total_mass_threshold": 100.0,
+        "in_band_duration_quantiles": {
+            "p10": 6.259992908236532,
+            "p50": 367.2413399975902,
+            "p90": 548.3399369985088
+        },
+        "n_draws": 10,
+        "redshift_reach": 11.5564,
+        "seeds": [42, 43, 44, 45, 46, 47, 48, 49, 50, 51],
+        "share_of_band_max": {
+            "BBH": 0.3159420289855073,
+            "BNS": 0.7746913580246914,
+            "IMBH": 0.013245033112582781
+        },
+        "share_of_band_mean": {
+            "BBH": 0.2838106964963775,
+            "BNS": 0.7098087794344174,
+            "IMBH": 0.006380524069205119
+        },
+        "share_of_band_min": {
+            "BBH": 0.22530864197530864,
+            "BNS": 0.6811594202898551,
+            "IMBH": 0.0
+        },
+        "share_of_band_per_draw": {
+            "BBH": [
+                0.2631578947368421, 0.2966360856269113, 0.30718954248366015,
+                0.28703703703703703, 0.22530864197530864, 0.27424749163879597,
+                0.304635761589404, 0.2874251497005988, 0.2765273311897106,
+                0.3159420289855073
+            ],
+            "BNS": [
+                0.7244582043343654, 0.7003058103975535, 0.6830065359477124,
+                0.7067901234567902, 0.7746913580246914, 0.7157190635451505,
+                0.6821192052980133, 0.7095808383233533, 0.7202572347266881,
+                0.6811594202898551
+            ],
+            "IMBH": [
+                0.01238390092879257, 0.0030581039755351682, 0.00980392156862745,
+                0.006172839506172839, 0.0, 0.010033444816053512,
+                0.013245033112582781, 0.0029940119760479044,
+                0.003215434083601286, 0.002898550724637681
+            ]
+        },
+        "share_of_band_std": {
+            "BBH": 0.024888092245078798,
+            "BNS": 0.026407925975800488,
+            "IMBH": 0.004400324888542297
+        },
+        "source_frame_chirp_mass_range": {
+            "BBH": [5.189474523510049, 40.782927642120136],
+            "BNS": [1.0349723935418418, 2.1738600993124257],
+            "IMBH": [47.04407669388347, 65.12801010263946]
+        }
+    },
+    "configuration": {
+        "band_detector_frame_chirp_mass": 5.0,
+        "catalogue_order": ["bns", "bbh"],
+        "imbh_total_mass_threshold": 100.0,
+        "rate_multiplier": 1.0,
+        "seed": 42,
+        "span_seconds": 25600.0
+    },
+    "draw": {
+        "in_band_rows": 323,
+        "n_rows": 695,
+        "path": "artifacts/catalogue-draw-reference.h5",
+        "seed": 42,
+        "sha256": "e13fdad5e5e528d20b545fe420ef03bd2b993936c80547f2fa6807ac061b2724"
+    },
+    "inputs": [
+        {
+            "cache_hit": true,
+            "filename": "18321_1yrCatalogBNS.h5",
+            "n_rows": 721341,
+            "name": "bns",
+            "sha256": "2c984772bb5a618ee66efdc821fe65487b46602516e0131c948a05b43478b3ff",
+            "size_bytes": 93290425,
+            "source_class": "BNS",
+            "url": "https://apps.et-gw.eu/tds/?call_file=18321_1yrCatalogBNS.h5",
+            "verified": true
+        },
+        {
+            "cache_hit": true,
+            "filename": "18321_1yrCatalogBBH.h5",
+            "n_rows": 118119,
+            "name": "bbh",
+            "sha256": "5c421a4bbabc33b3c76c0595298de8663b6dc1b2e65713c346abdcac64e5ca65",
+            "size_bytes": 23449120,
+            "source_class": "BBH",
+            "url": "https://apps.et-gw.eu/tds/?call_file=18321_1yrCatalogBBH.h5",
+            "verified": true
+        }
+    ]
+}

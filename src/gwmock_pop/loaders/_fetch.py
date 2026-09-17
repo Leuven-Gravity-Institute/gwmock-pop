@@ -23,6 +23,7 @@ _TOKEN_ENV_VAR = "GWMOCK_POP_TOKEN"  # noqa: S105
 _ZENODO_TOKEN_ENV_VAR = "ZENODO_TOKEN"  # noqa: S105
 _SUPPORTED_URL_SCHEMES = frozenset({"http", "https", "s3", "zenodo"})
 _HTTP_RESPONSE_HEADER_KEYS = ("Content-Length", "Content-Type", "ETag", "Last-Modified")
+_SHA256_HEX_LENGTH = 64
 
 
 @dataclass(frozen=True, slots=True)
@@ -138,6 +139,202 @@ def resolve_population_path(  # noqa: PLR0913
     }
     cache_metadata_path.write_text(json.dumps(fetch_metadata, sort_keys=True, indent=2), encoding="utf-8")
     return FetchResult(path=cache_path, metadata=fetch_metadata)
+
+
+def resolve_digest_pinned_path(  # noqa: PLR0913  # one knob per cache/fetch decision, named at the call site
+    path: str | os.PathLike[str],
+    *,
+    sha256: str,
+    size: int | None = None,
+    filename: str | None = None,
+    cache_dir: str | os.PathLike[str] | None = None,
+    refresh: bool = False,
+    offline: bool = False,
+    timeout: int = 300,
+) -> FetchResult:
+    """Resolve a remote URL into the cache, checking the bytes against a known digest.
+
+    Unlike :func:`resolve_population_path`, the cached copy is not trusted on the
+    strength of its presence: its SHA-256 is recomputed and compared with
+    ``sha256`` on every call, so a truncated download or a file overwritten
+    since it was cached is re-fetched rather than used. The identity of the
+    bytes is the digest, not the URL, which is what makes an unversioned
+    document-server URL safe to pin against.
+
+    The digest is checked **before** the network is touched: a cache entry whose
+    digest already matches is returned without a request, so the common path
+    keeps working when the source is unreachable. A cold cache with
+    ``offline=True`` raises rather than silently proceeding without the data.
+
+    Args:
+        path: Remote URL to fetch. ``http(s)`` and ``zenodo://`` are supported.
+        sha256: Expected lowercase or uppercase hex SHA-256 of the file contents.
+        size: Optional expected size in bytes, checked alongside the digest.
+        filename: File name the URL names, used to keep the cache suffix (the
+            ET document server carries it in a query parameter rather than the
+            path).
+        cache_dir: Cache directory. Defaults to the package cache location.
+        refresh: Whether to re-download even when a matching entry is cached.
+        offline: Whether to refuse network access and use only a matching cache.
+        timeout: Timeout in seconds for the download.
+
+    Returns:
+        The resolved path and fetch metadata, with ``verified`` true and
+        ``content_sha256`` equal to the expected digest.
+
+    Raises:
+        PopulationFetchError: If ``path`` is not a remote URL, if the scheme is
+            unsupported for a pinned fetch, if the downloaded (or cached) bytes
+            do not match the expected digest or size, or if the file is not
+            cached while ``offline`` is set.
+    """
+    original_path = os.fspath(path)
+    if not is_population_url(original_path):
+        raise PopulationFetchError(
+            f"A digest-pinned fetch needs a remote URL, but {original_path!r} is a local path; "
+            "read it directly instead."
+        )
+
+    parsed = urlparse(original_path)
+    scheme = parsed.scheme.lower()
+    if scheme == "s3":
+        raise PopulationFetchError("Digest-pinned fetches do not support s3:// URLs; use an http(s) source.")
+
+    expected_sha256 = sha256.strip().lower()
+    if len(expected_sha256) != _SHA256_HEX_LENGTH or any(
+        character not in "0123456789abcdef" for character in expected_sha256
+    ):
+        raise PopulationFetchError(f"Expected digest {sha256!r} is not a 64-character hexadecimal SHA-256.")
+
+    resolved_url = _resolve_remote_url(parsed)
+    cache_root = _resolve_cache_dir(cache_dir)
+    cache_root.mkdir(parents=True, exist_ok=True)
+    cache_key = hashlib.sha256(original_path.encode("utf-8")).hexdigest()
+    cache_path = cache_root / f"{cache_key}{_pinned_cache_suffix(resolved_url, filename)}"
+    cache_metadata_path = cache_root / f"{cache_key}.json"
+    base_metadata = {
+        "original_url": original_path,
+        "resolved_url": resolved_url,
+        "scheme": scheme,
+        "cache_path": str(cache_path),
+        "expected_sha256": expected_sha256,
+    }
+
+    if cache_path.exists() and not refresh:
+        cached_sha256 = _sha256_file(cache_path)
+        if cached_sha256 == expected_sha256 and (size is None or cache_path.stat().st_size == size):
+            return FetchResult(
+                path=cache_path,
+                metadata={**base_metadata, "cache_hit": True, "content_sha256": cached_sha256, "verified": True},
+            )
+
+    if offline:
+        raise PopulationFetchError(
+            f"{original_path!r} is not cached with the expected digest {expected_sha256} and downloads are "
+            "disabled (offline=True); run without --offline once a source is reachable."
+        )
+
+    download_metadata = _download_http_url_verified(
+        resolved_url,
+        destination=cache_path,
+        expected_sha256=expected_sha256,
+        expected_size=size,
+        timeout=timeout,
+    )
+    fetch_metadata = {
+        **base_metadata,
+        **download_metadata,
+        "cache_hit": False,
+        "verified": True,
+    }
+    cache_metadata_path.write_text(json.dumps(fetch_metadata, sort_keys=True, indent=2), encoding="utf-8")
+    return FetchResult(path=cache_path, metadata=fetch_metadata)
+
+
+def _pinned_cache_suffix(url: str, filename: str | None) -> str:
+    """Return the cache suffix for a digest-pinned download.
+
+    Args:
+        url: Resolved URL the download comes from.
+        filename: File name the caller named, if any.
+
+    Returns:
+        The suffix to append to the cache key, derived from the explicit file
+        name, then from the URL's ``call_file`` query parameter, then from the
+        URL path.
+    """
+    if filename:
+        return Path(filename).suffix.lower()
+    query = urlparse(url).query
+    for key, value in (item.split("=", 1) for item in query.split("&") if "=" in item):
+        if key == "call_file" and value:
+            suffix = Path(value).suffix.lower()
+            if suffix:
+                return suffix
+    return _infer_cache_suffix(url)
+
+
+def _download_http_url_verified(
+    url: str,
+    *,
+    destination: Path,
+    expected_sha256: str,
+    expected_size: int | None,
+    timeout: int,
+) -> dict[str, Any]:
+    """Download an HTTP(S) file, refusing to cache bytes that fail the pin.
+
+    The file is written beside its destination and only moved into place once
+    the digest matches, so a mismatch cannot leave a bad file looking like a
+    good cache entry.
+
+    Args:
+        url: The URL to download.
+        destination: The cache path the verified file replaces.
+        expected_sha256: Expected hex SHA-256 of the contents.
+        expected_size: Optional expected size in bytes.
+        timeout: Timeout in seconds.
+
+    Returns:
+        Download metadata with the verified digest and response headers.
+
+    Raises:
+        PopulationFetchError: If the download fails, or the bytes do not match
+            the expected digest or size.
+    """
+    request = Request(url, headers={})  # noqa: S310  # https URL from the pinned manifest
+    temporary_path = _temporary_download_path(destination)
+    try:
+        with urlopen(request, timeout=timeout) as response, temporary_path.open("wb") as handle:  # noqa: S310
+            shutil.copyfileobj(response, handle)
+            response_headers = {
+                key: value for key in _HTTP_RESPONSE_HEADER_KEYS if (value := response.headers.get(key)) is not None
+            }
+    except HTTPError as exc:
+        temporary_path.unlink(missing_ok=True)
+        raise PopulationFetchError(f"Failed to fetch {url!r}: HTTP {exc.code} {exc.reason}.") from exc
+    except (TimeoutError, URLError, OSError) as exc:
+        temporary_path.unlink(missing_ok=True)
+        raise PopulationFetchError(f"Failed to fetch {url!r}: {exc}.") from exc
+
+    if expected_size is not None and temporary_path.stat().st_size != expected_size:
+        actual_size = temporary_path.stat().st_size
+        temporary_path.unlink(missing_ok=True)
+        raise PopulationFetchError(
+            f"Downloaded {url!r} is {actual_size} bytes, but the pinned size is {expected_size}; "
+            "the source served a different file and it was not cached."
+        )
+
+    actual_sha256 = _sha256_file(temporary_path)
+    if actual_sha256 != expected_sha256:
+        temporary_path.unlink(missing_ok=True)
+        raise PopulationFetchError(
+            f"Downloaded {url!r} has SHA-256 {actual_sha256}, but the pinned digest is {expected_sha256}; "
+            "the source served a different file and it was not cached."
+        )
+
+    temporary_path.replace(destination)
+    return {"content_sha256": actual_sha256, "headers": response_headers}
 
 
 def _resolve_cache_dir(cache_dir: str | os.PathLike[str] | None) -> Path:
@@ -410,4 +607,9 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-__all__ = ["FetchResult", "is_population_url", "resolve_population_path"]
+__all__ = [
+    "FetchResult",
+    "is_population_url",
+    "resolve_digest_pinned_path",
+    "resolve_population_path",
+]
