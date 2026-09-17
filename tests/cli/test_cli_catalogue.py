@@ -194,6 +194,57 @@ def test_catalogue_command_stamp_requires_output(offline_pair: tuple[Path, Path]
     assert result.exit_code == 1
 
 
+def _record_draw_calls(monkeypatch: pytest.MonkeyPatch) -> list[int]:
+    """Replace the draw with a recorder that also fails if it is reached.
+
+    Args:
+        monkeypatch: pytest patch fixture.
+
+    Returns:
+        The list the recorder appends to on every call.
+    """
+    calls: list[int] = []
+
+    def record(*args: object, **kwargs: object) -> None:
+        calls.append(1)
+        raise AssertionError("the draw must not run when the persistence options are invalid")
+
+    monkeypatch.setattr(catalogue_module, "draw_catalogue_population_many", record)
+    return calls
+
+
+def test_catalogue_command_validates_the_stamp_before_the_draw(
+    offline_pair: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A stamp without an output is refused without drawing the population."""
+    calls = _record_draw_calls(monkeypatch)
+
+    result = _RUNNER.invoke(
+        app,
+        ["catalogue", "--span-seconds", "1", "--stamp", str(tmp_path / "stamp.json")],
+    )
+
+    assert result.exit_code == 1
+    assert calls == []
+
+
+def test_catalogue_command_rejects_output_and_stamp_on_the_same_path(
+    offline_pair: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An output and a stamp naming the same file are refused before the draw."""
+    calls = _record_draw_calls(monkeypatch)
+    target = tmp_path / "draw.h5"
+
+    result = _RUNNER.invoke(
+        app,
+        ["catalogue", "--span-seconds", "1", "--output", str(target), "--stamp", str(target)],
+    )
+
+    assert result.exit_code == 1
+    assert calls == []
+    assert not target.exists()
+
+
 def test_catalogue_command_rejects_an_unsupported_output_suffix(
     offline_pair: tuple[Path, Path], tmp_path: Path
 ) -> None:
