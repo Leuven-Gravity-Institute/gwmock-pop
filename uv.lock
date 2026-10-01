@@ -447,10 +447,10 @@ release = [
 
 [package.metadata]
 requires-dist = [
-    { name = "h5py", specifier = ">=3.12.1" },
+    { name = "h5py", specifier = ">=3.13.0" },
     { name = "jax", specifier = ">=0.5.0" },
     { name = "networkx", specifier = ">=3.4" },
-    { name = "pydantic", specifier = ">=2.9.0" },
+    { name = "pydantic", specifier = ">=2.10.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "ruyaml", specifier = ">=0.91.0" },
     { name = "typer", specifier = ">=0.16.0" },
