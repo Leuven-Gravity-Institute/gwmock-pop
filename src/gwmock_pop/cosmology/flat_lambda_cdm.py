@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import jax
 import jax.numpy as jnp
 import jax.scipy as jscipy
 from jax import Array
@@ -159,24 +160,36 @@ def build_distance_lookup(
     return redshift_grid, comoving_distance_grid, luminosity_distance_grid
 
 
-def check_within_lookup_range(values: Array, upper: Array, name: str) -> None:
-    """Raise if any of ``values`` lies outside the tabulated range ``[0, upper]``.
+def interpolate_within_lookup(values: Array, grid: Array, table: Array, name: str) -> Array:
+    """Linearly interpolate ``table`` over ``grid`` at ``values``, refusing to extrapolate.
 
-    Interpolating outside the table would silently return its edge value.
+    Interpolating outside ``[0, grid[-1]]`` would silently return the table edge.
+    Concrete (eager) input outside that range raises ``ValueError``. Traced input
+    (under ``jax.jit``, ``jax.vmap``, ``jax.lax.scan``, ...) cannot raise on a
+    data-dependent condition, so there each out-of-range element is returned as
+    NaN instead; it does not raise. In-range elements are unaffected either way.
 
     Args:
         values: Values to be looked up.
-        upper: Largest tabulated value.
-        name: Name of the quantity, used in the error message.
+        grid: Increasing tabulation points, starting at 0.
+        table: Tabulated values at ``grid``.
+        name: Name of the looked-up quantity, used in the error message.
+
+    Returns:
+        Interpolated values, NaN where a traced value is out of range.
 
     Raises:
-        ValueError: If any value is negative or greater than ``upper``.
+        ValueError: If concrete ``values`` contain an element below 0 or above ``grid[-1]``.
     """
-    if jnp.any((values < 0.0) | (values > upper)):
+    values = jnp.asarray(values)
+    upper = grid[-1]
+    out_of_range = (values < 0.0) | (values > upper)
+    if not isinstance(out_of_range, jax.core.Tracer) and jnp.any(out_of_range):
         raise ValueError(
             f"{name} outside the lookup range [0, {float(upper)}]; got values in "
             f"[{float(jnp.min(values))}, {float(jnp.max(values))}]. Raise max_redshift to extend the table."
         )
+    return jnp.where(out_of_range, jnp.nan, jnp.interp(values, grid, table))
 
 
 def compute_redshift_from_luminosity_distance(
@@ -200,7 +213,9 @@ def compute_redshift_from_luminosity_distance(
         Redshift inferred from ``luminosity_distance``.
 
     Raises:
-        ValueError: If any distance lies outside ``[0, d_L(max_redshift)]``.
+        ValueError: If any concrete distance lies outside ``[0, d_L(max_redshift)]``.
+            Traced out-of-range distances are returned as NaN instead; see
+            :func:`interpolate_within_lookup`.
     """
     redshift_grid, _, luminosity_distance_grid = build_distance_lookup(
         hubble_constant=hubble_constant,
@@ -208,6 +223,6 @@ def compute_redshift_from_luminosity_distance(
         max_redshift=max_redshift,
         n_grid=n_grid,
     )
-    luminosity_distance = jnp.asarray(luminosity_distance)
-    check_within_lookup_range(luminosity_distance, luminosity_distance_grid[-1], "luminosity_distance")
-    return jnp.interp(luminosity_distance, luminosity_distance_grid, redshift_grid)
+    return interpolate_within_lookup(
+        luminosity_distance, luminosity_distance_grid, redshift_grid, "luminosity_distance"
+    )

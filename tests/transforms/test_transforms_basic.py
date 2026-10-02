@@ -149,3 +149,36 @@ def test_luminosity_distance_to_redshift_rejects_distance_outside_lookup(scale: 
     distance = scale * float(_reference_luminosity_distance(DEFAULT_MAX_REDSHIFT))
     with pytest.raises(ValueError, match="outside the lookup range"):
         luminosity_distance_to_redshift(np.array([100.0, distance]))
+
+
+_LOOKUP_TRANSFORMS = [
+    pytest.param(redshift_to_luminosity_distance, np.array([1e-4, 0.1, 1.0, 9.5]), id="redshift_to_distance"),
+    pytest.param(luminosity_distance_to_redshift, np.array([1.0, 500.0, 6.0e3, 9.0e4]), id="distance_to_redshift"),
+]
+
+
+@pytest.mark.parametrize(("transform", "values"), _LOOKUP_TRANSFORMS)
+@pytest.mark.parametrize("trace", [jax.jit, jax.vmap], ids=["jit", "vmap"])
+def test_distance_redshift_lookups_trace_with_in_range_input(transform, values: np.ndarray, trace) -> None:
+    """Both lookups stay usable under jax.jit and jax.vmap and match the eager result.
+
+    Compiled code may sum the table in a different order, so agreement is to rounding, not bitwise.
+    """
+    traced = np.asarray(trace(transform)(values))
+    np.testing.assert_allclose(traced, np.asarray(transform(values)), rtol=1e-12, atol=0.0)
+
+
+@pytest.mark.parametrize(("transform", "values"), _LOOKUP_TRANSFORMS)
+@pytest.mark.parametrize("trace", [jax.jit, jax.vmap], ids=["jit", "vmap"])
+def test_distance_redshift_lookups_return_nan_out_of_range_when_traced(transform, values: np.ndarray, trace) -> None:
+    """Traced out-of-range elements become NaN instead of the table edge; in-range ones are untouched.
+
+    A traced call cannot raise on a data-dependent condition, so NaN is the signal there.
+    """
+    upper = DEFAULT_MAX_REDSHIFT if transform is redshift_to_luminosity_distance else 3.0e5
+    values = np.concatenate([values, [-1.0, upper * 2.0]])
+    traced = np.asarray(trace(transform)(values))
+
+    assert np.all(np.isfinite(traced[:-2]))
+    np.testing.assert_allclose(traced[:-2], np.asarray(transform(values[:-2])), rtol=1e-12, atol=0.0)
+    assert np.all(np.isnan(traced[-2:]))
