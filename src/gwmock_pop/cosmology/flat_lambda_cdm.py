@@ -12,7 +12,8 @@ PLANCK18_H0_KM_S_MPC = 67.66
 PLANCK18_OMEGA_M = 0.3111
 DEFAULT_MAX_REDSHIFT = 10.0
 DEFAULT_LOOKUP_GRID_SIZE = 4096
-MIN_LOOKUP_GRID_SIZE = 2
+MIN_LOOKUP_GRID_SIZE = 3
+MIN_LOOKUP_NONZERO_REDSHIFT = 1e-6
 
 
 def compute_normalized_hubble_parameter(redshift: Array, omega_m: Array) -> Array:
@@ -123,6 +124,12 @@ def build_distance_lookup(
 ) -> tuple[Array, Array, Array]:
     """Build flat-ΛCDM lookup tables for redshift, comoving distance, and luminosity distance.
 
+    The redshift grid is ``0`` followed by ``n_grid - 1`` points spaced uniformly in
+    ``log z`` from ``MIN_LOOKUP_NONZERO_REDSHIFT`` to ``max_redshift``. A grid uniform
+    in ``z`` would leave a first interval so wide that linear interpolation misstates
+    ``d_L`` there by about ``(1 - q0) / 2 * dz``; the logarithmic grid keeps the
+    relative interpolation error small down to ``MIN_LOOKUP_NONZERO_REDSHIFT``.
+
     Args:
         hubble_constant: Hubble constant in km / s / Mpc.
         omega_m: Matter density.
@@ -132,12 +139,14 @@ def build_distance_lookup(
     Returns:
         Tuple ``(redshift_grid, comoving_distance_grid, luminosity_distance_grid)``.
     """
-    if max_redshift <= 0.0:
-        raise ValueError("max_redshift must be positive.")
+    if max_redshift <= MIN_LOOKUP_NONZERO_REDSHIFT:
+        raise ValueError(f"max_redshift must be greater than {MIN_LOOKUP_NONZERO_REDSHIFT}.")
     if n_grid < MIN_LOOKUP_GRID_SIZE:
         raise ValueError(f"n_grid must be at least {MIN_LOOKUP_GRID_SIZE}.")
 
-    redshift_grid = jnp.linspace(0.0, max_redshift, n_grid)
+    redshift_grid = jnp.concatenate(
+        [jnp.zeros(1), jnp.geomspace(MIN_LOOKUP_NONZERO_REDSHIFT, max_redshift, n_grid - 1)]
+    )
     inv_e = 1.0 / compute_normalized_hubble_parameter(
         redshift=redshift_grid,
         omega_m=jnp.asarray(omega_m),
@@ -148,6 +157,26 @@ def build_distance_lookup(
     comoving_distance_grid = SPEED_OF_LIGHT / 1000 / jnp.asarray(hubble_constant) * integral
     luminosity_distance_grid = (1.0 + redshift_grid) * comoving_distance_grid
     return redshift_grid, comoving_distance_grid, luminosity_distance_grid
+
+
+def check_within_lookup_range(values: Array, upper: Array, name: str) -> None:
+    """Raise if any of ``values`` lies outside the tabulated range ``[0, upper]``.
+
+    Interpolating outside the table would silently return its edge value.
+
+    Args:
+        values: Values to be looked up.
+        upper: Largest tabulated value.
+        name: Name of the quantity, used in the error message.
+
+    Raises:
+        ValueError: If any value is negative or greater than ``upper``.
+    """
+    if jnp.any((values < 0.0) | (values > upper)):
+        raise ValueError(
+            f"{name} outside the lookup range [0, {float(upper)}]; got values in "
+            f"[{float(jnp.min(values))}, {float(jnp.max(values))}]. Raise max_redshift to extend the table."
+        )
 
 
 def compute_redshift_from_luminosity_distance(
@@ -169,6 +198,9 @@ def compute_redshift_from_luminosity_distance(
 
     Returns:
         Redshift inferred from ``luminosity_distance``.
+
+    Raises:
+        ValueError: If any distance lies outside ``[0, d_L(max_redshift)]``.
     """
     redshift_grid, _, luminosity_distance_grid = build_distance_lookup(
         hubble_constant=hubble_constant,
@@ -176,10 +208,6 @@ def compute_redshift_from_luminosity_distance(
         max_redshift=max_redshift,
         n_grid=n_grid,
     )
-    return jnp.interp(
-        jnp.asarray(luminosity_distance),
-        luminosity_distance_grid,
-        redshift_grid,
-        left=0.0,
-        right=max_redshift,
-    )
+    luminosity_distance = jnp.asarray(luminosity_distance)
+    check_within_lookup_range(luminosity_distance, luminosity_distance_grid[-1], "luminosity_distance")
+    return jnp.interp(luminosity_distance, luminosity_distance_grid, redshift_grid)

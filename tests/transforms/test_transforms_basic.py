@@ -7,12 +7,17 @@ import math
 import jax
 import numpy as np
 import pytest
+from astropy import units as u
+from astropy.cosmology import FlatLambdaCDM
 from scipy.stats import beta as scipy_beta
 
+from gwmock_pop.cosmology.flat_lambda_cdm import DEFAULT_MAX_REDSHIFT, PLANCK18_H0_KM_S_MPC, PLANCK18_OMEGA_M
 from gwmock_pop.transforms import (
     beta_spin_magnitude,
     gaussian_chi_eff,
     isotropic_spin_orientation,
+    luminosity_distance_to_redshift,
+    redshift_to_luminosity_distance,
 )
 from gwmock_pop.utils.import_utils import import_from_string
 
@@ -103,3 +108,44 @@ def test_transform_exports_are_discoverable_via_default_module_lookup() -> None:
     )
     assert import_from_string("gaussian_chi_eff", default_module="gwmock_pop.transforms") is gaussian_chi_eff
     assert import_from_string("beta_spin_magnitude", default_module="gwmock_pop.transforms") is beta_spin_magnitude
+
+
+_REFERENCE_COSMOLOGY = FlatLambdaCDM(H0=PLANCK18_H0_KM_S_MPC, Om0=PLANCK18_OMEGA_M, Tcmb0=0.0)
+
+
+def _reference_luminosity_distance(redshift: np.ndarray | float) -> np.ndarray:
+    """Return the astropy luminosity distance in Mpc for the default cosmology."""
+    return np.asarray(_REFERENCE_COSMOLOGY.luminosity_distance(redshift).to_value(u.Mpc))
+
+
+def test_distance_redshift_lookups_match_astropy_down_to_low_redshift() -> None:
+    """Both lookup directions stay within 1e-5 of astropy from z = 1e-6 to the table end.
+
+    A table uniform in z misstates d_L over its first interval by about (1 - q0) / 2 * dz,
+    roughly 2e-3 near z = 1e-4, which is where the nearest and loudest sources sit.
+    """
+    redshift = np.geomspace(1e-6, DEFAULT_MAX_REDSHIFT, 400)
+    reference_distance = _reference_luminosity_distance(redshift)
+
+    distance = np.asarray(redshift_to_luminosity_distance(redshift))
+    inverted_redshift = np.asarray(luminosity_distance_to_redshift(reference_distance))
+
+    assert np.max(np.abs(distance / reference_distance - 1.0)) < 1e-5
+    assert np.max(np.abs(inverted_redshift / redshift - 1.0)) < 1e-5
+    assert float(redshift_to_luminosity_distance(0.0)) == 0.0
+    assert float(luminosity_distance_to_redshift(0.0)) == 0.0
+
+
+@pytest.mark.parametrize("redshift", [20.0, -0.1])
+def test_redshift_to_luminosity_distance_rejects_redshift_outside_lookup(redshift: float) -> None:
+    """A redshift outside [0, max_redshift] raises instead of returning the table edge."""
+    with pytest.raises(ValueError, match="outside the lookup range"):
+        redshift_to_luminosity_distance(np.array([1.0, redshift]))
+
+
+@pytest.mark.parametrize("scale", [3.0, -1.0])
+def test_luminosity_distance_to_redshift_rejects_distance_outside_lookup(scale: float) -> None:
+    """A distance outside [0, d_L(max_redshift)] raises instead of returning the table edge."""
+    distance = scale * float(_reference_luminosity_distance(DEFAULT_MAX_REDSHIFT))
+    with pytest.raises(ValueError, match="outside the lookup range"):
+        luminosity_distance_to_redshift(np.array([100.0, distance]))
