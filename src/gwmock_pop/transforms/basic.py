@@ -13,6 +13,7 @@ from gwmock_pop.cosmology.flat_lambda_cdm import (
     PLANCK18_OMEGA_M,
     build_distance_lookup,
     compute_redshift_from_luminosity_distance,
+    interpolate_within_lookup,
 )
 
 
@@ -254,6 +255,11 @@ def luminosity_distance_to_redshift(
 
     Returns:
         Redshift inferred from ``luminosity_distance``.
+
+    Raises:
+        ValueError: If any concrete distance lies outside ``[0, d_L(max_redshift)]``.
+            Under ``jax.jit``/``jax.vmap`` out-of-range distances are returned as NaN
+            instead and do not raise.
     """
     return compute_redshift_from_luminosity_distance(
         luminosity_distance=luminosity_distance,
@@ -287,6 +293,11 @@ def redshift_to_luminosity_distance(
 
     Returns:
         Luminosity distance in Mpc inferred from ``redshift``.
+
+    Raises:
+        ValueError: If any concrete redshift lies outside ``[0, max_redshift]``.
+            Under ``jax.jit``/``jax.vmap`` out-of-range redshifts are returned as NaN
+            instead and do not raise.
     """
     redshift_grid, _, luminosity_distance_grid = build_distance_lookup(
         hubble_constant=hubble_constant,
@@ -294,4 +305,4 @@ def redshift_to_luminosity_distance(
         max_redshift=max_redshift,
         n_grid=n_grid,
     )
-    return jnp.interp(jnp.asarray(redshift), redshift_grid, luminosity_distance_grid)
+    return interpolate_within_lookup(redshift, redshift_grid, luminosity_distance_grid, "redshift")
