@@ -148,6 +148,9 @@ def build_distance_lookup(
     redshift_grid = jnp.concatenate(
         [jnp.zeros(1), jnp.geomspace(MIN_LOOKUP_NONZERO_REDSHIFT, max_redshift, n_grid - 1)]
     )
+    # geomspace can round its endpoint (e.g. to 9.999999999999998 for 10), which would
+    # put z = max_redshift itself outside the table.
+    redshift_grid = redshift_grid.at[-1].set(max_redshift)
     inv_e = 1.0 / compute_normalized_hubble_parameter(
         redshift=redshift_grid,
         omega_m=jnp.asarray(omega_m),

@@ -11,7 +11,12 @@ from astropy import units as u
 from astropy.cosmology import FlatLambdaCDM
 from scipy.stats import beta as scipy_beta
 
-from gwmock_pop.cosmology.flat_lambda_cdm import DEFAULT_MAX_REDSHIFT, PLANCK18_H0_KM_S_MPC, PLANCK18_OMEGA_M
+from gwmock_pop.cosmology.flat_lambda_cdm import (
+    DEFAULT_MAX_REDSHIFT,
+    PLANCK18_H0_KM_S_MPC,
+    PLANCK18_OMEGA_M,
+    build_distance_lookup,
+)
 from gwmock_pop.transforms import (
     beta_spin_magnitude,
     gaussian_chi_eff,
@@ -182,3 +187,14 @@ def test_distance_redshift_lookups_return_nan_out_of_range_when_traced(transform
     assert np.all(np.isfinite(traced[:-2]))
     np.testing.assert_allclose(traced[:-2], np.asarray(transform(values[:-2])), rtol=1e-12, atol=0.0)
     assert np.all(np.isnan(traced[-2:]))
+
+
+@pytest.mark.parametrize("max_redshift", [3.0, 5.0, 10.0, 20.0])
+def test_distance_redshift_lookups_accept_the_table_end(max_redshift: float) -> None:
+    """``z = max_redshift`` and its distance are inside the lookup, whatever rounding ``geomspace`` does."""
+    redshift_grid, _, luminosity_distance_grid = build_distance_lookup(max_redshift=max_redshift)
+    assert float(redshift_grid[-1]) == max_redshift
+
+    distance = redshift_to_luminosity_distance(max_redshift, max_redshift=max_redshift)
+    assert float(distance) == float(luminosity_distance_grid[-1])
+    assert float(luminosity_distance_to_redshift(distance, max_redshift=max_redshift)) == max_redshift
