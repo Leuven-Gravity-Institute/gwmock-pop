@@ -70,18 +70,13 @@ from gwmock_pop.catalogue.mdc_list import (
     _signal_bounds,
     _waiting_time,
 )
-from gwmock_pop.constants import SPEED_OF_LIGHT
-from gwmock_pop.cosmology.flat_lambda_cdm import (
-    PLANCK18_H0_KM_S_MPC,
-    PLANCK18_OMEGA_M,
-    build_distance_lookup,
-    compute_normalized_hubble_parameter,
-)
-from gwmock_pop.distributions.madau_dickinson import (
+from gwmock_pop.constants import (
     MADAU_DICKINSON_GAMMA,
     MADAU_DICKINSON_KAPPA,
     MADAU_DICKINSON_Z_PEAK,
-    madau_dickinson_rate,
+    PLANCK18_H0_KM_S_MPC,
+    PLANCK18_OMEGA_M,
+    SPEED_OF_LIGHT,
 )
 from gwmock_pop.exceptions import PopulationValidationError
 from gwmock_pop.provenance import build_provenance_record, run_metadata, simulator_origin
@@ -323,6 +318,14 @@ def imbh_rate(population: ImbhPopulation) -> ImbhRate:
     Raises:
         PopulationValidationError: If the model is out of range.
     """
+    # The tables are JAX functions; importing them here keeps JAX out of the
+    # import closure of the package and its command line.
+    from gwmock_pop.cosmology.flat_lambda_cdm import (  # noqa: PLC0415
+        build_distance_lookup,
+        compute_normalized_hubble_parameter,
+    )
+    from gwmock_pop.distributions.madau_dickinson import madau_dickinson_rate  # noqa: PLC0415
+
     population.validate()
     redshift, comoving_distance, luminosity_distance = (
         np.asarray(table, dtype=float)

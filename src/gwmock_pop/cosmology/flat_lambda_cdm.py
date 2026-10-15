@@ -7,10 +7,8 @@ import jax.numpy as jnp
 import jax.scipy as jscipy
 from jax import Array
 
-from gwmock_pop.constants import SPEED_OF_LIGHT
+from gwmock_pop.constants import PLANCK18_H0_KM_S_MPC, PLANCK18_OMEGA_M, SPEED_OF_LIGHT
 
-PLANCK18_H0_KM_S_MPC = 67.66
-PLANCK18_OMEGA_M = 0.3111
 DEFAULT_MAX_REDSHIFT = 10.0
 DEFAULT_LOOKUP_GRID_SIZE = 4096
 MIN_LOOKUP_GRID_SIZE = 3
