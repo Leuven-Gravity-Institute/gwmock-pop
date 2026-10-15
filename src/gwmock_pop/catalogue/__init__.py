@@ -6,7 +6,9 @@ still reproducible from the published product. See
 :mod:`gwmock_pop.catalogue.manifest` for the pinned files,
 :mod:`gwmock_pop.catalogue.population` for the draw, and
 :mod:`gwmock_pop.catalogue.mdc_list` for the regeneration of the Einstein
-Telescope Mock Data Challenge CBC injection lists from local catalogue copies.
+Telescope Mock Data Challenge CBC injection lists from local catalogue copies,
+and :mod:`gwmock_pop.catalogue.imbh_list` for intermediate-mass black-hole
+binary lists in the same per-event format, drawn from a parametric population.
 """
 
 from __future__ import annotations
@@ -17,6 +19,17 @@ from gwmock_pop.catalogue.composition import (
     ClassBandCounts,
     catalogue_band_anchor,
     composition_summary,
+)
+from gwmock_pop.catalogue.imbh_list import (
+    IMBH_ROUTING_KEY,
+    IMBH_TYPE,
+    IMRI_TYPE,
+    ImbhList,
+    ImbhListSettings,
+    ImbhPopulation,
+    ImbhRate,
+    generate_imbh_list,
+    imbh_rate,
 )
 from gwmock_pop.catalogue.manifest import (
     CATALOGUE_SOURCE_CITATION,
@@ -52,6 +65,9 @@ __all__ = [
     "COBA_BBH",
     "COBA_BNS",
     "COBA_CATALOGUES",
+    "IMBH_ROUTING_KEY",
+    "IMBH_TYPE",
+    "IMRI_TYPE",
     "MDC1_CATALOGUE_SHA256",
     "MDC1_SETTINGS",
     "PARAMETER_NAMES",
@@ -63,6 +79,10 @@ __all__ = [
     "CatalogueDraw",
     "CatalogueFile",
     "ClassBandCounts",
+    "ImbhList",
+    "ImbhListSettings",
+    "ImbhPopulation",
+    "ImbhRate",
     "MdcCbcList",
     "MdcInputFile",
     "MdcListSettings",
@@ -73,6 +93,8 @@ __all__ = [
     "draw_catalogue_population_many",
     "fetch_catalogue",
     "fetch_catalogues",
+    "generate_imbh_list",
     "generate_mdc_cbc_list",
+    "imbh_rate",
     "resolve_mdc_inputs",
 ]
