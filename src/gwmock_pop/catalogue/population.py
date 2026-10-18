@@ -46,8 +46,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
+from gwmock_data import hdf5
 
-from gwmock_pop._optional import require
 from gwmock_pop.catalogue.manifest import COBA_CATALOGUES, CatalogueFile
 from gwmock_pop.catalogue.source import ResolvedCatalogue, fetch_catalogues
 from gwmock_pop.exceptions import PopulationValidationError
@@ -251,14 +251,13 @@ def read_catalogue_columns(
             if the columns do not all have the same length.
     """
     catalogue_path = Path(path)
-    h5py = require("h5py", "hdf5", "Reading an HDF5 catalogue")
-    with h5py.File(catalogue_path, "r") as handle:
-        missing = [name for name in columns if name not in handle]
-        if missing:
-            raise PopulationValidationError(
-                f"Catalogue {catalogue_path} is missing required columns: {', '.join(missing)}."
-            )
-        read_columns = {name: np.asarray(handle[name]) for name in columns}
+    stored = hdf5.read(catalogue_path, members=columns).members
+    missing = [name for name in columns if not isinstance(stored.get(name), hdf5.Dataset)]
+    if missing:
+        raise PopulationValidationError(
+            f"Catalogue {catalogue_path} is missing required columns: {', '.join(missing)}."
+        )
+    read_columns = {name: np.asarray(stored[name].data) for name in columns}
 
     lengths = {name: values.shape[0] for name, values in read_columns.items()}
     if not lengths:

@@ -45,8 +45,8 @@ Public re-exports live in `gwmock_pop.__all__`; full module reference is in the
 
 ## Requirements
 
-- Python `>=3.12` (tested on 3.12–3.15; on 3.15, where h5py has no wheel yet,
-  HDF5 catalogues are unavailable and CSV works)
+- Python `>=3.13` (tested on 3.13–3.15; on 3.15, where h5py has no wheel yet,
+  HDF5 catalogues are read and written without it)
 - Linux, macOS, or Windows
 
 ## Floating-point precision
@@ -80,10 +80,10 @@ start XLA's thread pools, which is also what keeps such a process safe to
 Install from PyPI:
 
 ```bash
-uv venv --python 3.12
+uv venv --python 3.13
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 uv pip install gwmock-pop
-uv pip install "gwmock-pop[hdf5]"  # HDF5 catalogues (.h5, .hdf5)
+uv pip install "gwmock-pop[hdf5]"  # optional: faster HDF5 through h5py
 ```
 
 Install from source:
@@ -91,7 +91,7 @@ Install from source:
 ```bash
 git clone git@github.com:Leuven-Gravity-Institute/gwmock-pop.git
 cd gwmock-pop
-uv venv --python 3.12
+uv venv --python 3.13
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 uv sync --no-dev
 ```

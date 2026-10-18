@@ -17,7 +17,7 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from gwmock_pop._optional import require
+from gwmock_data import hdf5
 
 if TYPE_CHECKING:
     import h5py
@@ -114,18 +114,24 @@ def _decode_provenance(payload: str | bytes, *, origin: str) -> dict[str, Any]:
     return record
 
 
-def write_hdf5_provenance(handle: h5py.File, record: dict[str, Any]) -> None:
-    """Embed a record in an open HDF5 catalogue.
+def write_hdf5_provenance(handle: hdf5.Group | h5py.File, record: dict[str, Any]) -> None:
+    """Embed a record in an HDF5 catalogue.
 
     The record goes into a dataset rather than an attribute: HDF5 attributes are
     size-limited and a resolved configuration is not.
 
     Args:
-        handle: Open, writable HDF5 file.
+        handle: The root :class:`gwmock_data.hdf5.Group` of a catalogue about to be
+            written, or an open, writable h5py file.
         record: The record to embed.
     """
+    encoded = encode_provenance(record)
+    if isinstance(handle, hdf5.Group):
+        group = handle.members.setdefault(HDF5_METADATA_GROUP, hdf5.Group())
+        group.members[HDF5_PROVENANCE_DATASET] = hdf5.Dataset(encoded)
+        return
     group = handle.require_group(HDF5_METADATA_GROUP)
-    group.create_dataset(HDF5_PROVENANCE_DATASET, data=encode_provenance(record))
+    group.create_dataset(HDF5_PROVENANCE_DATASET, data=encoded)
 
 
 def write_provenance_sidecar(catalogue_path: str | os.PathLike[str], record: dict[str, Any]) -> Path:
@@ -160,11 +166,11 @@ def read_provenance(catalogue_path: str | os.PathLike[str]) -> dict[str, Any] | 
     """
     path = Path(catalogue_path)
     if path.is_file() and _is_hdf5(path):
-        h5py = require("h5py", "hdf5", "Reading the provenance of an HDF5 catalogue")
-        with h5py.File(path, "r") as handle:
-            stored = handle.get(HDF5_PROVENANCE_PATH)
-            if isinstance(stored, h5py.Dataset):
-                return _decode_provenance(stored[()], origin=f"{path}/{HDF5_PROVENANCE_PATH}")
+        # Only the metadata group is read, not the catalogue beside it.
+        metadata = hdf5.read(path, members=[HDF5_METADATA_GROUP]).members.get(HDF5_METADATA_GROUP)
+        stored = metadata.members.get(HDF5_PROVENANCE_DATASET) if isinstance(metadata, hdf5.Group) else None
+        if isinstance(stored, hdf5.Dataset):
+            return _decode_provenance(stored.data, origin=f"{path}/{HDF5_PROVENANCE_PATH}")
 
     sidecar = provenance_sidecar_path(path)
     if sidecar.is_file():

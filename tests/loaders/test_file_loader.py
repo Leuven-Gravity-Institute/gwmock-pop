@@ -6,13 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-
-try:
-    import h5py
-except ModuleNotFoundError as exc:  # Python 3.15: h5py publishes no wheel yet; its tests are skipped
-    if exc.name != "h5py":
-        raise
-    h5py = None
+from gwmock_data import hdf5
 
 from gwmock_pop import FilePopulationLoader, PopulationValidationError
 from gwmock_pop.protocols import GWPopSimulator
@@ -45,16 +39,12 @@ def _write_hdf5_catalogue(path: Path, columns: dict[str, np.ndarray]) -> None:
     for name, values in columns.items():
         structured[name] = values
 
-    with h5py.File(path, "w") as handle:
-        handle.create_dataset("data", data=structured)
+    hdf5.write(hdf5.Group({"data": hdf5.Dataset(structured)}), path)
 
 
 def _write_hdf5_group_catalogue(path: Path, columns: dict[str, np.ndarray]) -> None:
     """Write an HDF5 group where each column is its own dataset."""
-    with h5py.File(path, "w") as handle:
-        group = handle.create_group("data")
-        for name, values in columns.items():
-            group.create_dataset(name, data=values)
+    hdf5.write(hdf5.Group({"data": hdf5.Group({name: hdf5.Dataset(values) for name, values in columns.items()})}), path)
 
 
 def _write_csv_catalogue(path: Path, columns: dict[str, np.ndarray]) -> None:
@@ -183,10 +173,7 @@ def test_simulate_accepts_backend_agnostic_kwargs(tmp_path: Path) -> None:
 def test_hdf5_group_mismatched_column_lengths_raise(tmp_path: Path) -> None:
     """Reject group-of-datasets catalogues with inconsistent column lengths."""
     path = tmp_path / "catalogue_bad_group.hdf5"
-    with h5py.File(path, "w") as handle:
-        group = handle.create_group("data")
-        group.create_dataset("mass_1", data=np.linspace(30.0, 60.0, 20))
-        group.create_dataset("mass_2", data=np.linspace(20.0, 40.0, 19))
+    _write_hdf5_group_catalogue(path, {"mass_1": np.linspace(30.0, 60.0, 20), "mass_2": np.linspace(20.0, 40.0, 19)})
 
     with pytest.raises(ValueError, match="mismatched column lengths"):
         FilePopulationLoader("bbh", path)
