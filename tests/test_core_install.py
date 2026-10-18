@@ -93,38 +93,34 @@ def test_a_csv_catalogue_round_trips_with_its_provenance_without_h5py(tmp_path: 
     }
 
 
-def test_every_hdf5_entry_point_names_the_extra_without_h5py(tmp_path: Path):
-    """Writing or reading an HDF5 catalogue, reading its provenance or catalogue columns, all name the extra."""
-    existing = tmp_path / "existing.h5"
-    existing.write_bytes(b"\x89HDF\r\n\x1a\n" + bytes(64))
-    sidecar = tmp_path / "existing.h5.provenance.json"
-    sidecar.write_text('{"note": "kept"}\n', encoding="utf-8")
+def test_every_hdf5_entry_point_works_without_h5py(tmp_path: Path):
+    """An HDF5 catalogue is written, loaded, its provenance and its columns read, with h5py hidden."""
+    catalogue = tmp_path / "population.h5"
+    columns = tmp_path / "columns.h5"
     outcome = _run(
         f"""
         import numpy as np
+        from gwmock_data import hdf5
         from gwmock_pop.catalogue.population import read_catalogue_columns
         from gwmock_pop.loaders.file_loader import FilePopulationLoader, write_population_catalogue
         from gwmock_pop.provenance import read_provenance
 
-        calls = {{
-            "write": lambda: write_population_catalogue({str(tmp_path / "new.h5")!r}, {{"mass_1": np.ones(2)}}),
-            "rewrite": lambda: write_population_catalogue({str(existing)!r}, {{"mass_1": np.ones(2)}}),
-            "load": lambda: FilePopulationLoader("bbh", {str(existing)!r}),
-            "provenance": lambda: read_provenance({str(existing)!r}),
-            "columns": lambda: read_catalogue_columns({str(existing)!r}),
+        population = {{"mass_1": np.array([30.0, 20.0, 10.0]), "mass_2": np.array([25.0, 15.0, 5.0])}}
+        write_population_catalogue({str(catalogue)!r}, population, provenance={{"note": "core"}})
+        loader = FilePopulationLoader("bbh", {str(catalogue)!r})
+        hdf5.write(hdf5.Group({{"a": hdf5.Dataset(np.arange(3.0)), "b": hdf5.Dataset(np.ones(3))}}), {str(columns)!r})
+        result = {{
+            "columns": loader.parameter_names,
+            "provenance": read_provenance({str(catalogue)!r}),
+            "read": {{name: values.tolist() for name, values in read_catalogue_columns({str(columns)!r}, ["b"]).items()}},
         }}
-        result = {{}}
-        for label, call in calls.items():
-            try:
-                call()
-            except ModuleNotFoundError as exc:
-                result[label] = str(exc)
         """,
         hide_h5py=True,
     )
 
-    assert sorted(outcome["result"]) == ["columns", "load", "provenance", "rewrite", "write"]
-    assert all("pip install 'gwmock-pop[hdf5]'" in message for message in outcome["result"].values())
-    # A rewrite without a record removes a stale sidecar, but only once it can actually write.
-    assert sidecar.read_text(encoding="utf-8") == '{"note": "kept"}\n'
-    assert not (tmp_path / "new.h5").exists()
+    assert outcome["h5py_loaded"] is False
+    assert outcome["result"] == {
+        "columns": ["detector_frame_mass_1", "detector_frame_mass_2"],
+        "provenance": {"note": "core"},
+        "read": {"b": [1.0, 1.0, 1.0]},
+    }

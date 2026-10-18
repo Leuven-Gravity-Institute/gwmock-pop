@@ -15,12 +15,12 @@ jobs:
                 # (lowest-direct) runs on ubuntu with the oldest supported
                 # Python, since floor versions predate newer interpreters'
                 # wheels.
-                python-version: ['3.12', '3.13', '3.14']
+                python-version: ['3.13', '3.14', '3.15']
                 os: [ubuntu-latest, windows-latest, macos-latest]
                 resolution: [highest]
                 include:
                     - os: ubuntu-latest
-                      python-version: '3.12'
+                      python-version: '3.13'
                       resolution: lowest-direct
         runs-on: ${{ matrix.os }}
         steps:
@@ -54,7 +54,7 @@ jobs:
 
     test-core:
         # The newest Python, where h5py publishes no wheel yet. The package installs with its core
-        # dependencies only, and everything but HDF5 catalogues works there without importing h5py.
+        # dependencies only, and everything works there without importing h5py, HDF5 catalogues included.
         # Only the package and pytest are installed, and the tests run against the installed package
         # rather than the source tree. `tests/conftest.py` configures hypothesis, which is a dev
         # dependency and which none of these tests use, so it is not loaded.
@@ -76,5 +76,4 @@ jobs:
               run: >-
                   uv run --no-sync pytest -p no:cacheprovider --noconftest -o
                   addopts= -o pythonpath= tests/test_core_install.py
-                  tests/test_optional.py tests/test_import.py
-                  tests/test_lazy_jax_import.py
+                  tests/test_import.py tests/test_lazy_jax_import.py

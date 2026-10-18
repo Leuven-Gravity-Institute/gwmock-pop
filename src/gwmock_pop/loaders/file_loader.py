@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import os
+import shutil
+import uuid
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+from gwmock_data import hdf5
 
-from gwmock_pop._optional import require
 from gwmock_pop.exceptions import PopulationValidationError
 from gwmock_pop.loaders._fetch import resolve_population_path
 from gwmock_pop.loaders._validate import validate_population_catalogue
@@ -103,13 +105,10 @@ def _write_population_csv(
     population: Mapping[str, Array | np.ndarray],
     columns: Sequence[str],
     n_rows: int,
-    provenance: Mapping[str, Any] | None = None,
 ) -> None:
-    """Persist a population as a header-based CSV file with an optional sidecar record."""
+    """Persist a population as a header-based CSV file; its record, if any, is the caller's to write."""
     matrix = _population_matrix(population=population, columns=columns, n_rows=n_rows)
     np.savetxt(output_path, matrix, delimiter=",", header=",".join(columns), comments="")
-    if provenance is not None:
-        write_provenance_sidecar(output_path, dict(provenance))
 
 
 def _write_population_hdf5(  # noqa: PLR0913  # one writer, one place: every knob the format has
@@ -130,11 +129,10 @@ def _write_population_hdf5(  # noqa: PLR0913  # one writer, one place: every kno
     # A chunked dataset cannot have a zero-length chunk, so an empty catalogue is
     # written uncompressed rather than refused.
     dataset_compression = compression if n_rows > 0 else None
-    h5py = require("h5py", "hdf5", "Writing an HDF5 catalogue")
-    with h5py.File(output_path, "w") as handle:
-        handle.create_dataset(_HDF5_DATASET_NAME, data=structured, compression=dataset_compression)
-        if provenance is not None:
-            write_hdf5_provenance(handle, dict(provenance))
+    root = hdf5.Group({_HDF5_DATASET_NAME: hdf5.Dataset(structured)})
+    if provenance is not None:
+        write_hdf5_provenance(root, dict(provenance))
+    hdf5.write(root, output_path, compression=dataset_compression)
 
 
 def write_population_catalogue(
@@ -166,39 +164,42 @@ def write_population_catalogue(
     columns = _population_columns(population)
     n_rows = _population_size(population=population, columns=columns)
     file_format = infer_population_file_format(destination)
-    if file_format == "hdf5":
-        # Before the stale sidecar below is removed, so a write that cannot happen changes nothing.
-        require("h5py", "hdf5", "Writing an HDF5 catalogue")
+
+    # Written beside the destination and moved over it only once complete, so a
+    # write that fails part-way (a refused dtype, an unknown compression filter)
+    # leaves the previous catalogue, and the sidecar describing it, as they were.
+    # A symlinked destination is written through, as opening it would: the file
+    # it points to is replaced, not the link.
+    target = destination.resolve() if destination.is_symlink() else destination
+    partial = target.with_name(f".{target.name}.{uuid.uuid4().hex}.partial")
+    try:
+        if file_format == "csv":
+            _write_population_csv(output_path=partial, population=population, columns=columns, n_rows=n_rows)
+        else:
+            _write_population_hdf5(
+                output_path=partial,
+                population=population,
+                columns=columns,
+                n_rows=n_rows,
+                provenance=provenance,
+                compression=compression,
+            )
+        if target.exists():
+            # A rewrite keeps the permissions of the catalogue it replaces.
+            shutil.copymode(target, partial)
+        partial.replace(target)
+    finally:
+        partial.unlink(missing_ok=True)
 
     if provenance is None:
         # A catalogue written without a record must not inherit the record of
-        # whatever it replaced. An HDF5 rewrite truncates the embedded record,
+        # whatever it replaced. An HDF5 rewrite replaces the embedded record,
         # but a sidecar sits beside the file and would survive -- and
         # read_provenance falls back to it -- so it would resurface as a
         # description of samples that are no longer there.
         provenance_sidecar_path(destination).unlink(missing_ok=True)
-
-    if file_format == "csv":
-        _write_population_csv(
-            output_path=destination,
-            population=population,
-            columns=columns,
-            n_rows=n_rows,
-            provenance=provenance,
-        )
-        return
-    if file_format == "hdf5":
-        _write_population_hdf5(
-            output_path=destination,
-            population=population,
-            columns=columns,
-            n_rows=n_rows,
-            provenance=provenance,
-            compression=compression,
-        )
-        return
-
-    raise ValueError(f"Unsupported format {file_format!r}.")
+    elif file_format == "csv":
+        write_provenance_sidecar(destination, dict(provenance))
 
 
 class FilePopulationLoader:
@@ -385,33 +386,39 @@ class FilePopulationLoader:
 
     @staticmethod
     def _read_hdf5_catalogue(path: Path, *, dataset_name: str) -> dict[str, np.ndarray]:
-        """Read an HDF5 catalogue from a compound dataset or group-of-datasets."""
-        h5py = require("h5py", "hdf5", "Reading an HDF5 catalogue")
-        with h5py.File(path, "r") as handle:
-            hdf5_object = handle[dataset_name]
-            if isinstance(hdf5_object, h5py.Dataset):
-                data = np.atleast_1d(hdf5_object[()])
-                return FilePopulationLoader._structured_array_to_catalogue(data, file_format="HDF5")
-            if isinstance(hdf5_object, h5py.Group):
-                group_catalogue: dict[str, np.ndarray] = {}
-                expected_length: int | None = None
-                for child_name, child_object in hdf5_object.items():
-                    if not isinstance(child_object, h5py.Dataset):
-                        raise TypeError(f"HDF5 group '{dataset_name}' contains non-dataset member '{child_name}'.")
-                    column = np.atleast_1d(child_object[()])
-                    if column.ndim != 1:
-                        raise ValueError(f"HDF5 group dataset '{dataset_name}/{child_name}' must be a 1-D array.")
-                    current_length = len(column)
-                    if expected_length is None:
-                        expected_length = current_length
-                    elif current_length != expected_length:
-                        raise ValueError(
-                            f"HDF5 group '{dataset_name}' has mismatched column lengths: "
-                            f"'{child_name}' has {current_length}, expected {expected_length}."
-                        )
-                    group_catalogue[child_name] = column
-                return FilePopulationLoader._structured_array_to_catalogue(group_catalogue, file_format="HDF5")
-            raise ValueError(f"HDF5 object '{dataset_name}' must be a dataset or a group of datasets.")
+        """Read an HDF5 catalogue from a compound dataset or group-of-datasets.
+
+        ``dataset_name`` may be a path into groups, such as ``"run1/data"``; as in
+        HDF5, empty and ``.`` components are ignored, so ``"/"`` names the file itself.
+        """
+        parts = [part for part in dataset_name.split("/") if part not in ("", ".")]
+        # Only the top-level member on the path is read, not the rest of the file.
+        hdf5_object: hdf5.Group | hdf5.Dataset | None = hdf5.read(path, members=parts[:1] or None)
+        for part in parts:
+            hdf5_object = hdf5_object.members.get(part) if isinstance(hdf5_object, hdf5.Group) else None
+        if hdf5_object is None:
+            raise KeyError(f"HDF5 catalogue {path} has no object '{dataset_name}'.")
+        if isinstance(hdf5_object, hdf5.Dataset):
+            data = np.atleast_1d(hdf5_object.data)
+            return FilePopulationLoader._structured_array_to_catalogue(data, file_format="HDF5")
+        group_catalogue: dict[str, np.ndarray] = {}
+        expected_length: int | None = None
+        for child_name, child_object in hdf5_object.members.items():
+            if not isinstance(child_object, hdf5.Dataset):
+                raise TypeError(f"HDF5 group '{dataset_name}' contains non-dataset member '{child_name}'.")
+            column = np.atleast_1d(child_object.data)
+            if column.ndim != 1:
+                raise ValueError(f"HDF5 group dataset '{dataset_name}/{child_name}' must be a 1-D array.")
+            current_length = len(column)
+            if expected_length is None:
+                expected_length = current_length
+            elif current_length != expected_length:
+                raise ValueError(
+                    f"HDF5 group '{dataset_name}' has mismatched column lengths: "
+                    f"'{child_name}' has {current_length}, expected {expected_length}."
+                )
+            group_catalogue[child_name] = column
+        return FilePopulationLoader._structured_array_to_catalogue(group_catalogue, file_format="HDF5")
 
     @staticmethod
     def _read_csv_catalogue(path: Path) -> dict[str, np.ndarray]:

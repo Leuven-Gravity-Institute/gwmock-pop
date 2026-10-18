@@ -12,16 +12,16 @@ pages for more details:
 
 ## Requirements
 
-- Python 3.12 or higher
+- Python 3.13 or higher
 - Operating System: Linux, macOS, or Windows
 
 <!-- prettier-ignore-start -->
 !!!note
-    The package is built and tested against Python 3.12-3.15. When creating a virtual environment with `uv`,
+    The package is built and tested against Python 3.13-3.15. When creating a virtual environment with `uv`,
     specify the Python version to ensure compatibility:
-    `uv venv --python 3.12` (replace `3.12` with your preferred version in the 3.12-3.15 range).
-    On Python 3.15, h5py publishes no wheel yet, so the `hdf5` extra may not install there; everything
-    else does.
+    `uv venv --python 3.13` (replace `3.13` with your preferred version in the 3.13-3.15 range).
+    On Python 3.15, h5py publishes no wheel yet, so the `hdf5` extra may not install there. HDF5 catalogues
+    still work: without h5py they are written and read by gwmock-data's own HDF5 support.
 
 <!-- prettier-ignore-end -->
 
@@ -31,20 +31,18 @@ The recommended way to install `gwmock-pop` is from PyPI:
 
 ```bash
 # Create a virtual environment (recommended with uv)
-uv venv --python 3.12
+uv venv --python 3.13
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 uv pip install gwmock-pop
 ```
 
 HDF5 catalogues (`.h5`, `.hdf5`), including the published catalogues the
-`catalogue` commands draw from, need the `hdf5` extra; CSV needs nothing extra:
+`catalogue` commands draw from, work with the core install. The `hdf5` extra
+adds `h5py`, which is faster and compresses what it writes:
 
 ```bash
 uv pip install "gwmock-pop[hdf5]"
 ```
-
-Without it, reading or writing an HDF5 catalogue raises `ModuleNotFoundError`
-naming the extra.
 
 ## Install from Source
 
@@ -54,7 +52,7 @@ For the latest development version:
 git clone git@github.com:Leuven-Gravity-Institute/gwmock-pop.git
 cd gwmock-pop
 # Create a virtual environment (recommended with uv)
-uv venv --python 3.12
+uv venv --python 3.13
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 uv sync --no-dev
 ```
@@ -68,7 +66,7 @@ git clone git@github.com:Leuven-Gravity-Institute/gwmock-pop.git
 cd gwmock-pop
 
 # Create a virtual environment (recommended with uv)
-uv venv --python 3.12
+uv venv --python 3.13
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 uv sync --group dev
 
@@ -91,7 +89,8 @@ python -c "import gwmock_pop; print(gwmock_pop.__version__)"
 ## Dependencies
 
 Core dependencies are defined in `pyproject.toml` (`jax`, `typer`, `networkx`,
-`PyYAML`, `ruyaml`, `pydantic`). `h5py` is the optional `hdf5` extra.
+`PyYAML`, `ruyaml`, `pydantic`, `gwmock-data`). `h5py` is the optional `hdf5`
+extra, a faster HDF5 backend.
 
 ## Getting Help
 
