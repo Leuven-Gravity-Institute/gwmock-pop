@@ -30,7 +30,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-hdf5 = ["h5py>=3.13.0"]
+hdf5 = ["h5py>=3.16.0"]
 
 [dependency-groups]
 dev = [
