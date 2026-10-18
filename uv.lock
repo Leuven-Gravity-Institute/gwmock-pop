@@ -483,7 +483,7 @@ provides-extras = ["hdf5"]
 build = [{ name = "hatch", specifier = ">=1.18.1" }]
 dev = [
     { name = "astropy", specifier = ">=8.0.1" },
-    { name = "h5py", marker = "python_full_version < '3.15'", specifier = ">=3.13.0" },
+    { name = "h5py", marker = "python_full_version < '3.15'", specifier = ">=3.16.0" },
     { name = "hypothesis", specifier = ">=6.169.4" },
     { name = "mutmut", specifier = ">=3.8.0" },
     { name = "prek", specifier = ">=0.5.5" },
