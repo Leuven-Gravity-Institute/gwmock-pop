@@ -17,10 +17,11 @@ pages for more details:
 
 <!-- prettier-ignore-start -->
 !!!note
-    The package is built and tested against Python 3.12-3.14. When creating a virtual environment with `uv`,
+    The package is built and tested against Python 3.12-3.15. When creating a virtual environment with `uv`,
     specify the Python version to ensure compatibility:
-    `uv venv --python 3.12` (replace `3.12` with your preferred version in the 3.12-3.14 range).
-    This avoids potential issues with unsupported Python versions.
+    `uv venv --python 3.12` (replace `3.12` with your preferred version in the 3.12-3.15 range).
+    On Python 3.15, h5py publishes no wheel yet, so the `hdf5` extra may not install there; everything
+    else does.
 
 <!-- prettier-ignore-end -->
 
@@ -34,6 +35,16 @@ uv venv --python 3.12
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 uv pip install gwmock-pop
 ```
+
+HDF5 catalogues (`.h5`, `.hdf5`), including the published catalogues the
+`catalogue` commands draw from, need the `hdf5` extra; CSV needs nothing extra:
+
+```bash
+uv pip install "gwmock-pop[hdf5]"
+```
+
+Without it, reading or writing an HDF5 catalogue raises `ModuleNotFoundError`
+naming the extra.
 
 ## Install from Source
 
@@ -79,8 +90,8 @@ python -c "import gwmock_pop; print(gwmock_pop.__version__)"
 
 ## Dependencies
 
-Core dependencies are defined in `pyproject.toml` (`jax`, `typer`, `h5py`,
-`networkx`, `PyYAML`, `ruyaml`, `pydantic`).
+Core dependencies are defined in `pyproject.toml` (`jax`, `typer`, `networkx`,
+`PyYAML`, `ruyaml`, `pydantic`). `h5py` is the optional `hdf5` extra.
 
 ## Getting Help
 

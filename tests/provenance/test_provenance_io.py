@@ -5,9 +5,15 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import h5py
 import numpy as np
 import pytest
+
+try:
+    import h5py
+except ModuleNotFoundError as exc:  # Python 3.15: h5py publishes no wheel yet; its tests are skipped
+    if exc.name != "h5py":
+        raise
+    h5py = None
 
 from gwmock_pop import write_population_catalogue
 from gwmock_pop.provenance import (
@@ -19,6 +25,7 @@ from gwmock_pop.provenance import (
     read_provenance,
     write_provenance_sidecar,
 )
+from gwmock_pop.provenance.io import _is_hdf5
 
 _RECORD = {"schema_version": "1.0", "catalogue": {"n_samples": 2}, "note": "a record"}
 
@@ -59,6 +66,7 @@ class TestEncodeProvenance:
 class TestHdf5Provenance:
     """Tests for records embedded in HDF5 catalogues."""
 
+    @pytest.mark.requires_h5py
     def test_writes_a_metadata_group_beside_the_data(self, tmp_path: Path) -> None:
         """The record lives under a ``metadata`` group next to ``data``."""
         output_path = tmp_path / "c.hdf5"
@@ -70,6 +78,7 @@ class TestHdf5Provenance:
             assert HDF5_PROVENANCE_PATH in handle
             assert "data" in handle
 
+    @pytest.mark.requires_h5py
     def test_is_read_back_unchanged(self, tmp_path: Path) -> None:
         """A written record reads back equal to what was given."""
         output_path = tmp_path / "c.hdf5"
@@ -78,6 +87,7 @@ class TestHdf5Provenance:
 
         assert read_provenance(output_path) == _RECORD
 
+    @pytest.mark.requires_h5py
     def test_absent_when_no_record_is_supplied(self, tmp_path: Path) -> None:
         """Omitting the record leaves the file free of a metadata group."""
         output_path = tmp_path / "c.hdf5"
@@ -88,6 +98,7 @@ class TestHdf5Provenance:
             assert HDF5_METADATA_GROUP not in handle
         assert read_provenance(output_path) is None
 
+    @pytest.mark.requires_h5py
     def test_survives_a_compressed_dataset(self, tmp_path: Path) -> None:
         """Compression applies to the data, not to the record."""
         output_path = tmp_path / "c.hdf5"
@@ -100,6 +111,7 @@ class TestHdf5Provenance:
             assert handle["data"].compression == "gzip"
         assert read_provenance(output_path) == _RECORD
 
+    @pytest.mark.requires_h5py
     def test_compression_is_skipped_for_an_empty_catalogue(self, tmp_path: Path) -> None:
         """A zero-row dataset cannot be chunked, so compression is dropped, not fatal."""
         output_path = tmp_path / "c.hdf5"
@@ -157,6 +169,7 @@ class TestStaleRecordRemoval:
         assert not provenance_sidecar_path(output_path).exists()
         assert read_provenance(output_path) is None
 
+    @pytest.mark.requires_h5py
     def test_hdf5_rewritten_without_a_record_drops_a_sidecar_too(self, tmp_path: Path) -> None:
         """An HDF5 rewrite truncates the embedded record, and the sidecar goes with it.
 
@@ -190,6 +203,7 @@ class TestReadProvenance:
         """A path with no catalogue and no sidecar has no record."""
         assert read_provenance(tmp_path / "absent.hdf5") is None
 
+    @pytest.mark.requires_h5py
     def test_falls_back_to_a_sidecar_for_an_hdf5_catalogue(self, tmp_path: Path) -> None:
         """A record kept beside an HDF5 file is still found."""
         output_path = tmp_path / "c.hdf5"
@@ -198,6 +212,7 @@ class TestReadProvenance:
 
         assert read_provenance(output_path) == _RECORD
 
+    @pytest.mark.requires_h5py
     def test_prefers_the_embedded_record(self, tmp_path: Path) -> None:
         """An embedded record wins over a sidecar that disagrees with it."""
         output_path = tmp_path / "c.hdf5"
@@ -213,3 +228,38 @@ class TestReadProvenance:
 
         with pytest.raises(ValueError, match="provenance"):
             read_provenance(output_path)
+
+
+class TestTheHdf5SignatureCheck:
+    """``_is_hdf5`` tells HDF5 from anything else without h5py, the way ``h5py.is_hdf5`` does."""
+
+    @pytest.mark.parametrize("userblock", [0, 512, 1024, 4096])
+    @pytest.mark.requires_h5py
+    def test_it_agrees_with_h5py_on_real_files(self, tmp_path, userblock):
+        """Including files with a user block, which move the signature off byte 0."""
+        path = tmp_path / "catalogue.h5"
+        with h5py.File(path, "w", userblock_size=userblock) as handle:
+            handle.create_dataset("data", data=[1.0, 2.0])
+
+        assert _is_hdf5(path) is True
+        assert h5py.is_hdf5(path)
+
+    @pytest.mark.parametrize(
+        "content",
+        [
+            b"",
+            b"mass_1,mass_2\n1.0,2.0\n",
+            b"\x89HDF\r\n\x1a",  # one byte short
+            bytes(100) + b"\x89HDF\r\n\x1a\n",  # not at an allowed offset
+            bytes(512) + b"\x89HDF\r\n\x1a\n",  # at 512, after a user block
+        ],
+    )
+    def test_it_reads_the_signature_only_where_the_format_puts_it(self, tmp_path, content):
+        """At byte 0 or after a user block, whole, and nowhere else; h5py agrees on every non-HDF5 file."""
+        path = tmp_path / "catalogue.bin"
+        path.write_bytes(content)
+
+        expected = content[:8] == b"\x89HDF\r\n\x1a\n" or content[512:520] == b"\x89HDF\r\n\x1a\n"
+        assert _is_hdf5(path) is expected
+        if h5py is not None and not expected:
+            assert not h5py.is_hdf5(path)

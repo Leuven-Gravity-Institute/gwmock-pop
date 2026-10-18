@@ -7,9 +7,9 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import h5py
 import numpy as np
 
+from gwmock_pop._optional import require
 from gwmock_pop.exceptions import PopulationValidationError
 from gwmock_pop.loaders._fetch import resolve_population_path
 from gwmock_pop.loaders._validate import validate_population_catalogue
@@ -130,6 +130,7 @@ def _write_population_hdf5(  # noqa: PLR0913  # one writer, one place: every kno
     # A chunked dataset cannot have a zero-length chunk, so an empty catalogue is
     # written uncompressed rather than refused.
     dataset_compression = compression if n_rows > 0 else None
+    h5py = require("h5py", "hdf5", "Writing an HDF5 catalogue")
     with h5py.File(output_path, "w") as handle:
         handle.create_dataset(_HDF5_DATASET_NAME, data=structured, compression=dataset_compression)
         if provenance is not None:
@@ -165,6 +166,9 @@ def write_population_catalogue(
     columns = _population_columns(population)
     n_rows = _population_size(population=population, columns=columns)
     file_format = infer_population_file_format(destination)
+    if file_format == "hdf5":
+        # Before the stale sidecar below is removed, so a write that cannot happen changes nothing.
+        require("h5py", "hdf5", "Writing an HDF5 catalogue")
 
     if provenance is None:
         # A catalogue written without a record must not inherit the record of
@@ -382,6 +386,7 @@ class FilePopulationLoader:
     @staticmethod
     def _read_hdf5_catalogue(path: Path, *, dataset_name: str) -> dict[str, np.ndarray]:
         """Read an HDF5 catalogue from a compound dataset or group-of-datasets."""
+        h5py = require("h5py", "hdf5", "Reading an HDF5 catalogue")
         with h5py.File(path, "r") as handle:
             hdf5_object = handle[dataset_name]
             if isinstance(hdf5_object, h5py.Dataset):

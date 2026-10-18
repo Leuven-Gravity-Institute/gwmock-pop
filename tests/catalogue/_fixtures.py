@@ -9,8 +9,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import h5py
 import numpy as np
+
+try:
+    import h5py
+except ModuleNotFoundError as exc:  # Python 3.15: h5py publishes no wheel yet; its tests are skipped
+    if exc.name != "h5py":
+        raise
+    h5py = None
 
 from gwmock_pop.catalogue.manifest import CatalogueFile
 from gwmock_pop.catalogue.source import ResolvedCatalogue

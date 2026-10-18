@@ -4,9 +4,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import h5py
 import numpy as np
 import pytest
+
+try:
+    import h5py
+except ModuleNotFoundError as exc:  # Python 3.15: h5py publishes no wheel yet; its tests are skipped
+    if exc.name != "h5py":
+        raise
+    h5py = None
 
 from gwmock_pop.catalogue.manifest import CatalogueFile
 from gwmock_pop.catalogue.population import (
@@ -21,6 +27,7 @@ from gwmock_pop.exceptions import PopulationValidationError
 from tests.catalogue._fixtures import make_pair, resolved_catalogue, write_catalogue
 
 
+@pytest.mark.requires_h5py
 def test_draw_is_deterministic_for_a_seed(tmp_path: Path) -> None:
     """The same seed, span and files reproduce the draw exactly."""
     bns, bbh = make_pair(tmp_path)
@@ -36,6 +43,7 @@ def test_draw_is_deterministic_for_a_seed(tmp_path: Path) -> None:
     assert np.array_equal(first.in_band, second.in_band)
 
 
+@pytest.mark.requires_h5py
 def test_draw_changes_with_the_seed(tmp_path: Path) -> None:
     """A different seed draws a different realisation."""
     bns, bbh = make_pair(tmp_path)
@@ -49,6 +57,7 @@ def test_draw_changes_with_the_seed(tmp_path: Path) -> None:
     assert differs
 
 
+@pytest.mark.requires_h5py
 def test_draw_converts_units_and_frames(tmp_path: Path) -> None:
     """Distances are converted to Mpc and masses are boosted to the detector frame."""
     bns, bbh = make_pair(tmp_path)
@@ -66,6 +75,7 @@ def test_draw_converts_units_and_frames(tmp_path: Path) -> None:
     assert np.all(draw.parameters["coa_time"] <= SECONDS_PER_YEAR * 3.0)
 
 
+@pytest.mark.requires_h5py
 def test_band_cut_uses_the_detector_frame_chirp_mass(tmp_path: Path) -> None:
     """The band membership is exactly the comparison on the detector-frame chirp mass."""
     bns, bbh = make_pair(tmp_path)
@@ -82,6 +92,7 @@ def test_band_cut_uses_the_detector_frame_chirp_mass(tmp_path: Path) -> None:
     assert np.array_equal(open_band.in_band, expected)
 
 
+@pytest.mark.requires_h5py
 def test_classes_are_read_from_the_catalogues_and_the_heavy_tail_is_labelled(tmp_path: Path) -> None:
     """Neutron stars stay neutron stars; only heavy black holes become intermediate-mass."""
     bns, bbh = make_pair(
@@ -100,6 +111,7 @@ def test_classes_are_read_from_the_catalogues_and_the_heavy_tail_is_labelled(tmp
     assert np.array_equal(draw.population_class == "IMBH", expected_imbh)
 
 
+@pytest.mark.requires_h5py
 def test_expected_counts_follow_rate_and_span(tmp_path: Path) -> None:
     """The per-class Poisson mean is the catalogue row count times span over year."""
     bns, bbh = make_pair(tmp_path)
@@ -111,6 +123,7 @@ def test_expected_counts_follow_rate_and_span(tmp_path: Path) -> None:
     assert sum(draw.drawn_per_class.values()) == draw.n_rows
 
 
+@pytest.mark.requires_h5py
 def test_zero_span_draws_nothing(tmp_path: Path) -> None:
     """A zero span draws no source and still returns every column."""
     bns, bbh = make_pair(tmp_path)
@@ -124,6 +137,7 @@ def test_zero_span_draws_nothing(tmp_path: Path) -> None:
     assert draw.population_class.shape == (0,)
 
 
+@pytest.mark.requires_h5py
 @pytest.mark.parametrize(
     "settings",
     [
@@ -140,6 +154,7 @@ def test_invalid_settings_are_refused(tmp_path: Path, settings: dict[str, float]
         draw_catalogue_population(seed=0, resolved=(bns, bbh), **settings)
 
 
+@pytest.mark.requires_h5py
 def test_read_catalogue_columns_rejects_a_missing_column(tmp_path: Path) -> None:
     """A catalogue without a required column is refused with the column named."""
     path = tmp_path / "incomplete.h5"
@@ -151,6 +166,7 @@ def test_read_catalogue_columns_rejects_a_missing_column(tmp_path: Path) -> None
         read_catalogue_columns(path)
 
 
+@pytest.mark.requires_h5py
 def test_read_catalogue_columns_rejects_mismatched_lengths(tmp_path: Path) -> None:
     """Columns of different lengths are refused rather than broadcast."""
     path = tmp_path / "ragged.h5"
@@ -178,6 +194,7 @@ def test_inband_duration_shrinks_with_chirp_mass() -> None:
     assert heavy[0] < light[0]
 
 
+@pytest.mark.requires_h5py
 def test_draw_uses_a_supplied_resolved_catalogue_without_fetching(tmp_path: Path) -> None:
     """A caller-supplied resolved catalogue is read directly, with no fetch."""
     path = tmp_path / "bbh.h5"
@@ -212,6 +229,7 @@ def _overwrite_column_with_nan(path: Path, column: str) -> None:
         handle[column][...] = values
 
 
+@pytest.mark.requires_h5py
 @pytest.mark.parametrize("column", ["chi1z", "chi2z", "dL", "ra", "dec", "psi", "iota", "Phicoal"])
 def test_draw_rejects_non_finite_catalogue_columns(tmp_path: Path, column: str) -> None:
     """A non-finite value in any emitted catalogue column is refused."""
@@ -233,6 +251,7 @@ def test_draw_rejects_non_finite_catalogue_columns(tmp_path: Path, column: str) 
         )
 
 
+@pytest.mark.requires_h5py
 def test_draw_rejects_non_numeric_catalogue_columns(tmp_path: Path) -> None:
     """A non-numeric catalogue column is refused as malformed, not as a NumPy error."""
     path = tmp_path / "bns.h5"
@@ -255,6 +274,7 @@ def test_draw_rejects_non_numeric_catalogue_columns(tmp_path: Path) -> None:
         )
 
 
+@pytest.mark.requires_h5py
 def test_draw_rejects_resolved_catalogues_that_do_not_match_the_configured_pins(tmp_path: Path) -> None:
     """A resolved file whose pinned identity differs from the configured one is refused."""
     bns, _ = make_pair(tmp_path)

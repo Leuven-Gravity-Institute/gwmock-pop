@@ -256,6 +256,7 @@ def test_listing_and_segments(small_inputs: dict) -> None:
         np.testing.assert_array_equal(mask, overlaps)
 
 
+@pytest.mark.requires_h5py
 def test_population_round_trips_through_the_file_loader(small_inputs: dict, tmp_path: Path) -> None:
     """A class population is written with its record and loads as that class."""
     generated = generate_mdc_cbc_list(_SMALL_SETTINGS, small_inputs)

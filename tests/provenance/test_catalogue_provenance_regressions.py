@@ -26,9 +26,15 @@ import json
 from collections.abc import Callable
 from pathlib import Path
 
-import h5py
 import numpy as np
 import pytest
+
+try:
+    import h5py
+except ModuleNotFoundError as exc:  # Python 3.15: h5py publishes no wheel yet; its tests are skipped
+    if exc.name != "h5py":
+        raise
+    h5py = None
 from typer.testing import CliRunner
 
 from gwmock_pop import (
@@ -73,6 +79,7 @@ def _assert_same_catalogue(left: dict[str, np.ndarray], right: dict[str, np.ndar
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_h5py
 def test_cli_hdf5_catalogue_carries_a_provenance_record(tmp_path: Path) -> None:
     """The HDF5 file the CLI writes must hold a record beside its ``data`` dataset."""
     output_path = tmp_path / "population.hdf5"
@@ -99,6 +106,7 @@ def test_cli_hdf5_catalogue_carries_a_provenance_record(tmp_path: Path) -> None:
     assert record["origin"]["configuration"]["parameters"]
 
 
+@pytest.mark.requires_h5py
 def test_cli_records_the_complete_resolved_configuration(
     tmp_path: Path, write_graph_config: Callable[..., Path]
 ) -> None:
@@ -130,6 +138,7 @@ def test_cli_records_the_complete_resolved_configuration(
     assert configuration["run"]["output"]["format"] == "hdf5"
 
 
+@pytest.mark.requires_h5py
 def test_write_population_catalogue_embeds_the_record_it_is_given(tmp_path: Path) -> None:
     """The library writer must persist a caller-supplied record, not drop it."""
     population = {"a": np.array([1.0, 2.0]), "b": np.array([3.0, 4.0])}
@@ -147,6 +156,7 @@ def test_write_population_catalogue_embeds_the_record_it_is_given(tmp_path: Path
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_h5py
 def test_simulator_persistence_goes_through_the_shared_named_column_writer(tmp_path: Path) -> None:
     """A simulator must persist a catalogue this package's own reader accepts.
 
@@ -169,6 +179,7 @@ def test_simulator_persistence_goes_through_the_shared_named_column_writer(tmp_p
     _assert_same_catalogue(catalogue, replay_catalogue(record))
 
 
+@pytest.mark.requires_h5py
 def test_a_library_written_catalogue_replays_from_its_own_record(tmp_path: Path) -> None:
     """The library path is publication-grade too, not only the CLI one."""
     simulator = BBHSimulator(seed=5)
@@ -199,6 +210,7 @@ def test_the_package_keeps_exactly_one_catalogue_persistence_path() -> None:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_h5py
 @pytest.mark.parametrize(("declared", "expect_record"), [("true", True), ("false", False)])
 def test_output_save_metadata_controls_whether_the_record_is_written(
     tmp_path: Path, declared: str, expect_record: bool, write_graph_config: Callable[..., Path]
@@ -233,6 +245,7 @@ def test_csv_catalogue_carries_its_record_in_a_sidecar(tmp_path: Path, write_gra
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_h5py
 def test_simulate_honours_the_configured_run_seed(tmp_path: Path, write_graph_config: Callable[..., Path]) -> None:
     """A configured ``run.seed`` must drive the run when ``--seed`` is omitted."""
     config_path = write_graph_config(preamble="run:\n  name: seeded-run\n  seed: 1234\n")
@@ -247,6 +260,7 @@ def test_simulate_honours_the_configured_run_seed(tmp_path: Path, write_graph_co
     assert read_provenance(from_cli)["run"]["seed_source"] == "cli"
 
 
+@pytest.mark.requires_h5py
 def test_cli_seed_overrides_the_configured_run_seed(tmp_path: Path, write_graph_config: Callable[..., Path]) -> None:
     """``--seed`` must win over a configured ``run.seed``."""
     config_path = write_graph_config(preamble="run:\n  seed: 1234\n")
@@ -260,6 +274,7 @@ def test_cli_seed_overrides_the_configured_run_seed(tmp_path: Path, write_graph_
     assert read_provenance(overridden)["run"]["seed"] == 99
 
 
+@pytest.mark.requires_h5py
 def test_simulate_honours_the_configured_sample_count(tmp_path: Path, write_graph_config: Callable[..., Path]) -> None:
     """``run.n_samples`` must supply the sample count when ``--n`` is omitted."""
     config_path = write_graph_config(preamble="run:\n  n_samples: 12\n  seed: 7\n")
@@ -285,6 +300,7 @@ def test_simulate_without_a_sample_count_anywhere_fails_clearly(
     assert not output_path.exists()
 
 
+@pytest.mark.requires_h5py
 def test_simulate_honours_the_configured_overwrite_flag(
     tmp_path: Path, write_graph_config: Callable[..., Path]
 ) -> None:
@@ -319,6 +335,7 @@ def test_simulate_rejects_a_configured_format_that_contradicts_the_output_suffix
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_h5py
 def test_loader_reports_the_record_the_input_catalogue_carried(tmp_path: Path) -> None:
     """A loaded catalogue's own record is readable through the loader."""
     source = tmp_path / "source.hdf5"
@@ -329,6 +346,7 @@ def test_loader_reports_the_record_the_input_catalogue_carried(tmp_path: Path) -
     assert loader.provenance == read_provenance(source)
 
 
+@pytest.mark.requires_h5py
 def test_loader_origin_folds_in_the_fetch_payload_and_chains_the_record(tmp_path: Path) -> None:
     """An externally derived catalogue names its engine without restating the fetch details."""
     source = tmp_path / "source.hdf5"
@@ -347,6 +365,7 @@ def test_loader_origin_folds_in_the_fetch_payload_and_chains_the_record(tmp_path
     assert origin["input"]["provenance"] == read_provenance(source)
 
 
+@pytest.mark.requires_h5py
 def test_convert_chains_the_record_of_the_file_it_converted(tmp_path: Path) -> None:
     """A conversion must not be where a catalogue loses its provenance."""
     source = tmp_path / "source.hdf5"
@@ -386,6 +405,7 @@ def test_simulate_rejects_a_configured_format_the_package_cannot_write(
     assert not output_path.exists()
 
 
+@pytest.mark.requires_h5py
 def test_simulate_honours_the_configured_output_directory(
     tmp_path: Path, write_graph_config: Callable[..., Path]
 ) -> None:
@@ -400,6 +420,7 @@ def test_simulate_honours_the_configured_output_directory(
     assert (destination / "population.hdf5").is_file()
 
 
+@pytest.mark.requires_h5py
 def test_same_seed_reproduces_the_catalogue_and_every_reconstruction_input(tmp_path: Path) -> None:
     """Two runs at one seed must agree on the data and on the whole record but its timestamp."""
     first = tmp_path / "first.hdf5"
@@ -423,6 +444,7 @@ def test_same_seed_reproduces_the_catalogue_and_every_reconstruction_input(tmp_p
     assert first_record == second_record
 
 
+@pytest.mark.requires_h5py
 def test_catalogue_is_reconstructible_from_its_provenance_record_alone(tmp_path: Path) -> None:
     """With no seed given, the drawn seed must be recorded and replay the catalogue."""
     output_path = tmp_path / "population.hdf5"
@@ -436,6 +458,7 @@ def test_catalogue_is_reconstructible_from_its_provenance_record_alone(tmp_path:
     _assert_same_catalogue(read_population_catalogue(output_path), replay_catalogue(record))
 
 
+@pytest.mark.requires_h5py
 def test_replay_needs_nothing_but_the_record(tmp_path: Path, write_graph_config: Callable[..., Path]) -> None:
     """A record moved away from its catalogue and its config file still replays."""
     config_path = write_graph_config(preamble="run:\n  seed: 8\n")
@@ -451,6 +474,7 @@ def test_replay_needs_nothing_but_the_record(tmp_path: Path, write_graph_config:
     _assert_same_catalogue(stored, replay_catalogue(detached))
 
 
+@pytest.mark.requires_h5py
 def test_omitting_the_seed_draws_a_fresh_seed_each_run(tmp_path: Path, write_graph_config: Callable[..., Path]) -> None:
     """A recorded seed is only worth having if it was not a fixed fallback."""
     seeds = set()

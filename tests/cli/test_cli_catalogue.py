@@ -6,9 +6,15 @@ import hashlib
 import json
 from pathlib import Path
 
-import h5py
 import numpy as np
 import pytest
+
+try:
+    import h5py
+except ModuleNotFoundError as exc:  # Python 3.15: h5py publishes no wheel yet; its tests are skipped
+    if exc.name != "h5py":
+        raise
+    h5py = None
 from typer.testing import CliRunner, Result
 
 from gwmock_pop.catalogue import population as population_module
@@ -19,6 +25,9 @@ from gwmock_pop.provenance import read_provenance
 from tests.catalogue._fixtures import make_pair
 
 _RUNNER = CliRunner()
+
+#: Every test here draws from a catalogue fixture written as HDF5.
+pytestmark = pytest.mark.requires_h5py
 
 
 def _offline_pair_from(pair: tuple, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:

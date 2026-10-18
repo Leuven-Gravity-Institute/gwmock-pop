@@ -5,10 +5,16 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import h5py
 import jax.numpy as jnp
 import numpy as np
 import pytest
+
+try:
+    import h5py
+except ModuleNotFoundError as exc:  # Python 3.15: h5py publishes no wheel yet; its tests are skipped
+    if exc.name != "h5py":
+        raise
+    h5py = None
 from jax import Array
 
 from gwmock_pop import read_population_catalogue
@@ -180,7 +186,14 @@ class TestSimulator:
         assert all(value.shape == (10,) for value in result.values())
         assert all(jnp.all(value == 1.0) for value in result.values())
 
-    @pytest.mark.parametrize("suffix", ["csv", "hdf5", "h5"])
+    @pytest.mark.parametrize(
+        "suffix",
+        [
+            "csv",
+            pytest.param("hdf5", marks=pytest.mark.requires_h5py),
+            pytest.param("h5", marks=pytest.mark.requires_h5py),
+        ],
+    )
     def test_save_catalogue_round_trips_through_the_package_reader(
         self, simulator: ConcreteSimulator, tmp_path: Path, suffix: str
     ) -> None:
@@ -195,6 +208,7 @@ class TestSimulator:
         for name, values in catalogue.items():
             assert np.allclose(values, np.asarray(expected[name]), atol=0.0)
 
+    @pytest.mark.requires_h5py
     def test_save_catalogue_writes_columns_in_parameter_order(
         self, simulator: ConcreteSimulator, tmp_path: Path
     ) -> None:
@@ -206,6 +220,7 @@ class TestSimulator:
 
         assert list(read_population_catalogue(output_path)) == simulator.parameter_names
 
+    @pytest.mark.requires_h5py
     def test_save_catalogue_carries_a_provenance_record(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
         """A saved catalogue says which code produced it and with which seed."""
         simulator.simulate()
@@ -220,6 +235,7 @@ class TestSimulator:
         assert record["origin"]["kind"] == "simulator"
         assert record["origin"]["engine"]["component"].endswith("ConcreteSimulator")
 
+    @pytest.mark.requires_h5py
     def test_save_catalogue_stores_a_supplied_record_unchanged(
         self, simulator: ConcreteSimulator, tmp_path: Path
     ) -> None:
@@ -232,6 +248,7 @@ class TestSimulator:
 
         assert read_provenance(output_path) == record
 
+    @pytest.mark.requires_h5py
     def test_save_catalogue_compresses_when_asked(self, simulator: ConcreteSimulator, tmp_path: Path) -> None:
         """The compression filter reaches the dataset."""
         simulator.simulate()

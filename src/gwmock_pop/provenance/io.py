@@ -15,9 +15,12 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import h5py
+from gwmock_pop._optional import require
+
+if TYPE_CHECKING:
+    import h5py
 
 # Name of the HDF5 group holding the record.
 HDF5_METADATA_GROUP = "metadata"
@@ -30,6 +33,27 @@ HDF5_PROVENANCE_PATH = f"{HDF5_METADATA_GROUP}/{HDF5_PROVENANCE_DATASET}"
 
 # Suffix appended to a catalogue's file name to name its sidecar.
 PROVENANCE_SIDECAR_SUFFIX = ".provenance.json"
+
+# The eight bytes every HDF5 file starts its superblock with.
+_HDF5_SIGNATURE = b"\x89HDF\r\n\x1a\n"
+
+
+def _is_hdf5(path: Path) -> bool:
+    """Whether ``path`` is an HDF5 file, read from its signature rather than through h5py.
+
+    The superblock, and so the signature, sits at byte 0 or, after a user block, at 512, 1024, 2048 and
+    so on (HDF5 File Format Specification, section II.A). Checking it here means telling a CSV catalogue
+    from an HDF5 one needs no h5py, which is an optional dependency.
+    """
+    with path.open("rb") as stream:
+        size = stream.seek(0, os.SEEK_END)
+        offset = 0
+        while offset + len(_HDF5_SIGNATURE) <= size:
+            stream.seek(offset)
+            if stream.read(len(_HDF5_SIGNATURE)) == _HDF5_SIGNATURE:
+                return True
+            offset = 512 if offset == 0 else offset * 2
+    return False
 
 
 def provenance_sidecar_path(catalogue_path: str | os.PathLike[str]) -> Path:
@@ -135,7 +159,8 @@ def read_provenance(catalogue_path: str | os.PathLike[str]) -> dict[str, Any] | 
         ValueError: If a stored record cannot be decoded.
     """
     path = Path(catalogue_path)
-    if path.is_file() and h5py.is_hdf5(path):
+    if path.is_file() and _is_hdf5(path):
+        h5py = require("h5py", "hdf5", "Reading the provenance of an HDF5 catalogue")
         with h5py.File(path, "r") as handle:
             stored = handle.get(HDF5_PROVENANCE_PATH)
             if isinstance(stored, h5py.Dataset):
