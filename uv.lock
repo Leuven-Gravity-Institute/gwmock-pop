@@ -469,7 +469,7 @@ release = [
 
 [package.metadata]
 requires-dist = [
-    { name = "h5py", marker = "extra == 'hdf5'", specifier = ">=3.13.0" },
+    { name = "h5py", marker = "extra == 'hdf5'", specifier = ">=3.16.0" },
     { name = "jax", specifier = ">=0.5.0" },
     { name = "networkx", specifier = ">=3.4" },
     { name = "pydantic", specifier = ">=2.10.0" },
