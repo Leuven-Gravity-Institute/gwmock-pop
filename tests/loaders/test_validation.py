@@ -102,6 +102,7 @@ def _write_hdf5_bns_catalogue(path: Path, lambda_col_1: str, lambda_col_2: str) 
     write_population_catalogue(path, pop)
 
 
+@pytest.mark.requires_h5py
 def test_bns_loader_accepts_canonical_tidal_columns(tmp_path: Path) -> None:
     """FilePopulationLoader accepts lambda_1/lambda_2 canonical column names for BNS."""
     path = tmp_path / "bns_canonical.h5"
@@ -113,6 +114,7 @@ def test_bns_loader_accepts_canonical_tidal_columns(tmp_path: Path) -> None:
     assert "lambda_2" in loader.parameter_names
 
 
+@pytest.mark.requires_h5py
 def test_bns_loader_accepts_tidal_alias_lambda1_lambda2(tmp_path: Path) -> None:
     """FilePopulationLoader resolves lambda1/lambda2 aliases to canonical lambda_1/lambda_2."""
     path = tmp_path / "bns_alias.h5"
@@ -124,6 +126,7 @@ def test_bns_loader_accepts_tidal_alias_lambda1_lambda2(tmp_path: Path) -> None:
     assert "lambda_2" in loader.parameter_names
 
 
+@pytest.mark.requires_h5py
 def test_bns_loader_accepts_tidal_alias_capital_lambda(tmp_path: Path) -> None:
     """FilePopulationLoader resolves Lambda1/Lambda2 aliases to canonical lambda_1/lambda_2."""
     path = tmp_path / "bns_Lambda.h5"

@@ -4,9 +4,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import h5py
 import numpy as np
 import pytest
+
+try:
+    import h5py
+except ModuleNotFoundError as exc:  # Python 3.15: h5py publishes no wheel yet; its tests are skipped
+    if exc.name != "h5py":
+        raise
+    h5py = None
 from typer.testing import CliRunner
 
 from gwmock_pop import FilePopulationLoader
@@ -66,6 +72,7 @@ parameters:
     )
 
 
+@pytest.mark.requires_h5py
 def test_simulate_command_writes_hdf5_from_packaged_preset(tmp_path: Path) -> None:
     """The CLI samples the packaged GWTC4 preset into a named-column HDF5 file."""
     output_path = tmp_path / "population.hdf5"
@@ -84,6 +91,7 @@ def test_simulate_command_writes_hdf5_from_packaged_preset(tmp_path: Path) -> No
         assert set(dataset.dtype.names or ()) == _EXPECTED_BBH_COLUMNS
 
 
+@pytest.mark.requires_h5py
 def test_simulate_command_writes_hdf5_from_bns_packaged_preset(tmp_path: Path) -> None:
     """The CLI samples the packaged BNS flat preset into a named-column HDF5 file."""
     output_path = tmp_path / "bns_population.hdf5"

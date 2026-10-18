@@ -45,7 +45,8 @@ Public re-exports live in `gwmock_pop.__all__`; full module reference is in the
 
 ## Requirements
 
-- Python `>=3.12` (tested on 3.12–3.14)
+- Python `>=3.12` (tested on 3.12–3.15; on 3.15, where h5py has no wheel yet,
+  HDF5 catalogues are unavailable and CSV works)
 - Linux, macOS, or Windows
 
 ## Floating-point precision
@@ -82,6 +83,7 @@ Install from PyPI:
 uv venv --python 3.12
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 uv pip install gwmock-pop
+uv pip install "gwmock-pop[hdf5]"  # HDF5 catalogues (.h5, .hdf5)
 ```
 
 Install from source:

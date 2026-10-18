@@ -45,9 +45,9 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
-import h5py
 import numpy as np
 
+from gwmock_pop._optional import require
 from gwmock_pop.catalogue.manifest import COBA_CATALOGUES, CatalogueFile
 from gwmock_pop.catalogue.source import ResolvedCatalogue, fetch_catalogues
 from gwmock_pop.exceptions import PopulationValidationError
@@ -251,6 +251,7 @@ def read_catalogue_columns(
             if the columns do not all have the same length.
     """
     catalogue_path = Path(path)
+    h5py = require("h5py", "hdf5", "Reading an HDF5 catalogue")
     with h5py.File(catalogue_path, "r") as handle:
         missing = [name for name in columns if name not in handle]
         if missing:

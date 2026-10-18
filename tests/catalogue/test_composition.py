@@ -247,6 +247,7 @@ def test_black_hole_rate_split_refuses_negative_or_non_finite_fractions() -> Non
         composition_summary([draw], black_hole_rate_split={"BBH": float("inf"), "IMBH": 0.0})
 
 
+@pytest.mark.requires_h5py
 def test_catalogue_band_anchor_counts_every_catalogue_row(tmp_path: Path) -> None:
     """The anchor counts the full catalogues exactly, in both frames' classes."""
     bns_path = tmp_path / "bns.h5"

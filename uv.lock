@@ -431,7 +431,6 @@ wheels = [
 name = "gwmock-pop"
 source = { editable = "." }
 dependencies = [
-    { name = "h5py" },
     { name = "jax" },
     { name = "networkx" },
     { name = "pydantic" },
@@ -440,12 +439,18 @@ dependencies = [
     { name = "typer" },
 ]
 
+[package.optional-dependencies]
+hdf5 = [
+    { name = "h5py" },
+]
+
 [package.dev-dependencies]
 build = [
     { name = "hatch" },
 ]
 dev = [
     { name = "astropy" },
+    { name = "h5py", marker = "python_full_version < '3.15'" },
     { name = "hypothesis" },
     { name = "mutmut" },
     { name = "prek" },
@@ -464,7 +469,7 @@ release = [
 
 [package.metadata]
 requires-dist = [
-    { name = "h5py", specifier = ">=3.13.0" },
+    { name = "h5py", marker = "extra == 'hdf5'", specifier = ">=3.13.0" },
     { name = "jax", specifier = ">=0.5.0" },
     { name = "networkx", specifier = ">=3.4" },
     { name = "pydantic", specifier = ">=2.10.0" },
@@ -472,11 +477,13 @@ requires-dist = [
     { name = "ruyaml", specifier = ">=0.91.0" },
     { name = "typer", specifier = ">=0.16.0" },
 ]
+provides-extras = ["hdf5"]
 
 [package.metadata.requires-dev]
 build = [{ name = "hatch", specifier = ">=1.18.1" }]
 dev = [
     { name = "astropy", specifier = ">=8.0.1" },
+    { name = "h5py", marker = "python_full_version < '3.15'", specifier = ">=3.13.0" },
     { name = "hypothesis", specifier = ">=6.169.4" },
     { name = "mutmut", specifier = ">=3.8.0" },
     { name = "prek", specifier = ">=0.5.5" },

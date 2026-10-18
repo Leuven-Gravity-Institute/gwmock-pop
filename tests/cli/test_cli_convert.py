@@ -5,8 +5,15 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import h5py
 import numpy as np
+import pytest
+
+try:
+    import h5py
+except ModuleNotFoundError as exc:  # Python 3.15: h5py publishes no wheel yet; its tests are skipped
+    if exc.name != "h5py":
+        raise
+    h5py = None
 from typer.testing import CliRunner
 
 from gwmock_pop.cli.main import app
@@ -31,6 +38,7 @@ def _write_csv_catalogue(path: Path, columns: dict[str, np.ndarray]) -> None:
     np.savetxt(path, matrix, delimiter=",", header=",".join(columns), comments="")
 
 
+@pytest.mark.requires_h5py
 def test_convert_command_converts_hdf5_to_csv_losslessly(tmp_path: Path) -> None:
     """The convert CLI preserves canonical floating-point columns across HDF5 -> CSV."""
     input_path = tmp_path / "population.hdf5"
@@ -54,6 +62,7 @@ def test_convert_command_converts_hdf5_to_csv_losslessly(tmp_path: Path) -> None
         np.testing.assert_allclose(np.asarray(reloaded[name]), values, rtol=0.0, atol=0.0)
 
 
+@pytest.mark.requires_h5py
 def test_convert_command_applies_column_map_and_reports_skipped_columns(tmp_path: Path) -> None:
     """The convert CLI remaps external names and drops columns without canonical targets."""
     input_path = tmp_path / "external.csv"
