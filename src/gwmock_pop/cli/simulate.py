@@ -2,6 +2,15 @@
 
 from __future__ import annotations
 
+# Imported on first use from Python 3.15 (PEP 810), and as usual before it: only the command body
+# needs them, so ``--help`` and building the command-line app do not pay for them.
+__lazy_modules__ = [
+    "gwmock_pop.cli.common",
+    "gwmock_pop.loaders.file_loader",
+    "gwmock_pop.provenance",
+]
+
+
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any
 
