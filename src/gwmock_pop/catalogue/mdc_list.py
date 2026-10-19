@@ -185,7 +185,8 @@ class MdcListSettings:
         Raises:
             PopulationValidationError: If a setting is out of range.
         """
-        if not isinstance(self.nsbh_tides, (bool, np.bool_)):
+        # A native bool only: the provenance record serialises anything else, numpy's bool included, as a string.
+        if not isinstance(self.nsbh_tides, bool):
             raise PopulationValidationError(f"nsbh_tides must be a boolean, got {self.nsbh_tides!r}.")
         if isinstance(self.seed, bool) or not isinstance(self.seed, (int, np.integer)):
             raise PopulationValidationError(f"seed must be an integer, got {self.seed!r}.")

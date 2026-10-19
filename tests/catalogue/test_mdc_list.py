@@ -353,6 +353,7 @@ def test_missing_input_role_is_an_error(small_inputs: dict) -> None:
         {"nsbh_tides": "false"},
         {"nsbh_tides": 1},
         {"nsbh_tides": None},
+        {"nsbh_tides": np.bool_(True)},
     ],
 )
 def test_settings_are_validated(changes: dict, small_inputs: dict) -> None:
