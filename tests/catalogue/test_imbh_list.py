@@ -264,6 +264,7 @@ def test_population_round_trips_through_the_file_loader(tmp_path: Path) -> None:
         {"local_rate": -1.0},
         {"max_redshift": math.inf},
         {"max_detector_frame_total_mass": 50.0},
+        {"max_detector_frame_total_mass": 100.0},
         {"omega_m": 2.0},
     ],
 )

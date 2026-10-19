@@ -185,9 +185,9 @@ class ImbhPopulation:
             value = getattr(self, name)
             if not math.isfinite(value) or not 0.0 <= value <= upper:
                 raise PopulationValidationError(f"{name} must lie in [0, {upper}], got {value!r}.")
-        if self.max_detector_frame_total_mass < self.min_total_mass:
+        if self.max_detector_frame_total_mass <= self.min_total_mass:
             raise PopulationValidationError(
-                "max_detector_frame_total_mass must be at least min_total_mass, or no event survives the cap."
+                "max_detector_frame_total_mass must exceed min_total_mass, or no event survives the cap."
             )
 
     @property
