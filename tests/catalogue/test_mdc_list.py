@@ -237,6 +237,24 @@ def test_class_specific_parameters(small_inputs: dict) -> None:
     )
 
 
+def test_nsbh_tides_follow_the_neutron_star_spline_when_asked(small_inputs: dict) -> None:
+    """With nsbh_tides, each NSBH neutron star gets the BNS spline at its source-frame mass; nothing else moves."""
+    plain = generate_mdc_cbc_list(_SMALL_SETTINGS, small_inputs).columns
+    tidal = generate_mdc_cbc_list(replace(_SMALL_SETTINGS, nsbh_tides=True), small_inputs).columns
+    nsbh = tidal["source_type"] == NSBH_TYPE
+    assert np.any(nsbh)
+
+    grid, deformability = np.loadtxt(small_inputs["lambda"].path, unpack=True)
+    expected = _natural_cubic_spline(grid, deformability, tidal["source_frame_mass_2"][nsbh])
+    np.testing.assert_allclose(tidal["lambda_2"][nsbh], expected, rtol=1e-12, atol=0.0)
+    assert np.all(tidal["lambda_2"][nsbh] > 0.0)
+    assert np.all(tidal["lambda_1"][nsbh] == 0.0)
+    for name, values in plain.items():
+        if name != "lambda_2":
+            np.testing.assert_array_equal(tidal[name], values, err_msg=name)
+    np.testing.assert_array_equal(tidal["lambda_2"][~nsbh], plain["lambda_2"][~nsbh])
+
+
 def test_listing_and_segments(small_inputs: dict) -> None:
     """Listed signals start before the end of the data and sit in the segments they overlap."""
     generated = generate_mdc_cbc_list(_SMALL_SETTINGS, small_inputs)
@@ -332,6 +350,10 @@ def test_missing_input_role_is_an_error(small_inputs: dict) -> None:
         {"bns_fraction": -0.1},
         {"bbh_fraction": 1.1},
         {"bns_fraction": 0.8, "bbh_fraction": 0.3},
+        {"nsbh_tides": "false"},
+        {"nsbh_tides": 1},
+        {"nsbh_tides": None},
+        {"nsbh_tides": np.bool_(True)},
     ],
 )
 def test_settings_are_validated(changes: dict, small_inputs: dict) -> None:

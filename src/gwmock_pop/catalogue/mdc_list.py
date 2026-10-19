@@ -28,9 +28,12 @@ the inclination, the polarisation angle and the coalescence phase.
 ``i``-th row of that class's catalogue, whether or not the event lands in the
 data, so the rows an event consumes depend only on the classes drawn before it.
 
-**Tidal deformability is set for binary neutron stars only.** It is the natural
+**Tidal deformability is set for binary neutron stars.** It is the natural
 cubic spline of the tabulated deformability, evaluated at each source-frame
-mass. Neutron-star--black-hole and binary-black-hole events carry zero.
+mass. By default neutron-star--black-hole and binary-black-hole events carry
+zero, as in the original generator; with ``nsbh_tides`` a neutron-star--black-hole
+binary's neutron star (the second component) gets the same spline at its mass,
+and its black hole stays zero.
 
 **The signal bounds decide placement, not the merger time.** The coalescence
 time is the accumulated waiting time. The signal start is the coalescence time
@@ -140,6 +143,11 @@ class MdcListSettings:
         min_component_mass: Component mass, in solar masses, of the longest
             signal the run allows for; it fixes how long after the end of the
             data mergers are still drawn.
+        nsbh_tides: Give each neutron-star--black-hole binary's neutron star
+            (the second component) the tidal deformability of the same table
+            and spline as a binary neutron star's, at its source-frame mass.
+            Off by default: the original generator writes zero for these
+            binaries, and the lists then reproduce it.
     """
 
     start_time: float
@@ -151,6 +159,7 @@ class MdcListSettings:
     seed: int = 100
     f_min: float = 5.0
     min_component_mass: float = 1.1
+    nsbh_tides: bool = False
 
     @property
     def nsbh_fraction(self) -> float:
@@ -176,6 +185,9 @@ class MdcListSettings:
         Raises:
             PopulationValidationError: If a setting is out of range.
         """
+        # A native bool only: the provenance record serialises anything else, numpy's bool included, as a string.
+        if not isinstance(self.nsbh_tides, bool):
+            raise PopulationValidationError(f"nsbh_tides must be a boolean, got {self.nsbh_tides!r}.")
         if isinstance(self.seed, bool) or not isinstance(self.seed, (int, np.integer)):
             raise PopulationValidationError(f"seed must be an integer, got {self.seed!r}.")
         if isinstance(self.n_segments, bool) or not isinstance(self.n_segments, (int, np.integer)):
@@ -479,8 +491,9 @@ class MdcCbcList:
 
         Returns:
             Mapping from canonical parameter name to a 1-D array, in event order.
-            Neutron-star--black-hole and binary-black-hole events carry an
-            explicit zero tidal deformability.
+            Binary-black-hole events carry an explicit zero tidal
+            deformability, and so do neutron-star--black-hole events unless
+            ``nsbh_tides`` gives their neutron star the spline value.
 
         Raises:
             ValueError: If ``source_type`` names no class.
@@ -613,7 +626,11 @@ _INTRINSIC_COLUMNS = (
 
 
 def _intrinsic_columns(
-    source_type: np.ndarray, uniforms: np.ndarray, inputs: Mapping[str, MdcInputFile]
+    source_type: np.ndarray,
+    uniforms: np.ndarray,
+    inputs: Mapping[str, MdcInputFile],
+    *,
+    nsbh_tides: bool = False,
 ) -> tuple[dict[str, np.ndarray], dict[str, int]]:
     """Fill each event's catalogue parameters, spins and tidal deformability.
 
@@ -642,6 +659,9 @@ def _intrinsic_columns(
         if code == BNS_TYPE:
             grid, deformability = _read_lambda_table(inputs["lambda"].path)
             columns["lambda_1"][selected] = _natural_cubic_spline(grid, deformability, rows["mass_1"])
+            columns["lambda_2"][selected] = _natural_cubic_spline(grid, deformability, rows["mass_2"])
+        if code == NSBH_TYPE and nsbh_tides:
+            grid, deformability = _read_lambda_table(inputs["lambda"].path)
             columns["lambda_2"][selected] = _natural_cubic_spline(grid, deformability, rows["mass_2"])
     return columns, rows_consumed
 
@@ -747,7 +767,7 @@ def generate_mdc_cbc_list(
     coa_time, source_type, uniforms = _draw_schedule(settings)
     n_events = len(coa_time)
 
-    columns, rows_consumed = _intrinsic_columns(source_type, uniforms, inputs)
+    columns, rows_consumed = _intrinsic_columns(source_type, uniforms, inputs, nsbh_tides=settings.nsbh_tides)
     columns.update(_signal_bounds(columns, coa_time, settings.f_min))
     columns.update(_extrinsic_angles(source_type, uniforms))
     columns.update(_segment_range(columns["start_time"], columns["end_time"], settings))
