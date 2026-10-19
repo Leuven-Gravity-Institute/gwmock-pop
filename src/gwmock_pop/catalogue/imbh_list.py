@@ -122,7 +122,10 @@ class ImbhPopulation:
         max_spin: Upper bound of the dimensionless spin magnitudes.
         local_rate: Source-frame merger-rate density at ``z = 0`` of the whole
             population (both sub-populations, the full mass range before the
-            detector-frame cap), in ``Gpc^-3 yr^-1``.
+            detector-frame cap), in ``Gpc^-3 yr^-1``. The default is the
+            GW190521-like rate as revised with the full third observing run,
+            0.08 (+0.19, -0.07) (LVK, A&A 659, A84 (2022), Sect. 5.3), which
+            supersedes the 0.13 estimated from the first half of that run.
         max_redshift: Largest source redshift.
         max_detector_frame_total_mass: Largest ``(1 + z) M`` kept, in solar masses.
         gamma: Low-redshift slope of the star-formation shape.
@@ -142,7 +145,7 @@ class ImbhPopulation:
     imri_min_mass_ratio: float = 10.0
     imri_max_mass_ratio: float = 100.0
     max_spin: float = 0.99
-    local_rate: float = 0.13
+    local_rate: float = 0.08
     max_redshift: float = 10.0
     max_detector_frame_total_mass: float = 3000.0
     gamma: float = MADAU_DICKINSON_GAMMA

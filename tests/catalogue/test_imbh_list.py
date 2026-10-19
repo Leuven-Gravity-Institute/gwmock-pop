@@ -31,7 +31,7 @@ from gwmock_pop.provenance import read_provenance
 _MONTH_SETTINGS = ImbhListSettings(start_time=1_000_000_000.0, segment_duration=2048.0, n_segments=1300, seed=11)
 
 #: About 40 years of data, so the distributions can be tested on ~2e4 events.
-_LONG_SETTINGS = ImbhListSettings(start_time=0.0, segment_duration=2**20, n_segments=1200, seed=3)
+_LONG_SETTINGS = ImbhListSettings(start_time=0.0, segment_duration=2**20, n_segments=2000, seed=3)
 
 
 def _reference_rate(population: ImbhPopulation, *, capped: bool) -> float:
@@ -80,14 +80,15 @@ def test_rate_has_the_euclidean_limit_at_low_redshift() -> None:
 def test_rate_is_linear_in_the_local_rate() -> None:
     """The local rate is a pure prefactor of the event rate."""
     base = imbh_rate(ImbhPopulation()).events_per_year
-    assert imbh_rate(ImbhPopulation(local_rate=0.39)).events_per_year == pytest.approx(3.0 * base, rel=1e-12)
+    tripled = ImbhPopulation(local_rate=3.0 * ImbhPopulation().local_rate)
+    assert imbh_rate(tripled).events_per_year == pytest.approx(3.0 * base, rel=1e-12)
 
 
 def test_fiducial_rate_per_month() -> None:
-    """The fiducial population gives about 43 mergers a month before the cap and 40 after it."""
+    """The fiducial population gives about 26.6 mergers a month before the cap and 24.6 after it."""
     rate = imbh_rate(ImbhPopulation())
-    assert rate.uncapped_events_per_year / 12.0 == pytest.approx(43.20, abs=0.01)
-    assert rate.events_per_year / 12.0 == pytest.approx(39.94, abs=0.01)
+    assert rate.uncapped_events_per_year / 12.0 == pytest.approx(26.58, abs=0.01)
+    assert rate.events_per_year / 12.0 == pytest.approx(24.58, abs=0.01)
     assert rate.mean_interval == pytest.approx(JULIAN_YEAR_SECONDS / rate.events_per_year)
 
 
@@ -238,7 +239,7 @@ def test_population_round_trips_through_the_file_loader(tmp_path: Path) -> None:
     record = read_provenance(output)
     assert record["run"]["seed"] == _MONTH_SETTINGS.seed
     configuration = record["origin"]["configuration"]
-    assert configuration["population"]["local_rate"] == 0.13
+    assert configuration["population"]["local_rate"] == 0.08
     assert configuration["population"]["imri_fraction"] == 0.5
     assert configuration["population"]["waveform_approximant"] == "IMRPhenomXPHM"
     assert configuration["settings"]["f_min"] == 5.0
