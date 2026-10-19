@@ -26,6 +26,7 @@ import pytest
 LAZY_MODULES = (
     "gwmock_pop",
     "gwmock_pop._precision",
+    "gwmock_pop.catalogue.imbh_list",
     "gwmock_pop.cli.common",
     "gwmock_pop.cli.convert",
     "gwmock_pop.cli.inspect",

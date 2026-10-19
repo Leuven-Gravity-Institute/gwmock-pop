@@ -404,7 +404,7 @@ def _read_catalogue_rows(path: Path, source_type: int, n_rows: int) -> dict[str,
     return {name: table[:, index] for index, name in enumerate(columns)}
 
 
-def _event_uniforms(generator: np.random.RandomState, seed: int) -> np.ndarray:
+def _event_uniforms(generator: np.random.RandomState, seed: int, n_draws: int = _DRAWS_PER_EVENT) -> np.ndarray:
     """Return the uniforms an event can consume, from its own seeded generator.
 
     ``RandomState`` seeded with an integer runs the reference ``init_genrand``,
@@ -413,7 +413,15 @@ def _event_uniforms(generator: np.random.RandomState, seed: int) -> np.ndarray:
     """
     seed %= _UINT32_RANGE
     generator.seed(seed or _ZERO_SEED_REPLACEMENT)
-    return generator.randint(0, _UINT32_RANGE, size=_DRAWS_PER_EVENT, dtype=np.uint64) / float(_UINT32_RANGE)
+    return generator.randint(0, _UINT32_RANGE, size=n_draws, dtype=np.uint64) / float(_UINT32_RANGE)
+
+
+def _waiting_time(mean_interval: float, uniform: float) -> float:
+    """Return the exponential waiting time ``-mean_interval * log(u)`` before the next merger.
+
+    A zero draw is an infinite wait, which ends the run as it would in the original.
+    """
+    return -mean_interval * math.log(uniform) if uniform > 0.0 else math.inf
 
 
 @dataclass(frozen=True, slots=True)
@@ -574,8 +582,7 @@ def _draw_schedule(settings: MdcListSettings) -> tuple[np.ndarray, np.ndarray, n
     while coa_time <= horizon:
         k += 1
         draws = _event_uniforms(generator, int(settings.seed) + k)
-        # A zero draw is an infinite wait, which ends the run as it would in the original.
-        coa_time += -settings.mean_interval * math.log(draws[0]) if draws[0] > 0.0 else math.inf
+        coa_time += _waiting_time(settings.mean_interval, draws[0])
         if draws[1] < settings.bns_fraction:
             types.append(BNS_TYPE)
         elif draws[1] < bbh_threshold:
@@ -676,13 +683,27 @@ def _extrinsic_angles(source_type: np.ndarray, uniforms: np.ndarray) -> dict[str
     """
     offset = np.where(source_type == BBH_TYPE, 4, 2)
     events = np.arange(len(source_type))
-    draws = [uniforms[events, offset + i] for i in range(5)]
+    return _angles_from_uniforms(np.stack([uniforms[events, offset + i] for i in range(5)], axis=1))
+
+
+def _angles_from_uniforms(draws: np.ndarray) -> dict[str, np.ndarray]:
+    """Map five uniforms per event to the sky position, orientation and phase.
+
+    Args:
+        draws: Array of shape ``(n_events, 5)``: right ascension, cosine of the
+            polar angle, cosine of the inclination, polarisation angle and
+            coalescence phase, in that order.
+
+    Returns:
+        Columns ``right_ascension``, ``declination``, ``inclination``,
+        ``polarization_angle`` and ``coa_phase``.
+    """
     return {
-        "right_ascension": 2.0 * np.pi * draws[0] - np.pi,
-        "declination": np.pi / 2.0 - np.arccos(2.0 * draws[1] - 1.0),
-        "inclination": np.arccos(draws[2] * 2.0 - 1.0),
-        "polarization_angle": 2.0 * np.pi * draws[3],
-        "coa_phase": 2.0 * np.pi * draws[4],
+        "right_ascension": 2.0 * np.pi * draws[:, 0] - np.pi,
+        "declination": np.pi / 2.0 - np.arccos(2.0 * draws[:, 1] - 1.0),
+        "inclination": np.arccos(draws[:, 2] * 2.0 - 1.0),
+        "polarization_angle": 2.0 * np.pi * draws[:, 3],
+        "coa_phase": 2.0 * np.pi * draws[:, 4],
     }
 
 
