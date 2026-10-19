@@ -52,3 +52,11 @@ def test_both_citations_are_recorded_with_distinct_roles() -> None:
     for role, description in manifest.CITATION_ROLES.items():
         assert role
         assert description
+
+
+def test_the_published_catalogues_declare_their_extra_columns() -> None:
+    """BNS carries tidal deformabilities; BBH carries in-plane spins defined at 2 Hz."""
+    assert manifest.COBA_BNS.extra_columns == ("Lambda1", "Lambda2")
+    assert manifest.COBA_BNS.spin_reference_frequency is None
+    assert manifest.COBA_BBH.extra_columns == ("chi1x", "chi1y", "chi2x", "chi2y")
+    assert manifest.COBA_BBH.spin_reference_frequency == 2.0

@@ -30,6 +30,7 @@ def write_catalogue(  # noqa: PLR0913  # the columns the published product carri
     redshift: np.ndarray,
     spin_1z: np.ndarray | None = None,
     spin_2z: np.ndarray | None = None,
+    extra: dict[str, np.ndarray] | None = None,
 ) -> None:
     """Write a minimal HDF5 catalogue with the published product's columns.
 
@@ -40,6 +41,7 @@ def write_catalogue(  # noqa: PLR0913  # the columns the published product carri
         redshift: Source redshifts.
         spin_1z: Aligned primary spins. Defaults to zeros.
         spin_2z: Aligned secondary spins. Defaults to zeros.
+        extra: Further columns to write, by catalogue column name.
     """
     n_rows = mass_1.shape[0]
     rng = np.random.default_rng(0)
@@ -56,6 +58,8 @@ def write_catalogue(  # noqa: PLR0913  # the columns the published product carri
         handle["iota"] = rng.uniform(0.0, np.pi, n_rows)
         handle["Phicoal"] = rng.uniform(0.0, 2.0 * np.pi, n_rows)
         handle["z"] = np.asarray(redshift, dtype=float)
+        for column, values in (extra or {}).items():
+            handle[column] = np.asarray(values, dtype=float)
 
 
 def resolved_catalogue(
@@ -64,6 +68,7 @@ def resolved_catalogue(
     name: str,
     source_class: str,
     n_rows: int | None = None,
+    extra_columns: tuple[str, ...] = (),
 ) -> ResolvedCatalogue:
     """Describe a written catalogue as an already-resolved fetch result.
 
@@ -72,6 +77,7 @@ def resolved_catalogue(
         name: Short catalogue name.
         source_class: Source class the file holds.
         n_rows: Row count for the pinned manifest. Defaults to the file's size.
+        extra_columns: Extra columns the manifest entry declares.
 
     Returns:
         The resolved catalogue, with the metadata a verified cache hit carries.
@@ -85,6 +91,7 @@ def resolved_catalogue(
         sha256="0" * 64,
         size_bytes=path.stat().st_size,
         n_rows=file_rows if n_rows is None else n_rows,
+        extra_columns=extra_columns,
     )
     return ResolvedCatalogue(catalogue=catalogue, path=path, metadata={"verified": True, "cache_hit": True})
 
