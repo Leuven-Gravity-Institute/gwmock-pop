@@ -146,8 +146,9 @@ COBA_BBH = CatalogueFile(
     extra_columns=("chi1x", "chi1y", "chi2x", "chi2y"),
     # The spin components and `iota` are LAL's transform of the file's own
     # `thetaJN`, `phiJL`, `tilt1`, `tilt2` and `phi12` at 2 Hz with detector-frame
-    # masses and zero reference phase: that reproduces all seven to 4e-9, and
-    # source-frame masses miss by 0.26. A waveform must use the same frequency.
+    # masses and zero reference phase: over all 118,119 rows that reproduces all
+    # seven to at most 2.9e-8 (lalsuite 7.26.16), while 5 Hz misses by up to 1.08
+    # and source-frame masses by up to 1.30. A waveform must use the same frequency.
     spin_reference_frequency=2.0,
 )
 

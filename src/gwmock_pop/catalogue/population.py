@@ -37,7 +37,9 @@ components; a file that also carries in-plane spin components or tidal
 deformabilities declares them in its manifest entry, and the draw emits them.
 A file that does not carry one emits zero for it: the in-plane spins of an
 aligned-spin catalogue and the deformabilities of a black-hole catalogue are
-zero by construction, not missing values. In-plane components are defined at
+zero by construction, not missing values. A file that carries one without
+declaring it is refused, so a precessing catalogue cannot be drawn as an
+aligned-spin one by omission. In-plane components are defined at
 the file's ``spin_reference_frequency``, which a waveform must use for them to
 mean the same spins.
 """
@@ -300,6 +302,14 @@ def _draw_from_catalogue(
             catalogue column.
     """
     extra_columns = resolved.catalogue.extra_columns
+    undeclared = [name for name in OPTIONAL_COLUMNS if name not in extra_columns]
+    present = hdf5.read(resolved.path, members=undeclared).members if undeclared else {}
+    found = [name for name in undeclared if isinstance(present.get(name), hdf5.Dataset)]
+    if found:
+        raise PopulationValidationError(
+            f"Catalogue {resolved.catalogue.filename} carries {', '.join(found)}, which its manifest entry "
+            "does not declare in extra_columns; declare them, or the draw would emit them as zero."
+        )
     columns = read_catalogue_columns(resolved.path, (*_CATALOGUE_COLUMNS, *extra_columns))
     n_catalogue = columns["m1_source"].shape[0]
     expected = n_catalogue * (span_seconds / SECONDS_PER_YEAR) * rate_multiplier

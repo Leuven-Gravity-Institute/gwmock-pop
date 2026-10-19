@@ -416,3 +416,20 @@ def test_an_unknown_extra_column_is_refused() -> None:
             n_rows=1,
             extra_columns=("theta_jn",),
         )
+
+
+@pytest.mark.requires_h5py
+def test_a_carried_but_undeclared_extra_column_is_refused(tmp_path: Path) -> None:
+    """A file holding in-plane spins its manifest entry does not declare fails, rather than drawing zeros."""
+    path = tmp_path / "bbh.h5"
+    write_catalogue(
+        path,
+        mass_1=np.asarray([30.0, 40.0]),
+        mass_2=np.asarray([20.0, 30.0]),
+        redshift=np.asarray([0.5, 1.0]),
+        extra={"chi1x": np.asarray([0.1, 0.2])},
+    )
+    resolved = resolved_catalogue(path, name="bbh", source_class="BBH")
+
+    with pytest.raises(PopulationValidationError, match="chi1x"):
+        draw_catalogue_population(seed=0, span_seconds=SECONDS_PER_YEAR * 100.0, resolved=(resolved,))
