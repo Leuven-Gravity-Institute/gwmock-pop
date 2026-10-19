@@ -36,7 +36,7 @@ hdf5 = ["h5py>=3.16.0"] # a faster HDF5 backend, which also compresses
 dev = [
   # For the HDF5 tests. h5py publishes no wheel for Python 3.15 yet, where those tests skip.
   "h5py>=3.16.0; python_version < '3.15'",
-  "astropy>=8.0.1",
+  "astropy>=8.0.2",
   "hypothesis>=6.170.0",
   "prek>=0.5.5",
   "pytest-cov>=7.1.0",
