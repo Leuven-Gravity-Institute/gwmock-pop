@@ -265,6 +265,8 @@ def test_population_round_trips_through_the_file_loader(tmp_path: Path) -> None:
         {"max_redshift": math.inf},
         {"max_detector_frame_total_mass": 50.0},
         {"max_detector_frame_total_mass": 100.0},
+        {"max_detector_frame_total_mass": 100.0001},
+        {"max_detector_frame_total_mass": 100.09},
         {"omega_m": 2.0},
     ],
 )
@@ -289,3 +291,16 @@ def test_settings_refuse_out_of_range_values(change: dict) -> None:
     """Settings that cannot describe a run are refused."""
     with pytest.raises(PopulationValidationError):
         generate_imbh_list(replace(_MONTH_SETTINGS, **change))
+
+
+def test_the_narrowest_accepted_cap_matches_its_low_redshift_limit() -> None:
+    """A cap 0.1% above the lightest mass leaves masses only to z = 1e-3, where the rate is analytic.
+
+    There ``dV_c/dz = 4 pi (c / H0)^3 z^2``, ``psi = 1`` and the surviving fraction is
+    ``(delta - z) / ln(M_max / M_min)``, so the rate is ``R0 4 pi (c / H0)^3 delta^4 / (12 ln 10)``.
+    """
+    population = ImbhPopulation(max_detector_frame_total_mass=100.1)
+    delta = 1e-3
+    hubble_gpc = 299792.458 / population.hubble_constant / 1000.0
+    expected = population.local_rate * 4.0 * math.pi * hubble_gpc**3 * delta**4 / (12.0 * math.log(10.0))
+    assert imbh_rate(population).events_per_year == pytest.approx(expected, rel=2e-3)

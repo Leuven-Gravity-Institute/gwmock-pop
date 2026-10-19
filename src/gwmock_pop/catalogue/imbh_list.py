@@ -105,6 +105,11 @@ _REDSHIFT_GRID_SIZE = 16384
 
 _MPC3_PER_GPC3 = 1e9
 
+#: Smallest redshift range below which some mass survives the cap. The rate table is logarithmic
+#: from z = 1e-6; it reproduces an independent quadrature to 1e-7 for a range of 1e-3, to 2e-3 for
+#: 1e-5, and returns nothing at 1e-6. A cap that close to the lightest mass has almost no events.
+_MIN_CAP_SUPPORT = 1e-3
+
 
 @dataclass(frozen=True, slots=True)
 class ImbhPopulation:
@@ -185,9 +190,13 @@ class ImbhPopulation:
             value = getattr(self, name)
             if not math.isfinite(value) or not 0.0 <= value <= upper:
                 raise PopulationValidationError(f"{name} must lie in [0, {upper}], got {value!r}.")
-        if self.max_detector_frame_total_mass <= self.min_total_mass:
+        support = self.max_detector_frame_total_mass / self.min_total_mass - 1.0
+        # The tolerance admits a cap given as exactly 0.1% above, which rounds to just under.
+        if not support >= _MIN_CAP_SUPPORT - 1e-12:
             raise PopulationValidationError(
-                "max_detector_frame_total_mass must exceed min_total_mass, or no event survives the cap."
+                "max_detector_frame_total_mass must exceed min_total_mass by at least "
+                f"{_MIN_CAP_SUPPORT:.1%}: the cap leaves masses only below z = {support:.3g}, "
+                "too narrow for the redshift table to integrate."
             )
 
     @property
