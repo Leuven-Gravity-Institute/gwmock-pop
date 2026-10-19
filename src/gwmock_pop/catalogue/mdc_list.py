@@ -28,9 +28,12 @@ the inclination, the polarisation angle and the coalescence phase.
 ``i``-th row of that class's catalogue, whether or not the event lands in the
 data, so the rows an event consumes depend only on the classes drawn before it.
 
-**Tidal deformability is set for binary neutron stars only.** It is the natural
+**Tidal deformability is set for binary neutron stars.** It is the natural
 cubic spline of the tabulated deformability, evaluated at each source-frame
-mass. Neutron-star--black-hole and binary-black-hole events carry zero.
+mass. By default neutron-star--black-hole and binary-black-hole events carry
+zero, as in the original generator; with ``nsbh_tides`` a neutron-star--black-hole
+binary's neutron star (the second component) gets the same spline at its mass,
+and its black hole stays zero.
 
 **The signal bounds decide placement, not the merger time.** The coalescence
 time is the accumulated waiting time. The signal start is the coalescence time
@@ -182,6 +185,8 @@ class MdcListSettings:
         Raises:
             PopulationValidationError: If a setting is out of range.
         """
+        if not isinstance(self.nsbh_tides, (bool, np.bool_)):
+            raise PopulationValidationError(f"nsbh_tides must be a boolean, got {self.nsbh_tides!r}.")
         if isinstance(self.seed, bool) or not isinstance(self.seed, (int, np.integer)):
             raise PopulationValidationError(f"seed must be an integer, got {self.seed!r}.")
         if isinstance(self.n_segments, bool) or not isinstance(self.n_segments, (int, np.integer)):
@@ -477,8 +482,9 @@ class MdcCbcList:
 
         Returns:
             Mapping from canonical parameter name to a 1-D array, in event order.
-            Neutron-star--black-hole and binary-black-hole events carry an
-            explicit zero tidal deformability.
+            Binary-black-hole events carry an explicit zero tidal
+            deformability, and so do neutron-star--black-hole events unless
+            ``nsbh_tides`` gives their neutron star the spline value.
 
         Raises:
             ValueError: If ``source_type`` names no class.

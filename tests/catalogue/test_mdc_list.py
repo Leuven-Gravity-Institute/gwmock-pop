@@ -350,6 +350,9 @@ def test_missing_input_role_is_an_error(small_inputs: dict) -> None:
         {"bns_fraction": -0.1},
         {"bbh_fraction": 1.1},
         {"bns_fraction": 0.8, "bbh_fraction": 0.3},
+        {"nsbh_tides": "false"},
+        {"nsbh_tides": 1},
+        {"nsbh_tides": None},
     ],
 )
 def test_settings_are_validated(changes: dict, small_inputs: dict) -> None:
