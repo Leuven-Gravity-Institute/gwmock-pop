@@ -32,10 +32,16 @@ source-frame total mass -- because the published catalogue product has no
 separate intermediate-mass file. It is a labelling convention and is recorded as
 such in the draw's provenance, not a claim about the catalogue.
 
-Only the aligned spin components are carried. The catalogue's precessing
-degrees of freedom are dropped because every waveform family the reference
-population is injected with is aligned-spin; the alternative would be a
-component the waveform does not consume.
+**Columns a file declares are carried.** Every catalogue gives the aligned spin
+components; a file that also carries in-plane spin components or tidal
+deformabilities declares them in its manifest entry, and the draw emits them.
+A file that does not carry one emits zero for it: the in-plane spins of an
+aligned-spin catalogue and the deformabilities of a black-hole catalogue are
+zero by construction, not missing values. A file that carries one without
+declaring it is refused, so a precessing catalogue cannot be drawn as an
+aligned-spin one by omission. In-plane components are defined at
+the file's ``spin_reference_frequency``, which a waveform must use for them to
+mean the same spins.
 """
 
 from __future__ import annotations
@@ -48,7 +54,7 @@ from pathlib import Path
 import numpy as np
 from gwmock_data import hdf5
 
-from gwmock_pop.catalogue.manifest import COBA_CATALOGUES, CatalogueFile
+from gwmock_pop.catalogue.manifest import COBA_CATALOGUES, OPTIONAL_COLUMNS, CatalogueFile
 from gwmock_pop.catalogue.source import ResolvedCatalogue, fetch_catalogues
 from gwmock_pop.exceptions import PopulationValidationError
 
@@ -87,6 +93,7 @@ PARAMETER_NAMES = (
     "polarization_angle",
     "coa_time",
     "redshift",
+    *OPTIONAL_COLUMNS.values(),
 )
 
 #: Catalogue distance unit to the output unit (Gpc to Mpc).
@@ -294,7 +301,16 @@ def _draw_from_catalogue(
             emitted row holds a non-numeric or non-finite value in any
             catalogue column.
     """
-    columns = read_catalogue_columns(resolved.path)
+    extra_columns = resolved.catalogue.extra_columns
+    undeclared = [name for name in OPTIONAL_COLUMNS if name not in extra_columns]
+    present = hdf5.read(resolved.path, members=undeclared).members if undeclared else {}
+    found = [name for name in undeclared if isinstance(present.get(name), hdf5.Dataset)]
+    if found:
+        raise PopulationValidationError(
+            f"Catalogue {resolved.catalogue.filename} carries {', '.join(found)}, which its manifest entry "
+            "does not declare in extra_columns; declare them, or the draw would emit them as zero."
+        )
+    columns = read_catalogue_columns(resolved.path, (*_CATALOGUE_COLUMNS, *extra_columns))
     n_catalogue = columns["m1_source"].shape[0]
     expected = n_catalogue * (span_seconds / SECONDS_PER_YEAR) * rate_multiplier
     count = int(rng.poisson(expected))
@@ -319,6 +335,10 @@ def _draw_from_catalogue(
     redshift = selected["z"]
     one_plus_redshift = 1.0 + redshift
     coa_time = rng.uniform(0.0, span_seconds, size=count)
+    optional = {
+        parameter: selected[column] if column in extra_columns else np.zeros(count, dtype=float)
+        for column, parameter in OPTIONAL_COLUMNS.items()
+    }
     return {
         "detector_frame_mass_1": mass_1_source * one_plus_redshift,
         "detector_frame_mass_2": mass_2_source * one_plus_redshift,
@@ -332,6 +352,7 @@ def _draw_from_catalogue(
         "polarization_angle": selected["psi"],
         "coa_time": coa_time,
         "redshift": redshift,
+        **optional,
     }
 
 

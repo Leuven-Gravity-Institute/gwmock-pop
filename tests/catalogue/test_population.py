@@ -294,3 +294,142 @@ def test_draw_rejects_resolved_catalogues_that_do_not_match_the_configured_pins(
             catalogues=(mismatched,),
             resolved=(bns,),
         )
+
+
+_SPIN_COLUMNS = ("chi1x", "chi1y", "chi2x", "chi2y")
+_TIDE_COLUMNS = ("Lambda1", "Lambda2")
+
+
+def _pair_with_extras(tmp_path: Path) -> tuple:
+    """Write a BNS file carrying deformabilities and a BBH file carrying in-plane spins.
+
+    Each extra value is a distinct function of the row's primary mass, so a test
+    can tell which catalogue row an emitted value came from.
+
+    Args:
+        tmp_path: Directory to write the files in.
+
+    Returns:
+        The resolved BNS and BBH catalogues, in that order.
+    """
+    bns_mass_1 = np.asarray([1.2, 1.4, 1.6])
+    bbh_mass_1 = np.asarray([30.0, 40.0, 50.0])
+    bns_path = tmp_path / "bns.h5"
+    bbh_path = tmp_path / "bbh.h5"
+    write_catalogue(
+        bns_path,
+        mass_1=bns_mass_1,
+        mass_2=np.asarray([1.1, 1.3, 1.5]),
+        redshift=np.asarray([0.05, 0.1, 0.2]),
+        extra={"Lambda1": 100.0 * bns_mass_1, "Lambda2": 200.0 * bns_mass_1},
+    )
+    write_catalogue(
+        bbh_path,
+        mass_1=bbh_mass_1,
+        mass_2=np.asarray([20.0, 30.0, 40.0]),
+        redshift=np.asarray([0.5, 1.0, 1.5]),
+        extra={column: (k + 1) * bbh_mass_1 / 1000.0 for k, column in enumerate(_SPIN_COLUMNS)},
+    )
+    return (
+        resolved_catalogue(bns_path, name="bns", source_class="BNS", extra_columns=_TIDE_COLUMNS),
+        resolved_catalogue(bbh_path, name="bbh", source_class="BBH", extra_columns=_SPIN_COLUMNS),
+    )
+
+
+@pytest.mark.requires_h5py
+def test_declared_extra_columns_are_emitted_from_their_own_rows(tmp_path: Path) -> None:
+    """Each declared column is emitted for its file's rows; undeclared ones are zero."""
+    bns, bbh = _pair_with_extras(tmp_path)
+    draw = draw_catalogue_population(seed=3, span_seconds=SECONDS_PER_YEAR * 20.0, resolved=(bns, bbh))
+    parameters = draw.parameters
+    source_mass_1 = parameters["detector_frame_mass_1"] / (1.0 + parameters["redshift"])
+    is_bns = draw.source_class == "BNS"
+    assert np.any(is_bns)
+    assert np.any(~is_bns)
+
+    np.testing.assert_allclose(parameters["lambda_1"][is_bns], 100.0 * source_mass_1[is_bns], rtol=1e-12, atol=0.0)
+    np.testing.assert_allclose(parameters["lambda_2"][is_bns], 200.0 * source_mass_1[is_bns], rtol=1e-12, atol=0.0)
+    for k, name in enumerate(("spin_1x", "spin_1y", "spin_2x", "spin_2y")):
+        expected = (k + 1) * source_mass_1[~is_bns] / 1000.0
+        np.testing.assert_allclose(parameters[name][~is_bns], expected, rtol=1e-12, atol=0.0)
+        assert np.all(parameters[name][is_bns] == 0.0)
+    assert np.all(parameters["lambda_1"][~is_bns] == 0.0)
+    assert np.all(parameters["lambda_2"][~is_bns] == 0.0)
+
+
+@pytest.mark.requires_h5py
+def test_extra_columns_do_not_change_the_seeded_draw(tmp_path: Path) -> None:
+    """Carrying extra columns consumes no randomness, so every other parameter is unchanged."""
+    plain_dir = tmp_path / "plain"
+    extra_dir = tmp_path / "extra"
+    plain_dir.mkdir()
+    extra_dir.mkdir()
+    plain = make_pair(plain_dir)
+    extra = _pair_with_extras(extra_dir)
+    first = draw_catalogue_population(seed=11, span_seconds=SECONDS_PER_YEAR * 5.0, resolved=plain)
+    second = draw_catalogue_population(seed=11, span_seconds=SECONDS_PER_YEAR * 5.0, resolved=extra)
+
+    for name in PARAMETER_NAMES:
+        if name in ("spin_1x", "spin_1y", "spin_2x", "spin_2y", "lambda_1", "lambda_2"):
+            continue
+        np.testing.assert_array_equal(first.parameters[name], second.parameters[name])
+
+
+@pytest.mark.requires_h5py
+def test_a_declared_extra_column_missing_from_the_file_is_refused(tmp_path: Path) -> None:
+    """A manifest entry that declares a column the file lacks fails the draw, naming it."""
+    path = tmp_path / "bbh.h5"
+    write_catalogue(path, mass_1=np.asarray([30.0]), mass_2=np.asarray([20.0]), redshift=np.asarray([0.5]))
+    resolved = resolved_catalogue(path, name="bbh", source_class="BBH", extra_columns=("chi1x",))
+
+    with pytest.raises(PopulationValidationError, match="chi1x"):
+        draw_catalogue_population(seed=0, span_seconds=SECONDS_PER_YEAR * 100.0, resolved=(resolved,))
+
+
+@pytest.mark.requires_h5py
+@pytest.mark.parametrize("column", [*_SPIN_COLUMNS, *_TIDE_COLUMNS])
+def test_draw_rejects_non_finite_extra_columns(tmp_path: Path, column: str) -> None:
+    """A non-finite value in a declared extra column is refused like any other column."""
+    path = tmp_path / "cat.h5"
+    write_catalogue(
+        path,
+        mass_1=np.asarray([1.2, 1.4, 1.6]),
+        mass_2=np.asarray([1.1, 1.3, 1.5]),
+        redshift=np.asarray([0.05, 0.1, 0.2]),
+        extra={column: np.asarray([np.nan, np.nan, np.nan])},
+    )
+    resolved = resolved_catalogue(path, name="cat", source_class="BNS", extra_columns=(column,))
+
+    with pytest.raises(PopulationValidationError, match=column):
+        draw_catalogue_population(seed=0, span_seconds=SECONDS_PER_YEAR * 100.0, resolved=(resolved,))
+
+
+def test_an_unknown_extra_column_is_refused() -> None:
+    """A manifest entry naming a column the draw cannot emit is refused at construction."""
+    with pytest.raises(ValueError, match="theta_jn"):
+        CatalogueFile(
+            name="x",
+            source_class="BBH",
+            filename="x.h5",
+            sha256="0" * 64,
+            size_bytes=1,
+            n_rows=1,
+            extra_columns=("theta_jn",),
+        )
+
+
+@pytest.mark.requires_h5py
+def test_a_carried_but_undeclared_extra_column_is_refused(tmp_path: Path) -> None:
+    """A file holding in-plane spins its manifest entry does not declare fails, rather than drawing zeros."""
+    path = tmp_path / "bbh.h5"
+    write_catalogue(
+        path,
+        mass_1=np.asarray([30.0, 40.0]),
+        mass_2=np.asarray([20.0, 30.0]),
+        redshift=np.asarray([0.5, 1.0]),
+        extra={"chi1x": np.asarray([0.1, 0.2])},
+    )
+    resolved = resolved_catalogue(path, name="bbh", source_class="BBH")
+
+    with pytest.raises(PopulationValidationError, match="chi1x"):
+        draw_catalogue_population(seed=0, span_seconds=SECONDS_PER_YEAR * 100.0, resolved=(resolved,))

@@ -73,6 +73,8 @@ def _fetch_block(draw: CatalogueDraw) -> list[dict[str, Any]]:
             "sha256": resolved.catalogue.sha256,
             "size_bytes": resolved.catalogue.size_bytes,
             "n_rows": resolved.catalogue.n_rows,
+            "extra_columns": list(resolved.catalogue.extra_columns),
+            "spin_reference_frequency": resolved.catalogue.spin_reference_frequency,
             "verified": bool(resolved.metadata.get("verified", False)),
             "cache_hit": bool(resolved.metadata.get("cache_hit", False)),
         }

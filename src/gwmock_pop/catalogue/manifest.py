@@ -54,6 +54,18 @@ CITATION_ROLES = {
 }
 
 
+#: Catalogue columns a file may carry beyond the common set, mapped to the
+#: output parameter each one is emitted as.
+OPTIONAL_COLUMNS: dict[str, str] = {
+    "chi1x": "spin_1x",
+    "chi1y": "spin_1y",
+    "chi2x": "spin_2x",
+    "chi2y": "spin_2y",
+    "Lambda1": "lambda_1",
+    "Lambda2": "lambda_2",
+}
+
+
 @dataclass(frozen=True, slots=True)
 class CatalogueFile:
     """One catalogue file, with the identity needed to fetch and verify it.
@@ -65,6 +77,12 @@ class CatalogueFile:
         sha256: Expected SHA-256 of the file contents, lowercase hex.
         size_bytes: Expected size of the file in bytes.
         n_rows: Number of catalogue rows, a property of the published product.
+        extra_columns: Columns the file carries beyond those every catalogue
+            carries, each one of :data:`OPTIONAL_COLUMNS`. A draw reads and
+            emits them, and refuses the file if one is absent.
+        spin_reference_frequency: Frequency in Hz at which the file's spin
+            components are defined, or ``None`` when the file carries only
+            aligned components, which do not depend on it.
     """
 
     name: str
@@ -73,6 +91,18 @@ class CatalogueFile:
     sha256: str
     size_bytes: int
     n_rows: int
+    extra_columns: tuple[str, ...] = ()
+    spin_reference_frequency: float | None = None
+
+    def __post_init__(self) -> None:
+        """Refuse an extra column the draw would not know how to emit.
+
+        Raises:
+            ValueError: If an extra column is not one of :data:`OPTIONAL_COLUMNS`.
+        """
+        unknown = [name for name in self.extra_columns if name not in OPTIONAL_COLUMNS]
+        if unknown:
+            raise ValueError(f"Catalogue {self.name} declares unknown extra columns: {', '.join(unknown)}.")
 
     @property
     def url(self) -> str:
@@ -102,6 +132,7 @@ COBA_BNS = CatalogueFile(
     sha256="2c984772bb5a618ee66efdc821fe65487b46602516e0131c948a05b43478b3ff",
     size_bytes=93290425,
     n_rows=721341,
+    extra_columns=("Lambda1", "Lambda2"),
 )
 
 #: Design-comparison binary-black-hole catalogue.
@@ -112,6 +143,13 @@ COBA_BBH = CatalogueFile(
     sha256="5c421a4bbabc33b3c76c0595298de8663b6dc1b2e65713c346abdcac64e5ca65",
     size_bytes=23449120,
     n_rows=118119,
+    extra_columns=("chi1x", "chi1y", "chi2x", "chi2y"),
+    # The spin components and `iota` are LAL's transform of the file's own
+    # `thetaJN`, `phiJL`, `tilt1`, `tilt2` and `phi12` at 2 Hz with detector-frame
+    # masses and zero reference phase: over all 118,119 rows that reproduces all
+    # seven to at most 2.9e-8 (lalsuite 7.26.16), while 5 Hz misses by up to 1.08
+    # and source-frame masses by up to 1.30. A waveform must use the same frequency.
+    spin_reference_frequency=2.0,
 )
 
 #: Catalogue files a design-comparison draw is made from, in draw order.
