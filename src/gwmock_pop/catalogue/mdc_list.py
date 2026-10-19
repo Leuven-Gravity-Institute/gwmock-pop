@@ -140,6 +140,11 @@ class MdcListSettings:
         min_component_mass: Component mass, in solar masses, of the longest
             signal the run allows for; it fixes how long after the end of the
             data mergers are still drawn.
+        nsbh_tides: Give each neutron-star--black-hole binary's neutron star
+            (the second component) the tidal deformability of the same table
+            and spline as a binary neutron star's, at its source-frame mass.
+            Off by default: the original generator writes zero for these
+            binaries, and the lists then reproduce it.
     """
 
     start_time: float
@@ -151,6 +156,7 @@ class MdcListSettings:
     seed: int = 100
     f_min: float = 5.0
     min_component_mass: float = 1.1
+    nsbh_tides: bool = False
 
     @property
     def nsbh_fraction(self) -> float:
@@ -606,7 +612,11 @@ _INTRINSIC_COLUMNS = (
 
 
 def _intrinsic_columns(
-    source_type: np.ndarray, uniforms: np.ndarray, inputs: Mapping[str, MdcInputFile]
+    source_type: np.ndarray,
+    uniforms: np.ndarray,
+    inputs: Mapping[str, MdcInputFile],
+    *,
+    nsbh_tides: bool = False,
 ) -> tuple[dict[str, np.ndarray], dict[str, int]]:
     """Fill each event's catalogue parameters, spins and tidal deformability.
 
@@ -635,6 +645,9 @@ def _intrinsic_columns(
         if code == BNS_TYPE:
             grid, deformability = _read_lambda_table(inputs["lambda"].path)
             columns["lambda_1"][selected] = _natural_cubic_spline(grid, deformability, rows["mass_1"])
+            columns["lambda_2"][selected] = _natural_cubic_spline(grid, deformability, rows["mass_2"])
+        if code == NSBH_TYPE and nsbh_tides:
+            grid, deformability = _read_lambda_table(inputs["lambda"].path)
             columns["lambda_2"][selected] = _natural_cubic_spline(grid, deformability, rows["mass_2"])
     return columns, rows_consumed
 
@@ -726,7 +739,7 @@ def generate_mdc_cbc_list(
     coa_time, source_type, uniforms = _draw_schedule(settings)
     n_events = len(coa_time)
 
-    columns, rows_consumed = _intrinsic_columns(source_type, uniforms, inputs)
+    columns, rows_consumed = _intrinsic_columns(source_type, uniforms, inputs, nsbh_tides=settings.nsbh_tides)
     columns.update(_signal_bounds(columns, coa_time, settings.f_min))
     columns.update(_extrinsic_angles(source_type, uniforms))
     columns.update(_segment_range(columns["start_time"], columns["end_time"], settings))
