@@ -7,6 +7,17 @@ either used or reported, never quietly ignored.
 
 from __future__ import annotations
 
+# Imported on first use from Python 3.15 (PEP 810), and as usual before it: only the command body
+# needs them, so ``--help`` and building the command-line app do not pay for them.
+__lazy_modules__ = [
+    "gwmock_pop.config.main",
+    "gwmock_pop.config.simulation",
+    "gwmock_pop.loaders.file_loader",
+    "gwmock_pop.protocols",
+    "gwmock_pop.simulators.graph",
+]
+
+
 from dataclasses import dataclass
 from pathlib import Path
 

@@ -2,6 +2,14 @@
 
 from __future__ import annotations
 
+# Imported on first use from Python 3.15 (PEP 810), and as usual before it: only the command body
+# needs them, so ``--help`` and building the command-line app do not pay for them.
+__lazy_modules__ = [
+    "gwmock_pop.configs",
+    "gwmock_pop.simulators.simulator",
+]
+
+
 import inspect
 from dataclasses import dataclass
 
