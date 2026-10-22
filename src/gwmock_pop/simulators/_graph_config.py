@@ -140,7 +140,8 @@ def build_cbc_graph_config(  # noqa: PLR0913
         d_max: Maximum luminosity distance in Mpc.
         gps_start: Lower bound for the coalescence-time prior.
         gps_end: Upper bound for the coalescence-time prior.
-        f_ref: Constant reference frequency assigned to every sample.
+        f_ref: Reference frequency (Hz) at which precessing spins are defined.
+            Written as a column only when ``aligned_spins`` is ``False``.
         lambda_1_max: Upper bound for ``lambda_1`` (``None`` for a zero constant).
         lambda_2_max: Upper bound for ``lambda_2`` (``None`` for a zero constant).
         eccentricity: Constant eccentricity assigned to every sample.
@@ -204,7 +205,12 @@ def build_cbc_graph_config(  # noqa: PLR0913
         },
         "f_ref": _constant(f_ref),
     }
-    if not aligned_spins:
+    if aligned_spins:
+        # Aligned spins do not evolve, so nothing written here depends on a
+        # reference frequency; a per-event f_ref could only disagree with the
+        # one the waveform generator is configured with.
+        del config["f_ref"]
+    else:
         # A theta_jn drawn independently of the inclination would describe a
         # different binary from the one generated from the inclination and the
         # spins. Deriving it needs a model-dependent orbital angular momentum at

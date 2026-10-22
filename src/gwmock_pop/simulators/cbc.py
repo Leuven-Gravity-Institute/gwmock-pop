@@ -88,7 +88,12 @@ class CBCSimulator(_CBCGraphSimulator):
         gps_start: Lower bound for the coalescence-time prior.
         gps_end: Upper bound for the coalescence-time prior.
         total_mass_max: Optional upper bound on ``mass_1 + mass_2``.
-        f_ref: Constant reference frequency assigned to every sample.
+        f_ref: Reference frequency (Hz) at which precessing spins are defined.
+            Written as the ``f_ref`` column only for precessing draws
+            (``aligned_spins=False``); aligned-spin draws do not depend on a
+            reference frequency and write no ``f_ref``. The waveform generator
+            must use the same reference frequency: in gwmock, set ``f_ref`` to
+            this value under ``waveform-backend-arguments``.
         lambda_max: Upper bound for the uniform tidal-deformability prior applied
             to both components. ``None`` (default) sets both to zero.
         ordered_masses: If ``True``, enforce ``mass_1 >= mass_2`` per sample.
@@ -160,7 +165,12 @@ class BBHSimulator(_CBCGraphSimulator):
         gps_start: Lower bound for the coalescence-time prior.
         gps_end: Upper bound for the coalescence-time prior.
         total_mass_max: Optional upper bound on ``mass_1 + mass_2``.
-        f_ref: Constant reference frequency assigned to every sample.
+        f_ref: Reference frequency (Hz) at which precessing spins are defined.
+            Written as the ``f_ref`` column only for precessing draws
+            (``aligned_spins=False``); aligned-spin draws do not depend on a
+            reference frequency and write no ``f_ref``. The waveform generator
+            must use the same reference frequency: in gwmock, set ``f_ref`` to
+            this value under ``waveform-backend-arguments``.
         parameters: Optional partial graph config merged onto the defaults.
         seed: Optional RNG seed forwarded to the graph simulator.
     """
@@ -227,7 +237,12 @@ class BNSSimulator(_CBCGraphSimulator):
         gps_start: Lower bound for the coalescence-time prior.
         gps_end: Upper bound for the coalescence-time prior.
         total_mass_max: Optional upper bound on ``mass_1 + mass_2``.
-        f_ref: Constant reference frequency assigned to every sample.
+        f_ref: Reference frequency (Hz) at which precessing spins are defined.
+            Written as the ``f_ref`` column only for precessing draws
+            (``aligned_spins=False``); aligned-spin draws do not depend on a
+            reference frequency and write no ``f_ref``. The waveform generator
+            must use the same reference frequency: in gwmock, set ``f_ref`` to
+            this value under ``waveform-backend-arguments``.
         lambda_max: Upper bound for the uniform tidal-deformability prior.
         parameters: Optional partial graph config merged onto the defaults.
         seed: Optional RNG seed forwarded to the graph simulator.
@@ -300,7 +315,12 @@ class NSBHSimulator(_CBCGraphSimulator):
         gps_start: Lower bound for the coalescence-time prior.
         gps_end: Upper bound for the coalescence-time prior.
         total_mass_max: Optional upper bound on ``mass_1 + mass_2``.
-        f_ref: Constant reference frequency assigned to every sample.
+        f_ref: Reference frequency (Hz) at which precessing spins are defined.
+            Written as the ``f_ref`` column only for precessing draws
+            (``aligned_spins=False``); aligned-spin draws do not depend on a
+            reference frequency and write no ``f_ref``. The waveform generator
+            must use the same reference frequency: in gwmock, set ``f_ref`` to
+            this value under ``waveform-backend-arguments``.
         ns_lambda_max: Upper bound for the secondary tidal-deformability prior.
         parameters: Optional partial graph config merged onto the defaults.
         seed: Optional RNG seed forwarded to the graph simulator.

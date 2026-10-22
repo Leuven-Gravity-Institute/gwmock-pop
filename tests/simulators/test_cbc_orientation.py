@@ -31,6 +31,15 @@ def test_aligned_spin_draws_write_theta_jn_equal_to_inclination(simulator_class:
     np.testing.assert_array_equal(np.asarray(result["theta_jn"]), np.asarray(result["inclination"]))
 
 
+@pytest.mark.parametrize("simulator_class", _CLASSES, ids=lambda cls: cls.__name__)
+def test_aligned_spin_draws_write_no_reference_frequency(simulator_class: type) -> None:
+    """An aligned-spin draw has nothing defined at a reference frequency, so writes no ``f_ref``."""
+    simulator = simulator_class(aligned_spins=True, seed=0)
+
+    assert "f_ref" not in simulator.parameter_names
+    assert "f_ref" not in simulator.simulate(8)
+
+
 @pytest.mark.parametrize("seed", _SEEDS)
 @pytest.mark.parametrize("simulator_class", _CLASSES, ids=lambda cls: cls.__name__)
 def test_precessing_draws_write_no_independent_theta_jn(simulator_class: type, seed: int) -> None:
