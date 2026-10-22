@@ -24,7 +24,9 @@ Layout versions:
 
 - ``1.0`` -- the layout above.
 - ``1.1`` -- a ``catalogue_draw`` origin's ``configuration`` also records
-  ``poisson_mean_per_class``, the Poisson mean each class count was drawn from.
+  ``poisson_mean_per_class``, the Poisson mean each class count was drawn from,
+  and ``allow_replacement``, whether a class count larger than its catalogue
+  was permitted to be sampled with replacement.
 """
 
 from __future__ import annotations

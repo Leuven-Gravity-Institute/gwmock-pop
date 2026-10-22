@@ -83,14 +83,20 @@ def heavy_offline_pair(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> tuple
     return _offline_pair_from(pair, monkeypatch)
 
 
-def _run_catalogue(output: Path, stamp: Path, seed: int = 1, draws: int = 2) -> Result:
+def _run_catalogue(
+    output: Path, stamp: Path, seed: int = 1, draws: int = 2, *, allow_replacement: bool = True
+) -> Result:
     """Run the catalogue CLI into a draw and a stamp.
+
+    The three-year span draws more rows than the three-row fixture catalogues
+    hold, so replacement is allowed unless the test is about the refusal.
 
     Args:
         output: Destination draw file.
         stamp: Destination stamp file.
         seed: Seed of the archived draw.
         draws: Number of draws whose spread is reported.
+        allow_replacement: Whether to pass ``--allow-replacement``.
 
     Returns:
         The CLI result.
@@ -109,6 +115,7 @@ def _run_catalogue(output: Path, stamp: Path, seed: int = 1, draws: int = 2) -> 
             str(output),
             "--stamp",
             str(stamp),
+            *(["--allow-replacement"] if allow_replacement else []),
         ],
     )
 
@@ -160,6 +167,41 @@ def test_catalogue_command_records_the_poisson_mean_of_each_class(
     assert provenance["origin"]["configuration"]["poisson_mean_per_class"] == expected
     payload = json.loads(stamp.read_text(encoding="utf-8"))
     assert payload["configuration"]["poisson_mean_per_class"] == expected
+
+
+def test_catalogue_command_refuses_a_count_larger_than_the_catalogue(
+    offline_pair: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """Without --allow-replacement, a draw the catalogue cannot meet writes nothing."""
+    output = tmp_path / "draw.h5"
+    stamp = tmp_path / "stamp.json"
+
+    result = _run_catalogue(output=output, stamp=stamp, allow_replacement=False)
+
+    assert result.exit_code == 1
+    assert not output.exists()
+    assert not stamp.exists()
+
+
+@pytest.mark.parametrize("allow_replacement", [False, True])
+def test_catalogue_command_records_whether_replacement_was_allowed(
+    offline_pair: tuple[Path, Path], tmp_path: Path, *, allow_replacement: bool
+) -> None:
+    """The provenance and the stamp say whether the draw could repeat rows."""
+    output = tmp_path / "draw.h5"
+    stamp = tmp_path / "stamp.json"
+    # One merger per class is expected over four months, which three rows can meet.
+    arguments = ["catalogue", "--seed", "1", "--draws", "1", "--span-seconds", str(SECONDS_PER_YEAR / 3.0)]
+    arguments += ["--output", str(output), "--stamp", str(stamp)]
+
+    result = _RUNNER.invoke(app, arguments + (["--allow-replacement"] if allow_replacement else []))
+    assert result.exit_code == 0, result.output
+
+    provenance = read_provenance(output)
+    assert provenance is not None
+    assert provenance["origin"]["configuration"]["allow_replacement"] is allow_replacement
+    payload = json.loads(stamp.read_text(encoding="utf-8"))
+    assert payload["configuration"]["allow_replacement"] is allow_replacement
 
 
 def test_catalogue_command_regeneration_is_data_deterministic(offline_pair: tuple[Path, Path], tmp_path: Path) -> None:

@@ -87,7 +87,9 @@ def _draw_configuration(draw: CatalogueDraw) -> dict[str, Any]:
 
     The per-class Poisson mean is recorded beside the settings it follows
     from, so a draw's count of each class can be audited against the mean it
-    was drawn from without rebuilding the draw.
+    was drawn from without rebuilding the draw. Whether a class was permitted
+    to be sampled with replacement is recorded too, so a draw that may repeat
+    catalogue rows says so.
 
     Args:
         draw: The draw whose settings are described.
@@ -104,6 +106,7 @@ def _draw_configuration(draw: CatalogueDraw) -> dict[str, Any]:
         "imbh_total_mass_threshold": draw.imbh_total_mass_threshold,
         "catalogue_order": [resolved.catalogue.name for resolved in draw.resolved],
         "poisson_mean_per_class": dict(draw.expected_per_class),
+        "allow_replacement": draw.allow_replacement,
     }
 
 
@@ -400,13 +403,25 @@ def catalogue_command(  # noqa: PLR0913, PLR0917  # the draw's settings, surface
         typer.Option("--offline", help="Use only a cache entry whose digest matches; never download."),
     ] = False,
     overwrite: Annotated[bool, typer.Option("--overwrite", help="Replace an existing output file.")] = False,
+    allow_replacement: Annotated[
+        bool,
+        typer.Option(
+            "--allow-replacement",
+            help=(
+                "Sample a class with replacement when its drawn count exceeds the catalogue's rows, "
+                "instead of refusing. Repeats catalogue rows; recorded in the provenance."
+            ),
+        ),
+    ] = False,
 ) -> None:
     """Draw the pinned population and report its detector-frame band composition.
 
     The catalogues are fetched on demand into a local cache and verified against
     their pinned SHA-256, so the package does not ship them and a draw is still
     reproducible. The archived draw is the first seed's; ``--draws`` further
-    seeds measure the draw-to-draw spread of the composition.
+    seeds measure the draw-to-draw spread of the composition. Rows are sampled
+    without replacement, so a span whose drawn count exceeds a catalogue's rows
+    is refused unless ``--allow-replacement`` is given.
     """
     import logging  # noqa: PLC0415
 
@@ -431,6 +446,7 @@ def catalogue_command(  # noqa: PLR0913, PLR0917  # the draw's settings, surface
             cache_dir=cache_dir,
             refresh=refresh,
             offline=offline,
+            allow_replacement=allow_replacement,
         )
     except Exception as error:
         logger.error("%s", error)
