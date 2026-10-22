@@ -11,6 +11,12 @@ the inherited :class:`GraphSimulator` machinery.
 The default output reproduces the legacy lightweight prior simulators: uniform
 component masses, isotropic spins and sky position, distance uniform in comoving
 volume, and a flat-LambdaCDM distance-to-redshift conversion.
+
+Which orientation columns are written depends on the spins. Aligned-spin draws
+write ``theta_jn`` equal to ``inclination`` and no ``f_ref``, since nothing they
+contain depends on a reference frequency. Precessing draws write ``f_ref``, at
+which their spins are defined, and no ``theta_jn``, which would follow from the
+inclination, the spins and that frequency rather than being drawn on its own.
 """
 
 from __future__ import annotations
