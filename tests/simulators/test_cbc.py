@@ -32,13 +32,13 @@ def _ks_p_value(samples: np.ndarray, cdf: Callable[[np.ndarray], np.ndarray]) ->
 
 
 def test_simulate_returns_canonical_keys_and_shape() -> None:
-    """CBCSimulator returns the full canonical CBC parameter surface in order."""
+    """CBCSimulator returns the canonical CBC parameters in order; precessing draws omit ``theta_jn``."""
     simulator = CBCSimulator(seed=42)
 
     result = simulator.simulate(1000)
 
     assert list(result.keys()) == list(simulator.parameter_names)
-    assert set(result.keys()) == set(CBC_PARAMETER_NAMES)
+    assert set(result.keys()) == set(CBC_PARAMETER_NAMES) - {"theta_jn"}
     assert all(array.shape == (1000,) for array in result.values())
 
 
@@ -135,12 +135,12 @@ def test_aligned_spins_zero_in_plane_components() -> None:
 
 
 def test_theta_jn_depends_on_spin_alignment_mode() -> None:
-    """theta_jn matches inclination only in aligned-spin mode."""
+    """theta_jn equals inclination in aligned-spin mode and is not written for precessing spins."""
     aligned = CBCSimulator(aligned_spins=True, seed=11).simulate(256)
     np.testing.assert_array_equal(np.asarray(aligned["theta_jn"]), np.asarray(aligned["inclination"]))
 
     precessing = CBCSimulator(aligned_spins=False, seed=11).simulate(256)
-    assert not np.array_equal(np.asarray(precessing["theta_jn"]), np.asarray(precessing["inclination"]))
+    assert "theta_jn" not in precessing
 
 
 def test_total_mass_max_is_respected() -> None:
@@ -182,7 +182,7 @@ def test_parameters_override_replaces_a_distribution() -> None:
     mass_1 = np.asarray(result["detector_frame_mass_1"])
     # A steep power law concentrates probability near the minimum mass.
     assert mass_1.mean() < 30.0
-    assert set(result.keys()) == set(CBC_PARAMETER_NAMES)
+    assert set(result.keys()) == set(CBC_PARAMETER_NAMES) - {"theta_jn"}
 
 
 def test_parameters_override_adds_a_new_output_node() -> None:

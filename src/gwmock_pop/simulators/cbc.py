@@ -70,7 +70,7 @@ class CBCSimulator(_CBCGraphSimulator):
     (not reordered, matching the legacy ``CBCPriorSimulator``); spins are
     isotropic with magnitude uniform on ``[0, chi_max]`` (or aligned-only when
     ``aligned_spins`` is set); distance is uniform in comoving volume; sky
-    position and orientation angles are isotropic. Pass ``parameters`` to
+    position and inclination are isotropic. Pass ``parameters`` to
     override the distribution of any node (see
     :func:`gwmock_pop.simulators._graph_config.deep_merge_graph_config`).
 
@@ -82,7 +82,9 @@ class CBCSimulator(_CBCGraphSimulator):
         d_min: Minimum luminosity distance in Mpc.
         d_max: Maximum luminosity distance in Mpc.
         chi_max: Maximum dimensionless spin magnitude for both components.
-        aligned_spins: If ``True``, populate only the ``z`` spin components.
+        aligned_spins: If ``True``, populate only the ``z`` spin components and
+            write ``theta_jn`` equal to ``inclination``. If ``False``, the spins
+            are precessing and no ``theta_jn`` is written.
         gps_start: Lower bound for the coalescence-time prior.
         gps_end: Upper bound for the coalescence-time prior.
         total_mass_max: Optional upper bound on ``mass_1 + mass_2``.
@@ -152,7 +154,9 @@ class BBHSimulator(_CBCGraphSimulator):
         d_min: Minimum luminosity distance in Mpc.
         d_max: Maximum luminosity distance in Mpc.
         chi_max: Maximum dimensionless spin magnitude for both components.
-        aligned_spins: If ``True``, populate only the ``z`` spin components.
+        aligned_spins: If ``True``, populate only the ``z`` spin components and
+            write ``theta_jn`` equal to ``inclination``. If ``False``, the spins
+            are precessing and no ``theta_jn`` is written.
         gps_start: Lower bound for the coalescence-time prior.
         gps_end: Upper bound for the coalescence-time prior.
         total_mass_max: Optional upper bound on ``mass_1 + mass_2``.
@@ -217,7 +221,9 @@ class BNSSimulator(_CBCGraphSimulator):
         d_min: Minimum luminosity distance in Mpc.
         d_max: Maximum luminosity distance in Mpc.
         chi_max: Maximum dimensionless spin magnitude for both components.
-        aligned_spins: If ``True``, populate only the ``z`` spin components.
+        aligned_spins: If ``True``, populate only the ``z`` spin components and
+            write ``theta_jn`` equal to ``inclination``. If ``False``, the spins
+            are precessing and no ``theta_jn`` is written.
         gps_start: Lower bound for the coalescence-time prior.
         gps_end: Upper bound for the coalescence-time prior.
         total_mass_max: Optional upper bound on ``mass_1 + mass_2``.
@@ -288,7 +294,9 @@ class NSBHSimulator(_CBCGraphSimulator):
         d_max: Maximum luminosity distance in Mpc.
         bh_chi_max: Maximum dimensionless spin magnitude for the primary.
         ns_chi_max: Maximum dimensionless spin magnitude for the secondary.
-        aligned_spins: If ``True``, populate only the ``z`` spin components.
+        aligned_spins: If ``True``, populate only the ``z`` spin components and
+            write ``theta_jn`` equal to ``inclination``. If ``False``, the spins
+            are precessing and no ``theta_jn`` is written.
         gps_start: Lower bound for the coalescence-time prior.
         gps_end: Upper bound for the coalescence-time prior.
         total_mass_max: Optional upper bound on ``mass_1 + mass_2``.

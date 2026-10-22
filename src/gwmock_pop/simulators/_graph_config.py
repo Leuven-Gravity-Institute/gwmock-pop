@@ -133,7 +133,9 @@ def build_cbc_graph_config(  # noqa: PLR0913
         total_mass_max: Optional upper bound on ``mass_1 + mass_2``.
         chi_1_max: Maximum dimensionless spin magnitude for component 1.
         chi_2_max: Maximum dimensionless spin magnitude for component 2.
-        aligned_spins: If ``True``, populate only the ``z`` spin components.
+        aligned_spins: If ``True``, populate only the ``z`` spin components and
+            write ``theta_jn`` equal to ``inclination``. If ``False``, the spins
+            are precessing and no ``theta_jn`` is written.
         d_min: Minimum luminosity distance in Mpc.
         d_max: Maximum luminosity distance in Mpc.
         gps_start: Lower bound for the coalescence-time prior.
@@ -182,11 +184,10 @@ def build_cbc_graph_config(  # noqa: PLR0913
         "inclination": {
             "transform": {"function": "isotropic_spin_orientation", "arguments": {"reference": _SHAPE_REFERENCE}}
         },
-        "theta_jn": (
-            {"transform": {"function": "identity", "arguments": {"value": "@inclination"}}}
-            if aligned_spins
-            else {"transform": {"function": "isotropic_spin_orientation", "arguments": {"reference": _SHAPE_REFERENCE}}}
-        ),
+        # Aligned spins keep J parallel to L, so theta_jn is the inclination
+        # itself. With precessing spins it follows from the inclination, the
+        # spins and the reference frequency, and is left out (see below).
+        "theta_jn": {"transform": {"function": "identity", "arguments": {"value": "@inclination"}}},
         "long_asc_node": _uniform(0.0, _TWO_PI),
         "mean_per_ano": _uniform(0.0, _TWO_PI),
         "coa_time": _uniform(gps_start, gps_end),
@@ -203,6 +204,12 @@ def build_cbc_graph_config(  # noqa: PLR0913
         },
         "f_ref": _constant(f_ref),
     }
+    if not aligned_spins:
+        # A theta_jn drawn independently of the inclination would describe a
+        # different binary from the one generated from the inclination and the
+        # spins. Deriving it needs a model-dependent orbital angular momentum at
+        # the reference frequency, so the column is not written.
+        del config["theta_jn"]
     return config
 
 
