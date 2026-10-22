@@ -13,9 +13,11 @@ producer artefact.
 **The draw is seeded and cell-counted.** Each class's row count is Poisson with
 mean ``n_rows / year * span * rate_multiplier`` -- the catalogue holds one year
 of mergers, so its row count is its annual rate -- and the rows are then sampled
-without replacement (with replacement only when more are asked for than the
-catalogue holds, where a Poisson tail can exceed a small class). The same seed,
-span and files reproduce the draw exactly.
+without replacement. A count larger than the catalogue -- a span longer than a
+year, a rate multiplier, or a Poisson tail on a small class -- cannot be met
+without repeating rows, so it is refused unless the caller opts in to sampling
+that class with replacement, which the draw then records. The same seed, span
+and files reproduce the draw exactly.
 
 **Distances are the catalogue's own.** No rescaling is applied. A source's
 luminosity distance is its catalogue value converted from Gpc to Mpc, and its
@@ -164,9 +166,12 @@ class CatalogueDraw:
         detector_frame_chirp_mass: Detector-frame chirp mass of each row.
         source_frame_chirp_mass: Source-frame chirp mass of each row.
         in_band: Whether the row's detector-frame chirp mass is above the band.
-        expected_per_class: Poisson mean count per catalogue class.
+        expected_per_class: Poisson mean the count of each catalogue class was
+            drawn from, summed over the catalogues of a class.
         drawn_per_class: Realized count per catalogue class.
         resolved: The verified catalogue files the draw was made from.
+        allow_replacement: Whether a class whose count exceeds its catalogue's
+            rows was permitted to be sampled with replacement.
     """
 
     seed: int
@@ -183,6 +188,7 @@ class CatalogueDraw:
     expected_per_class: Mapping[str, float]
     drawn_per_class: Mapping[str, int]
     resolved: tuple[ResolvedCatalogue, ...] = field(repr=False)
+    allow_replacement: bool = False
 
     @property
     def n_rows(self) -> int:
@@ -283,8 +289,14 @@ def _draw_from_catalogue(
     rng: np.random.Generator,
     span_seconds: float,
     rate_multiplier: float,
-) -> dict[str, np.ndarray]:
+    allow_replacement: bool = False,
+) -> tuple[dict[str, np.ndarray], float]:
     """Draw one catalogue's rows for an observation span.
+
+    Rows are sampled without replacement. A count larger than the catalogue
+    is refused unless ``allow_replacement`` is set, in which case that count
+    alone is sampled with replacement; a count the catalogue can meet is drawn
+    the same way either way.
 
     Args:
         resolved: The verified catalogue to draw from.
@@ -292,14 +304,20 @@ def _draw_from_catalogue(
             by the seed and the class order alone.
         span_seconds: Observation span in seconds.
         rate_multiplier: Factor applied to the catalogue's annual rate.
+        allow_replacement: Whether a count larger than the catalogue may be
+            sampled with replacement instead of being refused.
 
     Returns:
-        Mapping from output parameter name to a 1-D array of drawn values.
+        Mapping from output parameter name to a 1-D array of drawn values, and
+        the Poisson mean the row count was drawn from. The mean is returned
+        rather than recomputed by the caller, so the value a draw reports is
+        the value it used.
 
     Raises:
-        PopulationValidationError: If the catalogue cannot be read, or any
-            emitted row holds a non-numeric or non-finite value in any
-            catalogue column.
+        PopulationValidationError: If the catalogue cannot be read, if the
+            drawn count exceeds the catalogue's rows and ``allow_replacement``
+            is not set, or if any emitted row holds a non-numeric or non-finite
+            value in any catalogue column.
     """
     extra_columns = resolved.catalogue.extra_columns
     undeclared = [name for name in OPTIONAL_COLUMNS if name not in extra_columns]
@@ -315,8 +333,15 @@ def _draw_from_catalogue(
     expected = n_catalogue * (span_seconds / SECONDS_PER_YEAR) * rate_multiplier
     count = int(rng.poisson(expected))
     if count == 0:
-        return {name: np.empty(0, dtype=float) for name in PARAMETER_NAMES}
+        return {name: np.empty(0, dtype=float) for name in PARAMETER_NAMES}, expected
 
+    if count > n_catalogue and not allow_replacement:
+        raise PopulationValidationError(
+            f"Catalogue {resolved.catalogue.filename} holds {n_catalogue} rows, but the draw asks for {count} "
+            f"(Poisson mean {expected:.6g}), and rows are sampled without replacement. Shorten the span, lower "
+            "the rate multiplier, or allow sampling with replacement (allow_replacement=True, or "
+            "--allow-replacement on the command line), which repeats catalogue rows."
+        )
     indices = rng.choice(n_catalogue, size=count, replace=count > n_catalogue)
 
     selected = {name: values[indices] for name, values in columns.items()}
@@ -339,7 +364,7 @@ def _draw_from_catalogue(
         parameter: selected[column] if column in extra_columns else np.zeros(count, dtype=float)
         for column, parameter in OPTIONAL_COLUMNS.items()
     }
-    return {
+    block = {
         "detector_frame_mass_1": mass_1_source * one_plus_redshift,
         "detector_frame_mass_2": mass_2_source * one_plus_redshift,
         "spin_1z": selected["chi1z"],
@@ -354,6 +379,7 @@ def _draw_from_catalogue(
         "redshift": redshift,
         **optional,
     }
+    return block, expected
 
 
 def draw_catalogue_population(  # noqa: PLR0913  # the draw's settings, named at its one call site
@@ -369,12 +395,14 @@ def draw_catalogue_population(  # noqa: PLR0913  # the draw's settings, named at
     refresh: bool = False,
     offline: bool = False,
     timeout: int = 300,
+    allow_replacement: bool = False,
 ) -> CatalogueDraw:
     """Draw a seeded population from pinned catalogues into injection parameters.
 
     Classes are drawn in ``catalogues`` order, each with a Poisson count and a
     without-replacement row sample, so the same seed, span and files reproduce
-    the draw exactly. Pass ``resolved`` to draw from already-resolved files
+    the draw exactly. A count larger than its catalogue is refused unless
+    ``allow_replacement`` is set. Pass ``resolved`` to draw from already-resolved files
     (a cached or locally built catalogue); otherwise the files are fetched and
     digest-verified on demand.
 
@@ -396,14 +424,18 @@ def draw_catalogue_population(  # noqa: PLR0913  # the draw's settings, named at
         refresh: Whether to re-download catalogues even when cached.
         offline: Whether to refuse network access and use only matching caches.
         timeout: Timeout in seconds for each catalogue download.
+        allow_replacement: Whether a class count larger than its catalogue may
+            be sampled with replacement, repeating rows, instead of being
+            refused. A count the catalogue can meet is unaffected.
 
     Returns:
         The draw, its parameters and its class labels.
 
     Raises:
         PopulationValidationError: If the settings are out of range, a supplied
-            resolved catalogue does not match its configured pin, or a
-            catalogue is malformed.
+            resolved catalogue does not match its configured pin, a catalogue
+            is malformed, or a class count exceeds its catalogue's rows and
+            ``allow_replacement`` is not set.
         PopulationFetchError: If a catalogue cannot be fetched or does not match
             its pinned digest.
     """
@@ -438,15 +470,17 @@ def draw_catalogue_population(  # noqa: PLR0913  # the draw's settings, named at
     parameter_blocks: dict[str, list[np.ndarray]] = {name: [] for name in PARAMETER_NAMES}
     source_classes: list[str] = []
     for catalogue, resolved_catalogue in zip(catalogues, resolved_catalogues, strict=True):
-        expected = catalogue.n_rows * (span_seconds / SECONDS_PER_YEAR) * rate_multiplier
-        block = _draw_from_catalogue(
+        block, expected = _draw_from_catalogue(
             resolved_catalogue,
             rng=rng,
             span_seconds=span_seconds,
             rate_multiplier=rate_multiplier,
+            allow_replacement=allow_replacement,
         )
         count = block["detector_frame_mass_1"].shape[0]
-        expected_per_class[catalogue.source_class] = expected
+        # Counts of one class from several catalogues are independent Poisson
+        # draws, so the class count is Poisson with the summed mean.
+        expected_per_class[catalogue.source_class] = expected_per_class.get(catalogue.source_class, 0.0) + expected
         drawn_per_class[catalogue.source_class] = drawn_per_class.get(catalogue.source_class, 0) + count
         for name in PARAMETER_NAMES:
             parameter_blocks[name].append(block[name])
@@ -485,6 +519,7 @@ def draw_catalogue_population(  # noqa: PLR0913  # the draw's settings, named at
         expected_per_class=expected_per_class,
         drawn_per_class=drawn_per_class,
         resolved=resolved_catalogues,
+        allow_replacement=bool(allow_replacement),
     )
 
 
@@ -501,6 +536,7 @@ def draw_catalogue_population_many(  # noqa: PLR0913  # the draw's settings, nam
     refresh: bool = False,
     offline: bool = False,
     timeout: int = 300,
+    allow_replacement: bool = False,
 ) -> tuple[CatalogueDraw, ...]:
     """Draw the same population once per seed.
 
@@ -522,6 +558,8 @@ def draw_catalogue_population_many(  # noqa: PLR0913  # the draw's settings, nam
         refresh: Whether to re-download catalogues even when cached.
         offline: Whether to refuse network access and use only matching caches.
         timeout: Timeout in seconds for each catalogue download.
+        allow_replacement: Whether a class count larger than its catalogue may
+            be sampled with replacement instead of being refused.
 
     Returns:
         One draw per seed, in seed order.
@@ -542,6 +580,7 @@ def draw_catalogue_population_many(  # noqa: PLR0913  # the draw's settings, nam
             rate_multiplier=rate_multiplier,
             band_detector_frame_chirp_mass=band_detector_frame_chirp_mass,
             imbh_total_mass_threshold=imbh_total_mass_threshold,
+            allow_replacement=allow_replacement,
         )
         for seed in seeds
     )

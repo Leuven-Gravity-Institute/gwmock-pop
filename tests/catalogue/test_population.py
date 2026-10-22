@@ -26,6 +26,10 @@ from gwmock_pop.catalogue.population import (
 from gwmock_pop.exceptions import PopulationValidationError
 from tests.catalogue._fixtures import make_pair, resolved_catalogue, write_catalogue
 
+# The fixture catalogues hold a few rows, fewer than most spans here draw, so the
+# tests of other properties permit sampling with replacement. The refusal, and the
+# draws it leaves unchanged, are tested on their own below.
+
 
 @pytest.mark.requires_h5py
 def test_draw_is_deterministic_for_a_seed(tmp_path: Path) -> None:
@@ -33,8 +37,8 @@ def test_draw_is_deterministic_for_a_seed(tmp_path: Path) -> None:
     bns, bbh = make_pair(tmp_path)
     settings = {"seed": 11, "span_seconds": SECONDS_PER_YEAR * 3.0, "resolved": (bns, bbh)}
 
-    first = draw_catalogue_population(**settings)
-    second = draw_catalogue_population(**settings)
+    first = draw_catalogue_population(allow_replacement=True, **settings)
+    second = draw_catalogue_population(allow_replacement=True, **settings)
 
     assert first.n_rows > 0
     for name in PARAMETER_NAMES:
@@ -49,8 +53,8 @@ def test_draw_changes_with_the_seed(tmp_path: Path) -> None:
     bns, bbh = make_pair(tmp_path)
     common = {"span_seconds": SECONDS_PER_YEAR * 3.0, "resolved": (bns, bbh)}
 
-    first = draw_catalogue_population(seed=1, **common)
-    second = draw_catalogue_population(seed=2, **common)
+    first = draw_catalogue_population(allow_replacement=True, seed=1, **common)
+    second = draw_catalogue_population(allow_replacement=True, seed=2, **common)
 
     assert first.n_rows > 0
     differs = any(not np.array_equal(first.parameters[name], second.parameters[name]) for name in PARAMETER_NAMES)
@@ -61,7 +65,9 @@ def test_draw_changes_with_the_seed(tmp_path: Path) -> None:
 def test_draw_converts_units_and_frames(tmp_path: Path) -> None:
     """Distances are converted to Mpc and masses are boosted to the detector frame."""
     bns, bbh = make_pair(tmp_path)
-    draw = draw_catalogue_population(seed=5, span_seconds=SECONDS_PER_YEAR * 3.0, resolved=(bns, bbh))
+    draw = draw_catalogue_population(
+        allow_replacement=True, seed=5, span_seconds=SECONDS_PER_YEAR * 3.0, resolved=(bns, bbh)
+    )
 
     source_mass_1 = draw.parameters["detector_frame_mass_1"] / (1.0 + draw.parameters["redshift"])
     source_mass_2 = draw.parameters["detector_frame_mass_2"] / (1.0 + draw.parameters["redshift"])
@@ -81,8 +87,8 @@ def test_band_cut_uses_the_detector_frame_chirp_mass(tmp_path: Path) -> None:
     bns, bbh = make_pair(tmp_path)
     common = {"seed": 9, "span_seconds": SECONDS_PER_YEAR, "resolved": (bns, bbh)}
 
-    unbounded = draw_catalogue_population(band_detector_frame_chirp_mass=1.0e9, **common)
-    open_band = draw_catalogue_population(band_detector_frame_chirp_mass=0.1, **common)
+    unbounded = draw_catalogue_population(allow_replacement=True, band_detector_frame_chirp_mass=1.0e9, **common)
+    open_band = draw_catalogue_population(allow_replacement=True, band_detector_frame_chirp_mass=0.1, **common)
 
     assert unbounded.n_rows > 0
     assert open_band.n_rows > 0
@@ -101,7 +107,9 @@ def test_classes_are_read_from_the_catalogues_and_the_heavy_tail_is_labelled(tmp
         bbh_mass_2=(3.0, 60.0, 80.0),
         bbh_redshift=(0.0, 0.0, 0.0),
     )
-    draw = draw_catalogue_population(seed=3, span_seconds=SECONDS_PER_YEAR * 20.0, resolved=(bns, bbh))
+    draw = draw_catalogue_population(
+        allow_replacement=True, seed=3, span_seconds=SECONDS_PER_YEAR * 20.0, resolved=(bns, bbh)
+    )
 
     assert set(draw.source_class.tolist()) == {"BNS", "BBH"}
     assert set(draw.population_class.tolist()) == {"BNS", "BBH", "IMBH"}
@@ -116,11 +124,144 @@ def test_expected_counts_follow_rate_and_span(tmp_path: Path) -> None:
     """The per-class Poisson mean is the catalogue row count times span over year."""
     bns, bbh = make_pair(tmp_path)
     span = SECONDS_PER_YEAR / 4.0
-    draw = draw_catalogue_population(seed=0, span_seconds=span, resolved=(bns, bbh), rate_multiplier=2.0)
+    draw = draw_catalogue_population(
+        allow_replacement=True, seed=0, span_seconds=span, resolved=(bns, bbh), rate_multiplier=2.0
+    )
 
     assert draw.expected_per_class["BNS"] == pytest.approx(3 * (span / SECONDS_PER_YEAR) * 2.0)
     assert draw.expected_per_class["BBH"] == pytest.approx(3 * (span / SECONDS_PER_YEAR) * 2.0)
     assert sum(draw.drawn_per_class.values()) == draw.n_rows
+
+
+@pytest.mark.requires_h5py
+def test_expected_count_of_a_class_sums_over_its_catalogues(tmp_path: Path) -> None:
+    """Two catalogues of one class report the summed mean, as their counts are summed."""
+    first = tmp_path / "bbh_a.h5"
+    second = tmp_path / "bbh_b.h5"
+    write_catalogue(
+        first, mass_1=np.asarray([30.0, 40.0]), mass_2=np.asarray([20.0, 30.0]), redshift=np.asarray([0.5, 1.0])
+    )
+    write_catalogue(
+        second,
+        mass_1=np.asarray([30.0, 40.0, 50.0, 60.0]),
+        mass_2=np.asarray([20.0, 30.0, 40.0, 50.0]),
+        redshift=np.asarray([0.5, 1.0, 1.5, 2.0]),
+    )
+    resolved = (
+        resolved_catalogue(first, name="bbh_a", source_class="BBH"),
+        resolved_catalogue(second, name="bbh_b", source_class="BBH"),
+    )
+    span = SECONDS_PER_YEAR / 4.0
+
+    draw = draw_catalogue_population(seed=0, span_seconds=span, resolved=resolved)
+
+    assert draw.expected_per_class == {"BBH": pytest.approx((2 + 4) * span / SECONDS_PER_YEAR)}
+    assert draw.drawn_per_class["BBH"] == draw.n_rows
+
+
+def _reference_draw(
+    resolved: tuple, *, seed: int, span_seconds: float, rate_multiplier: float = 1.0
+) -> dict[str, np.ndarray]:
+    """Redraw rows the documented way, independently of the package's draw.
+
+    One generator is seeded and shared across catalogues in order; each draws a
+    Poisson count, then ``choice`` of that many row indices (with replacement only
+    when the count exceeds the rows), then uniform merger times over the span.
+
+    Args:
+        resolved: The resolved catalogues, in draw order.
+        seed: Seed of the generator.
+        span_seconds: Observation span in seconds.
+        rate_multiplier: Factor applied to every catalogue's annual rate.
+
+    Returns:
+        The redrawn distance, redshift, primary detector-frame mass and merger time.
+    """
+    rng = np.random.default_rng(seed)
+    blocks: dict[str, list[np.ndarray]] = {"distance": [], "redshift": [], "detector_frame_mass_1": [], "coa_time": []}
+    for item in resolved:
+        columns = read_catalogue_columns(item.path)
+        n_rows = columns["m1_source"].shape[0]
+        count = int(rng.poisson(n_rows * (span_seconds / SECONDS_PER_YEAR) * rate_multiplier))
+        if count == 0:
+            continue
+        indices = rng.choice(n_rows, size=count, replace=count > n_rows)
+        blocks["distance"].append(columns["dL"][indices] * 1000.0)
+        blocks["redshift"].append(columns["z"][indices])
+        blocks["detector_frame_mass_1"].append(columns["m1_source"][indices] * (1.0 + columns["z"][indices]))
+        blocks["coa_time"].append(rng.uniform(0.0, span_seconds, size=count))
+    return {name: np.concatenate(values) if values else np.empty(0) for name, values in blocks.items()}
+
+
+def _large_pair(tmp_path: Path, n_rows: int = 400) -> tuple:
+    """Write and resolve a BNS/BBH pair large enough that a draw never exceeds it.
+
+    Args:
+        tmp_path: Directory to write the files in.
+        n_rows: Rows per catalogue.
+
+    Returns:
+        The resolved BNS and BBH catalogues, in that order.
+    """
+    rng = np.random.default_rng(17)
+    resolved = []
+    for name, source_class, low, high in (("bns", "BNS", 1.0, 2.0), ("bbh", "BBH", 5.0, 60.0)):
+        path = tmp_path / f"{name}_large.h5"
+        mass_2 = rng.uniform(low, high, n_rows)
+        write_catalogue(
+            path,
+            mass_1=mass_2 + rng.uniform(0.0, high - low, n_rows),
+            mass_2=mass_2,
+            redshift=rng.uniform(0.0, 3.0, n_rows),
+        )
+        resolved.append(resolved_catalogue(path, name=name, source_class=source_class))
+    return tuple(resolved)
+
+
+@pytest.mark.requires_h5py
+def test_a_count_larger_than_the_catalogue_is_refused(tmp_path: Path) -> None:
+    """Rows are sampled without replacement, so a count the catalogue cannot meet is refused."""
+    bns, bbh = make_pair(tmp_path)
+
+    with pytest.raises(PopulationValidationError, match=r"holds 3 rows.*allow_replacement"):
+        draw_catalogue_population(seed=0, span_seconds=SECONDS_PER_YEAR * 20.0, resolved=(bns, bbh))
+
+
+@pytest.mark.requires_h5py
+@pytest.mark.parametrize("allow_replacement", [False, True])
+@pytest.mark.parametrize("seed", [0, 1, 7, 42, 1234])
+def test_a_count_within_the_catalogue_draws_exactly_as_before(
+    tmp_path: Path, seed: int, *, allow_replacement: bool
+) -> None:
+    """A count the catalogue can meet is drawn bit for bit as before, whether or not replacement is allowed."""
+    resolved = _large_pair(tmp_path)
+    span = SECONDS_PER_YEAR * 0.5
+
+    draw = draw_catalogue_population(
+        seed=seed, span_seconds=span, resolved=resolved, allow_replacement=allow_replacement
+    )
+    reference = _reference_draw(resolved, seed=seed, span_seconds=span)
+
+    assert draw.n_rows > 0
+    assert all(count <= 400 for count in draw.drawn_per_class.values())
+    for name, values in reference.items():
+        assert draw.parameters[name].dtype == values.dtype, name
+        assert draw.parameters[name].tobytes() == values.tobytes(), name
+
+
+@pytest.mark.requires_h5py
+def test_allowing_replacement_draws_an_oversized_count_as_before(tmp_path: Path) -> None:
+    """With replacement allowed, a count larger than the catalogue is drawn bit for bit as before."""
+    bns, bbh = make_pair(tmp_path)
+    span = SECONDS_PER_YEAR * 20.0
+
+    draw = draw_catalogue_population(seed=0, span_seconds=span, resolved=(bns, bbh), allow_replacement=True)
+    reference = _reference_draw((bns, bbh), seed=0, span_seconds=span)
+
+    assert draw.allow_replacement is True
+    assert all(count > 3 for count in draw.drawn_per_class.values())
+    for name, values in reference.items():
+        assert draw.parameters[name].tobytes() == values.tobytes(), name
 
 
 @pytest.mark.requires_h5py
@@ -206,6 +347,7 @@ def test_draw_uses_a_supplied_resolved_catalogue_without_fetching(tmp_path: Path
     )
     resolved = resolved_catalogue(path, name="bbh", source_class="BBH")
     draw = draw_catalogue_population(
+        allow_replacement=True,
         seed=0,
         span_seconds=SECONDS_PER_YEAR,
         catalogues=(resolved.catalogue,),
@@ -245,6 +387,7 @@ def test_draw_rejects_non_finite_catalogue_columns(tmp_path: Path, column: str) 
 
     with pytest.raises(PopulationValidationError, match=column):
         draw_catalogue_population(
+            allow_replacement=True,
             seed=0,
             span_seconds=SECONDS_PER_YEAR * 100.0,
             resolved=(resolved,),
@@ -268,6 +411,7 @@ def test_draw_rejects_non_numeric_catalogue_columns(tmp_path: Path) -> None:
 
     with pytest.raises(PopulationValidationError, match="non-numeric chi1z"):
         draw_catalogue_population(
+            allow_replacement=True,
             seed=0,
             span_seconds=SECONDS_PER_YEAR * 100.0,
             resolved=(resolved,),
@@ -289,6 +433,7 @@ def test_draw_rejects_resolved_catalogues_that_do_not_match_the_configured_pins(
 
     with pytest.raises(PopulationValidationError, match="match"):
         draw_catalogue_population(
+            allow_replacement=True,
             seed=0,
             span_seconds=SECONDS_PER_YEAR,
             catalogues=(mismatched,),
@@ -340,7 +485,9 @@ def _pair_with_extras(tmp_path: Path) -> tuple:
 def test_declared_extra_columns_are_emitted_from_their_own_rows(tmp_path: Path) -> None:
     """Each declared column is emitted for its file's rows; undeclared ones are zero."""
     bns, bbh = _pair_with_extras(tmp_path)
-    draw = draw_catalogue_population(seed=3, span_seconds=SECONDS_PER_YEAR * 20.0, resolved=(bns, bbh))
+    draw = draw_catalogue_population(
+        allow_replacement=True, seed=3, span_seconds=SECONDS_PER_YEAR * 20.0, resolved=(bns, bbh)
+    )
     parameters = draw.parameters
     source_mass_1 = parameters["detector_frame_mass_1"] / (1.0 + parameters["redshift"])
     is_bns = draw.source_class == "BNS"
@@ -366,8 +513,12 @@ def test_extra_columns_do_not_change_the_seeded_draw(tmp_path: Path) -> None:
     extra_dir.mkdir()
     plain = make_pair(plain_dir)
     extra = _pair_with_extras(extra_dir)
-    first = draw_catalogue_population(seed=11, span_seconds=SECONDS_PER_YEAR * 5.0, resolved=plain)
-    second = draw_catalogue_population(seed=11, span_seconds=SECONDS_PER_YEAR * 5.0, resolved=extra)
+    first = draw_catalogue_population(
+        allow_replacement=True, seed=11, span_seconds=SECONDS_PER_YEAR * 5.0, resolved=plain
+    )
+    second = draw_catalogue_population(
+        allow_replacement=True, seed=11, span_seconds=SECONDS_PER_YEAR * 5.0, resolved=extra
+    )
 
     for name in PARAMETER_NAMES:
         if name in ("spin_1x", "spin_1y", "spin_2x", "spin_2y", "lambda_1", "lambda_2"):
@@ -383,7 +534,9 @@ def test_a_declared_extra_column_missing_from_the_file_is_refused(tmp_path: Path
     resolved = resolved_catalogue(path, name="bbh", source_class="BBH", extra_columns=("chi1x",))
 
     with pytest.raises(PopulationValidationError, match="chi1x"):
-        draw_catalogue_population(seed=0, span_seconds=SECONDS_PER_YEAR * 100.0, resolved=(resolved,))
+        draw_catalogue_population(
+            allow_replacement=True, seed=0, span_seconds=SECONDS_PER_YEAR * 100.0, resolved=(resolved,)
+        )
 
 
 @pytest.mark.requires_h5py
@@ -401,7 +554,9 @@ def test_draw_rejects_non_finite_extra_columns(tmp_path: Path, column: str) -> N
     resolved = resolved_catalogue(path, name="cat", source_class="BNS", extra_columns=(column,))
 
     with pytest.raises(PopulationValidationError, match=column):
-        draw_catalogue_population(seed=0, span_seconds=SECONDS_PER_YEAR * 100.0, resolved=(resolved,))
+        draw_catalogue_population(
+            allow_replacement=True, seed=0, span_seconds=SECONDS_PER_YEAR * 100.0, resolved=(resolved,)
+        )
 
 
 def test_an_unknown_extra_column_is_refused() -> None:
@@ -432,4 +587,6 @@ def test_a_carried_but_undeclared_extra_column_is_refused(tmp_path: Path) -> Non
     resolved = resolved_catalogue(path, name="bbh", source_class="BBH")
 
     with pytest.raises(PopulationValidationError, match="chi1x"):
-        draw_catalogue_population(seed=0, span_seconds=SECONDS_PER_YEAR * 100.0, resolved=(resolved,))
+        draw_catalogue_population(
+            allow_replacement=True, seed=0, span_seconds=SECONDS_PER_YEAR * 100.0, resolved=(resolved,)
+        )

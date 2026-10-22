@@ -19,6 +19,14 @@ Record layout, version :data:`PROVENANCE_SCHEMA_VERSION`::
 with defaults filled in. Keeping the two roles apart is deliberate: a declared
 configuration and an effective run are different facts, and a reader that
 cannot tell them apart cannot tell an override from a default.
+
+Layout versions:
+
+- ``1.0`` -- the layout above.
+- ``1.1`` -- a ``catalogue_draw`` origin's ``configuration`` also records
+  ``poisson_mean_per_class``, the Poisson mean each class count was drawn from,
+  and ``allow_replacement``, whether a class count larger than its catalogue
+  was permitted to be sampled with replacement.
 """
 
 from __future__ import annotations
@@ -40,7 +48,7 @@ from gwmock_pop.utils.import_utils import import_from_string
 from gwmock_pop.version import __version__
 
 # Version of the record layout documented in this module.
-PROVENANCE_SCHEMA_VERSION = "1.0"
+PROVENANCE_SCHEMA_VERSION = "1.1"
 
 # Name recorded as the producer of a catalogue.
 TOOL_NAME = "gwmock-pop"
