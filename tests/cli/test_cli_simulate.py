@@ -41,7 +41,6 @@ _EXPECTED_BBH_COLUMNS = {
     "declination",
     "polarization_angle",
     "redshift",
-    "f_ref",
 }
 _EXPECTED_BNS_COLUMNS = _EXPECTED_BBH_COLUMNS | {"lambda_1", "lambda_2"}
 

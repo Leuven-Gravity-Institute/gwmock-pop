@@ -54,3 +54,16 @@ def test_theta_jn_equals_inclination_for_non_precessing_draws(label: str, source
     precessing = any(name in result and bool(np.any(np.asarray(result[name]) != 0.0)) for name in _IN_PLANE_SPINS)
     assert not precessing, "no packaged configuration draws in-plane spin; extend this test if one does"
     np.testing.assert_array_equal(np.asarray(result["theta_jn"]), np.asarray(result["inclination"]))
+
+
+@pytest.mark.parametrize(("label", "source"), _CASES, ids=[label for label, _ in _CASES])
+def test_configurations_write_no_reference_frequency(label: str, source: str | Path) -> None:
+    """No packaged configuration writes a per-event ``f_ref``.
+
+    None of them draws in-plane spin, so nothing they write depends on the
+    frequency the spins are defined at. A per-event value would only have to
+    agree with the reference frequency the waveform generator is configured
+    with, and could silently disagree with it instead.
+    """
+    del label
+    assert "f_ref" not in _build(source, 0).parameter_names

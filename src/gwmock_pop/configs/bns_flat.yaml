@@ -148,9 +148,3 @@ parameters:
             function: luminosity_distance_to_redshift
             arguments:
                 luminosity_distance: '@distance'
-    f_ref:
-        transform:
-            function: constant_like
-            arguments:
-                reference: '@distance'
-                value: 20.0
