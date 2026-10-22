@@ -32,7 +32,7 @@ def _ks_p_value(samples: np.ndarray, cdf: Callable[[np.ndarray], np.ndarray]) ->
 
 
 def test_simulate_returns_canonical_keys_and_shape() -> None:
-    """CBCSimulator returns the canonical CBC parameters in order; precessing draws omit ``theta_jn``."""
+    """CBCSimulator returns the canonical CBC parameters in order, except ``theta_jn``."""
     simulator = CBCSimulator(seed=42)
 
     result = simulator.simulate(1000)
@@ -134,10 +134,10 @@ def test_aligned_spins_zero_in_plane_components() -> None:
         np.testing.assert_array_equal(np.asarray(result[name]), np.zeros(128))
 
 
-def test_theta_jn_depends_on_spin_alignment_mode() -> None:
-    """theta_jn equals inclination in aligned-spin mode and is not written for precessing spins."""
+def test_theta_jn_is_not_written_in_either_spin_mode() -> None:
+    """theta_jn is written in neither spin mode."""
     aligned = CBCSimulator(aligned_spins=True, seed=11).simulate(256)
-    np.testing.assert_array_equal(np.asarray(aligned["theta_jn"]), np.asarray(aligned["inclination"]))
+    assert "theta_jn" not in aligned
 
     precessing = CBCSimulator(aligned_spins=False, seed=11).simulate(256)
     assert "theta_jn" not in precessing

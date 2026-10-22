@@ -1,23 +1,22 @@
-"""Physical-consistency checks shared by every packaged preset and example config.
+"""Orientation and reference-frequency columns of every packaged preset and example config.
 
-A non-precessing binary has its total angular momentum ``J`` parallel to its
-orbital angular momentum ``L``, so ``theta_jn`` and ``inclination`` are the same
-angle. A preset that draws them independently describes no physical binary.
+The orientation of a binary is written as ``inclination`` alone. ``theta_jn`` is
+not an independent angle: for a spinning binary it follows from the inclination,
+the spins and the reference frequency, and with anti-aligned spins it need not
+equal the inclination. A second orientation column could only disagree with the
+one the waveform is generated from.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-import numpy as np
 import pytest
 
 from gwmock_pop import list_presets
 from gwmock_pop.simulators.graph import GraphSimulator
 
-_SEEDS = (0, 1, 7, 42, 2026)
 _N_SAMPLES = 256
-_IN_PLANE_SPINS = ("spin_1x", "spin_1y", "spin_2x", "spin_2y")
 _EXAMPLE_CONFIGS = sorted((Path(__file__).resolve().parents[2] / "examples").rglob("*.yaml"))
 
 
@@ -41,19 +40,15 @@ def test_example_configs_are_discovered() -> None:
     assert _EXAMPLE_CONFIGS
 
 
-@pytest.mark.parametrize("seed", _SEEDS)
 @pytest.mark.parametrize(("label", "source"), _CASES, ids=[label for label, _ in _CASES])
-def test_theta_jn_equals_inclination_for_non_precessing_draws(label: str, source: str | Path, seed: int) -> None:
-    """Every non-precessing draw writes ``theta_jn`` equal to ``inclination``."""
+def test_configurations_write_no_theta_jn(label: str, source: str | Path) -> None:
+    """No packaged configuration writes ``theta_jn``; ``inclination`` is the orientation."""
     del label
-    result = _build(source, seed).simulate(_N_SAMPLES)
-    if "theta_jn" not in result:
-        pytest.skip("this configuration writes no theta_jn")
+    simulator = _build(source, 0)
+    result = simulator.simulate(_N_SAMPLES)
 
-    assert "inclination" in result
-    precessing = any(name in result and bool(np.any(np.asarray(result[name]) != 0.0)) for name in _IN_PLANE_SPINS)
-    assert not precessing, "no packaged configuration draws in-plane spin; extend this test if one does"
-    np.testing.assert_array_equal(np.asarray(result["theta_jn"]), np.asarray(result["inclination"]))
+    assert "theta_jn" not in simulator.parameter_names
+    assert "theta_jn" not in result
 
 
 @pytest.mark.parametrize(("label", "source"), _CASES, ids=[label for label, _ in _CASES])

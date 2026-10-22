@@ -12,11 +12,12 @@ The default output reproduces the legacy lightweight prior simulators: uniform
 component masses, isotropic spins and sky position, distance uniform in comoving
 volume, and a flat-LambdaCDM distance-to-redshift conversion.
 
-Which orientation columns are written depends on the spins. Aligned-spin draws
-write ``theta_jn`` equal to ``inclination`` and no ``f_ref``, since nothing they
-contain depends on a reference frequency. Precessing draws write ``f_ref``, at
-which their spins are defined, and no ``theta_jn``, which would follow from the
-inclination, the spins and that frequency rather than being drawn on its own.
+The orientation of the binary is written as ``inclination`` only. No
+``theta_jn`` is written: for a spinning binary it follows from the inclination,
+the spins and the reference frequency rather than being an independent angle,
+and with anti-aligned spins it need not even equal the inclination. Precessing
+draws write ``f_ref``, the frequency at which their spins are defined;
+aligned-spin draws write none, since nothing they contain depends on it.
 """
 
 from __future__ import annotations
@@ -88,9 +89,7 @@ class CBCSimulator(_CBCGraphSimulator):
         d_min: Minimum luminosity distance in Mpc.
         d_max: Maximum luminosity distance in Mpc.
         chi_max: Maximum dimensionless spin magnitude for both components.
-        aligned_spins: If ``True``, populate only the ``z`` spin components and
-            write ``theta_jn`` equal to ``inclination``. If ``False``, the spins
-            are precessing and no ``theta_jn`` is written.
+        aligned_spins: If ``True``, populate only the ``z`` spin components.
         gps_start: Lower bound for the coalescence-time prior.
         gps_end: Upper bound for the coalescence-time prior.
         total_mass_max: Optional upper bound on ``mass_1 + mass_2``.
@@ -165,9 +164,7 @@ class BBHSimulator(_CBCGraphSimulator):
         d_min: Minimum luminosity distance in Mpc.
         d_max: Maximum luminosity distance in Mpc.
         chi_max: Maximum dimensionless spin magnitude for both components.
-        aligned_spins: If ``True``, populate only the ``z`` spin components and
-            write ``theta_jn`` equal to ``inclination``. If ``False``, the spins
-            are precessing and no ``theta_jn`` is written.
+        aligned_spins: If ``True``, populate only the ``z`` spin components.
         gps_start: Lower bound for the coalescence-time prior.
         gps_end: Upper bound for the coalescence-time prior.
         total_mass_max: Optional upper bound on ``mass_1 + mass_2``.
@@ -237,9 +234,7 @@ class BNSSimulator(_CBCGraphSimulator):
         d_min: Minimum luminosity distance in Mpc.
         d_max: Maximum luminosity distance in Mpc.
         chi_max: Maximum dimensionless spin magnitude for both components.
-        aligned_spins: If ``True``, populate only the ``z`` spin components and
-            write ``theta_jn`` equal to ``inclination``. If ``False``, the spins
-            are precessing and no ``theta_jn`` is written.
+        aligned_spins: If ``True``, populate only the ``z`` spin components.
         gps_start: Lower bound for the coalescence-time prior.
         gps_end: Upper bound for the coalescence-time prior.
         total_mass_max: Optional upper bound on ``mass_1 + mass_2``.
@@ -315,9 +310,7 @@ class NSBHSimulator(_CBCGraphSimulator):
         d_max: Maximum luminosity distance in Mpc.
         bh_chi_max: Maximum dimensionless spin magnitude for the primary.
         ns_chi_max: Maximum dimensionless spin magnitude for the secondary.
-        aligned_spins: If ``True``, populate only the ``z`` spin components and
-            write ``theta_jn`` equal to ``inclination``. If ``False``, the spins
-            are precessing and no ``theta_jn`` is written.
+        aligned_spins: If ``True``, populate only the ``z`` spin components.
         gps_start: Lower bound for the coalescence-time prior.
         gps_end: Upper bound for the coalescence-time prior.
         total_mass_max: Optional upper bound on ``mass_1 + mass_2``.

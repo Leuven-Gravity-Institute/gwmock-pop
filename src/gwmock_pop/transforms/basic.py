@@ -72,8 +72,8 @@ def minimum(left: Array, right: Array) -> Array:
 def identity(*, value: Array) -> Array:
     """Return ``value`` unchanged.
 
-    Useful for aliasing one parameter to another in a graph config (e.g. setting
-    ``theta_jn`` equal to ``inclination`` for aligned-spin populations).
+    Useful for aliasing one parameter to another in a graph config, so that two
+    output columns share one draw.
 
     Args:
         value: Array-like value to pass through.

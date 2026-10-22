@@ -15,7 +15,7 @@ def test_simulator_satisfies_protocol() -> None:
 
 
 def test_simulate_returns_canonical_keys_and_shape() -> None:
-    """NSBHSimulator returns the canonical CBC parameters in order; precessing draws omit ``theta_jn``."""
+    """NSBHSimulator returns the canonical CBC parameters in order, except ``theta_jn``."""
     simulator = NSBHSimulator(seed=42)
 
     result = simulator.simulate(1000)

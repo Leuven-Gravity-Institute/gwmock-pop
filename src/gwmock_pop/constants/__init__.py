@@ -29,6 +29,9 @@ _CBC_PARAMETER_NAME_SEQUENCE = (
 )
 
 # Canonical gwmock-* CBC parameter names used at the public package boundary.
+# These are the names accepted there, not the columns every simulator writes:
+# no packaged preset or CBC simulator writes theta_jn, which for a spinning
+# binary follows from the inclination, the spins and the reference frequency.
 CBC_PARAMETER_NAMES = frozenset(_CBC_PARAMETER_NAME_SEQUENCE)
 
 # Speed of light in m/s.

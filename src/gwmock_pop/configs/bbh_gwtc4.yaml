@@ -134,13 +134,6 @@ parameters:
             function: isotropic_spin_orientation
             arguments:
                 reference: '@distance'
-    # No in-plane spin is drawn, so the binary is not precessing: J is
-    # parallel to L and theta_jn is the inclination itself, not a second draw.
-    theta_jn:
-        transform:
-            function: identity
-            arguments:
-                value: '@inclination'
     long_asc_node:
         transform:
             function: constant_like

@@ -133,9 +133,7 @@ def build_cbc_graph_config(  # noqa: PLR0913
         total_mass_max: Optional upper bound on ``mass_1 + mass_2``.
         chi_1_max: Maximum dimensionless spin magnitude for component 1.
         chi_2_max: Maximum dimensionless spin magnitude for component 2.
-        aligned_spins: If ``True``, populate only the ``z`` spin components and
-            write ``theta_jn`` equal to ``inclination``. If ``False``, the spins
-            are precessing and no ``theta_jn`` is written.
+        aligned_spins: If ``True``, populate only the ``z`` spin components.
         d_min: Minimum luminosity distance in Mpc.
         d_max: Maximum luminosity distance in Mpc.
         gps_start: Lower bound for the coalescence-time prior.
@@ -147,7 +145,10 @@ def build_cbc_graph_config(  # noqa: PLR0913
         eccentricity: Constant eccentricity assigned to every sample.
 
     Returns:
-        A ``parameters`` graph config dict in canonical CBC output order.
+        A ``parameters`` graph config dict in canonical CBC output order. The
+        orientation of the binary is given by ``inclination`` alone; no
+        ``theta_jn`` is written, since for spinning binaries it depends on the
+        spins and the reference frequency and is not an independent angle.
     """
     config: GraphConfig = {
         "mass_pair": {
@@ -185,10 +186,6 @@ def build_cbc_graph_config(  # noqa: PLR0913
         "inclination": {
             "transform": {"function": "isotropic_spin_orientation", "arguments": {"reference": _SHAPE_REFERENCE}}
         },
-        # Aligned spins keep J parallel to L, so theta_jn is the inclination
-        # itself. With precessing spins it follows from the inclination, the
-        # spins and the reference frequency, and is left out (see below).
-        "theta_jn": {"transform": {"function": "identity", "arguments": {"value": "@inclination"}}},
         "long_asc_node": _uniform(0.0, _TWO_PI),
         "mean_per_ano": _uniform(0.0, _TWO_PI),
         "coa_time": _uniform(gps_start, gps_end),
@@ -210,12 +207,6 @@ def build_cbc_graph_config(  # noqa: PLR0913
         # reference frequency; a per-event f_ref could only disagree with the
         # one the waveform generator is configured with.
         del config["f_ref"]
-    else:
-        # A theta_jn drawn independently of the inclination would describe a
-        # different binary from the one generated from the inclination and the
-        # spins. Deriving it needs a model-dependent orbital angular momentum at
-        # the reference frequency, so the column is not written.
-        del config["theta_jn"]
     return config
 
 

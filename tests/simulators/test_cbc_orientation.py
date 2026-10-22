@@ -1,10 +1,11 @@
 """Orientation and reference-frequency columns of the graph-backed CBC simulators.
 
-For a non-precessing binary the total angular momentum ``J`` is parallel to the
-orbital angular momentum ``L``, so ``theta_jn`` is the inclination itself, and no
-column depends on a reference frequency. For a precessing binary ``theta_jn``
-follows from the inclination, the spins and the reference frequency; it is not
-an independent angle, so the simulators do not write one.
+The orientation of a binary is written as ``inclination`` alone, in both spin
+modes. ``theta_jn`` follows from the inclination, the spins and the reference
+frequency; with anti-aligned spins whose angular momentum exceeds the orbital
+one, ``J`` is anti-parallel to ``L`` and ``theta_jn`` is ``pi - inclination``.
+It is not written. Only precessing draws depend on a reference frequency, so
+only they write ``f_ref``.
 """
 
 from __future__ import annotations
@@ -15,20 +16,20 @@ import pytest
 from gwmock_pop import BBHSimulator, BNSSimulator, CBCSimulator, NSBHSimulator
 
 _CLASSES = (CBCSimulator, BBHSimulator, BNSSimulator, NSBHSimulator)
-_SEEDS = (0, 1, 7, 42)
 _N_SAMPLES = 256
 _IN_PLANE_SPINS = ("spin_1x", "spin_1y", "spin_2x", "spin_2y")
 
 
-@pytest.mark.parametrize("seed", _SEEDS)
+@pytest.mark.parametrize("aligned_spins", [True, False], ids=["aligned", "precessing"])
 @pytest.mark.parametrize("simulator_class", _CLASSES, ids=lambda cls: cls.__name__)
-def test_aligned_spin_draws_write_theta_jn_equal_to_inclination(simulator_class: type, seed: int) -> None:
-    """An aligned-spin draw writes ``theta_jn`` equal to ``inclination``."""
-    result = simulator_class(aligned_spins=True, seed=seed).simulate(_N_SAMPLES)
+def test_draws_write_no_theta_jn(simulator_class: type, aligned_spins: bool) -> None:
+    """Neither spin mode writes ``theta_jn``; ``inclination`` is the orientation."""
+    simulator = simulator_class(aligned_spins=aligned_spins, seed=0)
+    result = simulator.simulate(_N_SAMPLES)
 
-    for name in _IN_PLANE_SPINS:
-        np.testing.assert_array_equal(np.asarray(result[name]), np.zeros(_N_SAMPLES))
-    np.testing.assert_array_equal(np.asarray(result["theta_jn"]), np.asarray(result["inclination"]))
+    assert "inclination" in result
+    assert "theta_jn" not in simulator.parameter_names
+    assert "theta_jn" not in result
 
 
 @pytest.mark.parametrize("simulator_class", _CLASSES, ids=lambda cls: cls.__name__)
@@ -40,17 +41,15 @@ def test_aligned_spin_draws_write_no_reference_frequency(simulator_class: type) 
     assert "f_ref" not in simulator.simulate(8)
 
 
-@pytest.mark.parametrize("seed", _SEEDS)
 @pytest.mark.parametrize("simulator_class", _CLASSES, ids=lambda cls: cls.__name__)
-def test_precessing_draws_write_no_independent_theta_jn(simulator_class: type, seed: int) -> None:
-    """A precessing draw writes no ``theta_jn``: an independent angle would describe another binary."""
-    simulator = simulator_class(aligned_spins=False, seed=seed)
-    result = simulator.simulate(_N_SAMPLES)
+def test_aligned_spin_draws_have_no_in_plane_spin_and_precessing_draws_do(simulator_class: type) -> None:
+    """The spin modes the reference-frequency tests rely on are the ones drawn."""
+    aligned = simulator_class(aligned_spins=True, seed=0).simulate(_N_SAMPLES)
+    precessing = simulator_class(aligned_spins=False, seed=0).simulate(_N_SAMPLES)
 
-    assert any(bool(np.any(np.asarray(result[name]) != 0.0)) for name in _IN_PLANE_SPINS)
-    assert "inclination" in result
-    assert "theta_jn" not in simulator.parameter_names
-    assert "theta_jn" not in result
+    for name in _IN_PLANE_SPINS:
+        np.testing.assert_array_equal(np.asarray(aligned[name]), np.zeros(_N_SAMPLES))
+    assert any(bool(np.any(np.asarray(precessing[name]) != 0.0)) for name in _IN_PLANE_SPINS)
 
 
 @pytest.mark.parametrize("f_ref", [5.0, 20.0])
