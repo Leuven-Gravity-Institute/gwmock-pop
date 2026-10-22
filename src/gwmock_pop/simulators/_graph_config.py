@@ -138,13 +138,17 @@ def build_cbc_graph_config(  # noqa: PLR0913
         d_max: Maximum luminosity distance in Mpc.
         gps_start: Lower bound for the coalescence-time prior.
         gps_end: Upper bound for the coalescence-time prior.
-        f_ref: Constant reference frequency assigned to every sample.
+        f_ref: Reference frequency (Hz) at which precessing spins are defined.
+            Written as a column only when ``aligned_spins`` is ``False``.
         lambda_1_max: Upper bound for ``lambda_1`` (``None`` for a zero constant).
         lambda_2_max: Upper bound for ``lambda_2`` (``None`` for a zero constant).
         eccentricity: Constant eccentricity assigned to every sample.
 
     Returns:
-        A ``parameters`` graph config dict in canonical CBC output order.
+        A ``parameters`` graph config dict in canonical CBC output order. The
+        orientation of the binary is given by ``inclination`` alone; no
+        ``theta_jn`` is written, since for spinning binaries it depends on the
+        spins and the reference frequency and is not an independent angle.
     """
     config: GraphConfig = {
         "mass_pair": {
@@ -182,11 +186,6 @@ def build_cbc_graph_config(  # noqa: PLR0913
         "inclination": {
             "transform": {"function": "isotropic_spin_orientation", "arguments": {"reference": _SHAPE_REFERENCE}}
         },
-        "theta_jn": (
-            {"transform": {"function": "identity", "arguments": {"value": "@inclination"}}}
-            if aligned_spins
-            else {"transform": {"function": "isotropic_spin_orientation", "arguments": {"reference": _SHAPE_REFERENCE}}}
-        ),
         "long_asc_node": _uniform(0.0, _TWO_PI),
         "mean_per_ano": _uniform(0.0, _TWO_PI),
         "coa_time": _uniform(gps_start, gps_end),
@@ -203,6 +202,11 @@ def build_cbc_graph_config(  # noqa: PLR0913
         },
         "f_ref": _constant(f_ref),
     }
+    if aligned_spins:
+        # Aligned spins do not evolve, so nothing written here depends on a
+        # reference frequency; a per-event f_ref could only disagree with the
+        # one the waveform generator is configured with.
+        del config["f_ref"]
     return config
 
 

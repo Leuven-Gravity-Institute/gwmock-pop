@@ -39,7 +39,6 @@ _CANONICAL_PARAMETER_NAMES = [
     "distance",
     "coa_phase",
     "inclination",
-    "theta_jn",
     "long_asc_node",
     "mean_per_ano",
     "coa_time",
@@ -47,7 +46,6 @@ _CANONICAL_PARAMETER_NAMES = [
     "declination",
     "polarization_angle",
     "redshift",
-    "f_ref",
 ]
 
 _CANONICAL_PARAMETER_NAMES_WITH_TIDAL = [
@@ -65,7 +63,6 @@ _CANONICAL_PARAMETER_NAMES_WITH_TIDAL = [
     "distance",
     "coa_phase",
     "inclination",
-    "theta_jn",
     "long_asc_node",
     "mean_per_ano",
     "coa_time",
@@ -73,7 +70,6 @@ _CANONICAL_PARAMETER_NAMES_WITH_TIDAL = [
     "declination",
     "polarization_angle",
     "redshift",
-    "f_ref",
 ]
 
 
@@ -118,7 +114,7 @@ def test_named_bbh_presets_return_canonical_bbh_surface(preset_name: str) -> Non
     assert isinstance(simulator, GWPopSimulator)
     assert simulator.source_type == "bbh"
     assert list(result.keys()) == list(simulator.parameter_names)
-    assert len(result) == 21
+    assert len(result) == 19
     assert list(result.keys()) == _CANONICAL_PARAMETER_NAMES
     assert all(array.shape == (64,) for array in result.values())
     assert bool(jnp.all(jnp.isfinite(result["distance"])))

@@ -33,7 +33,6 @@ _EXPECTED_BBH_COLUMNS = {
     "distance",
     "coa_phase",
     "inclination",
-    "theta_jn",
     "long_asc_node",
     "mean_per_ano",
     "coa_time",
@@ -41,7 +40,6 @@ _EXPECTED_BBH_COLUMNS = {
     "declination",
     "polarization_angle",
     "redshift",
-    "f_ref",
 }
 _EXPECTED_BNS_COLUMNS = _EXPECTED_BBH_COLUMNS | {"lambda_1", "lambda_2"}
 
@@ -149,7 +147,7 @@ def test_hdf5_output_round_trips_through_file_population_loader(tmp_path: Path) 
     loader = FilePopulationLoader("bbh", output_path)
     reloaded = loader.simulate(100, seed=5)
 
-    assert len(loader.parameter_names) == 21
+    assert len(loader.parameter_names) == len(_EXPECTED_BBH_COLUMNS) == 19
     assert set(loader.parameter_names) == _EXPECTED_BBH_COLUMNS
     assert set(reloaded) == _EXPECTED_BBH_COLUMNS
     assert all(values.shape == (100,) for values in reloaded.values())

@@ -10,13 +10,13 @@ from gwmock_pop.simulators import BNSSimulator as SimulatorsBNSSimulator
 
 
 def test_simulate_returns_canonical_keys_and_shape() -> None:
-    """BNSSimulator returns the full canonical CBC parameter surface in order."""
+    """BNSSimulator returns the canonical CBC parameters in order, except ``theta_jn`` and ``f_ref``."""
     simulator = BNSSimulator(seed=42)
 
     result = simulator.simulate(1000)
 
     assert list(result.keys()) == list(simulator.parameter_names)
-    assert set(result.keys()) == set(CBC_PARAMETER_NAMES)
+    assert set(result.keys()) == set(CBC_PARAMETER_NAMES) - {"theta_jn", "f_ref"}
     assert all(array.shape == (1000,) for array in result.values())
 
 
