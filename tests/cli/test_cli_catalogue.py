@@ -21,7 +21,7 @@ from gwmock_pop.catalogue import population as population_module
 from gwmock_pop.catalogue.population import SECONDS_PER_YEAR
 from gwmock_pop.cli import catalogue as catalogue_module
 from gwmock_pop.cli.main import app
-from gwmock_pop.provenance import read_provenance
+from gwmock_pop.provenance import PROVENANCE_SCHEMA_VERSION, read_provenance
 from tests.catalogue._fixtures import make_pair
 
 _RUNNER = CliRunner()
@@ -140,6 +140,26 @@ def test_catalogue_command_writes_a_stamped_draw(offline_pair: tuple[Path, Path]
     assert payload["draw"]["seed"] == 1
     assert payload["composition"]["n_draws"] == 2
     assert payload["catalogue_anchor"]["band_detector_frame_chirp_mass"] == 5.0
+
+
+def test_catalogue_command_records_the_poisson_mean_of_each_class(
+    offline_pair: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """The draw's provenance and stamp carry each class's Poisson mean."""
+    output = tmp_path / "draw.h5"
+    stamp = tmp_path / "stamp.json"
+
+    result = _run_catalogue(output=output, stamp=stamp)
+    assert result.exit_code == 0, result.output
+
+    # Each fixture catalogue holds three rows, one year of mergers, and the span is three years.
+    expected = {"BNS": pytest.approx(9.0), "BBH": pytest.approx(9.0)}
+    provenance = read_provenance(output)
+    assert provenance is not None
+    assert provenance["schema_version"] == PROVENANCE_SCHEMA_VERSION
+    assert provenance["origin"]["configuration"]["poisson_mean_per_class"] == expected
+    payload = json.loads(stamp.read_text(encoding="utf-8"))
+    assert payload["configuration"]["poisson_mean_per_class"] == expected
 
 
 def test_catalogue_command_regeneration_is_data_deterministic(offline_pair: tuple[Path, Path], tmp_path: Path) -> None:

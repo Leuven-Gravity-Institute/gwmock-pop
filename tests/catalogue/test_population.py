@@ -124,6 +124,32 @@ def test_expected_counts_follow_rate_and_span(tmp_path: Path) -> None:
 
 
 @pytest.mark.requires_h5py
+def test_expected_count_of_a_class_sums_over_its_catalogues(tmp_path: Path) -> None:
+    """Two catalogues of one class report the summed mean, as their counts are summed."""
+    first = tmp_path / "bbh_a.h5"
+    second = tmp_path / "bbh_b.h5"
+    write_catalogue(
+        first, mass_1=np.asarray([30.0, 40.0]), mass_2=np.asarray([20.0, 30.0]), redshift=np.asarray([0.5, 1.0])
+    )
+    write_catalogue(
+        second,
+        mass_1=np.asarray([30.0, 40.0, 50.0, 60.0]),
+        mass_2=np.asarray([20.0, 30.0, 40.0, 50.0]),
+        redshift=np.asarray([0.5, 1.0, 1.5, 2.0]),
+    )
+    resolved = (
+        resolved_catalogue(first, name="bbh_a", source_class="BBH"),
+        resolved_catalogue(second, name="bbh_b", source_class="BBH"),
+    )
+    span = SECONDS_PER_YEAR / 4.0
+
+    draw = draw_catalogue_population(seed=0, span_seconds=span, resolved=resolved)
+
+    assert draw.expected_per_class == {"BBH": pytest.approx((2 + 4) * span / SECONDS_PER_YEAR)}
+    assert draw.drawn_per_class["BBH"] == draw.n_rows
+
+
+@pytest.mark.requires_h5py
 def test_zero_span_draws_nothing(tmp_path: Path) -> None:
     """A zero span draws no source and still returns every column."""
     bns, bbh = make_pair(tmp_path)

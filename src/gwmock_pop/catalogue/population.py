@@ -164,7 +164,8 @@ class CatalogueDraw:
         detector_frame_chirp_mass: Detector-frame chirp mass of each row.
         source_frame_chirp_mass: Source-frame chirp mass of each row.
         in_band: Whether the row's detector-frame chirp mass is above the band.
-        expected_per_class: Poisson mean count per catalogue class.
+        expected_per_class: Poisson mean the count of each catalogue class was
+            drawn from, summed over the catalogues of a class.
         drawn_per_class: Realized count per catalogue class.
         resolved: The verified catalogue files the draw was made from.
     """
@@ -283,7 +284,7 @@ def _draw_from_catalogue(
     rng: np.random.Generator,
     span_seconds: float,
     rate_multiplier: float,
-) -> dict[str, np.ndarray]:
+) -> tuple[dict[str, np.ndarray], float]:
     """Draw one catalogue's rows for an observation span.
 
     Args:
@@ -294,7 +295,10 @@ def _draw_from_catalogue(
         rate_multiplier: Factor applied to the catalogue's annual rate.
 
     Returns:
-        Mapping from output parameter name to a 1-D array of drawn values.
+        Mapping from output parameter name to a 1-D array of drawn values, and
+        the Poisson mean the row count was drawn from. The mean is returned
+        rather than recomputed by the caller, so the value a draw reports is
+        the value it used.
 
     Raises:
         PopulationValidationError: If the catalogue cannot be read, or any
@@ -315,7 +319,7 @@ def _draw_from_catalogue(
     expected = n_catalogue * (span_seconds / SECONDS_PER_YEAR) * rate_multiplier
     count = int(rng.poisson(expected))
     if count == 0:
-        return {name: np.empty(0, dtype=float) for name in PARAMETER_NAMES}
+        return {name: np.empty(0, dtype=float) for name in PARAMETER_NAMES}, expected
 
     indices = rng.choice(n_catalogue, size=count, replace=count > n_catalogue)
 
@@ -339,7 +343,7 @@ def _draw_from_catalogue(
         parameter: selected[column] if column in extra_columns else np.zeros(count, dtype=float)
         for column, parameter in OPTIONAL_COLUMNS.items()
     }
-    return {
+    block = {
         "detector_frame_mass_1": mass_1_source * one_plus_redshift,
         "detector_frame_mass_2": mass_2_source * one_plus_redshift,
         "spin_1z": selected["chi1z"],
@@ -354,6 +358,7 @@ def _draw_from_catalogue(
         "redshift": redshift,
         **optional,
     }
+    return block, expected
 
 
 def draw_catalogue_population(  # noqa: PLR0913  # the draw's settings, named at its one call site
@@ -438,15 +443,16 @@ def draw_catalogue_population(  # noqa: PLR0913  # the draw's settings, named at
     parameter_blocks: dict[str, list[np.ndarray]] = {name: [] for name in PARAMETER_NAMES}
     source_classes: list[str] = []
     for catalogue, resolved_catalogue in zip(catalogues, resolved_catalogues, strict=True):
-        expected = catalogue.n_rows * (span_seconds / SECONDS_PER_YEAR) * rate_multiplier
-        block = _draw_from_catalogue(
+        block, expected = _draw_from_catalogue(
             resolved_catalogue,
             rng=rng,
             span_seconds=span_seconds,
             rate_multiplier=rate_multiplier,
         )
         count = block["detector_frame_mass_1"].shape[0]
-        expected_per_class[catalogue.source_class] = expected
+        # Counts of one class from several catalogues are independent Poisson
+        # draws, so the class count is Poisson with the summed mean.
+        expected_per_class[catalogue.source_class] = expected_per_class.get(catalogue.source_class, 0.0) + expected
         drawn_per_class[catalogue.source_class] = drawn_per_class.get(catalogue.source_class, 0) + count
         for name in PARAMETER_NAMES:
             parameter_blocks[name].append(block[name])

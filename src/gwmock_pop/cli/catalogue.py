@@ -85,11 +85,16 @@ def _fetch_block(draw: CatalogueDraw) -> list[dict[str, Any]]:
 def _draw_configuration(draw: CatalogueDraw) -> dict[str, Any]:
     """Return the draw settings as a provenance configuration block.
 
+    The per-class Poisson mean is recorded beside the settings it follows
+    from, so a draw's count of each class can be audited against the mean it
+    was drawn from without rebuilding the draw.
+
     Args:
         draw: The draw whose settings are described.
 
     Returns:
-        The configuration, with the catalogue order made explicit.
+        The configuration, with the catalogue order and the per-class Poisson
+        mean made explicit.
     """
     return {
         "seed": draw.seed,
@@ -98,6 +103,7 @@ def _draw_configuration(draw: CatalogueDraw) -> dict[str, Any]:
         "band_detector_frame_chirp_mass": draw.band_detector_frame_chirp_mass,
         "imbh_total_mass_threshold": draw.imbh_total_mass_threshold,
         "catalogue_order": [resolved.catalogue.name for resolved in draw.resolved],
+        "poisson_mean_per_class": dict(draw.expected_per_class),
     }
 
 
