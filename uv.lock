@@ -475,7 +475,7 @@ build = [{ name = "hatch", specifier = ">=1.18.1" }]
 dev = [
     { name = "astropy", specifier = ">=8.0.2" },
     { name = "h5py", marker = "python_full_version < '3.15'", specifier = ">=3.16.0" },
-    { name = "hypothesis", specifier = ">=6.170.11" },
+    { name = "hypothesis", specifier = ">=6.170.12" },
     { name = "mutmut", specifier = ">=3.8.0" },
     { name = "prek", specifier = ">=0.5.7" },
     { name = "pytest", specifier = ">=9.1.1" },
@@ -485,7 +485,7 @@ dev = [
 ]
 docs = [
     { name = "mkdocstrings-python", specifier = ">=2.0.10" },
-    { name = "zensical", specifier = ">=0.0.72" },
+    { name = "zensical", specifier = ">=0.0.73" },
 ]
 release = [{ name = "git-cliff", specifier = ">=2.14.2" }]
 
