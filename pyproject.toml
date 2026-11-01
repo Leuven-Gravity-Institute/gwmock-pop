@@ -25,7 +25,7 @@ dependencies = [
   "PyYAML>=6.0",
   "ruyaml>=0.91.0",
   "pydantic>=2.10.0",
-  "networkx>=3.4",
+  "networkx>=3.5",
   "gwmock-data>=0.2.0", # HDF5 catalogues without h5py
 ]
 
