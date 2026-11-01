@@ -462,7 +462,7 @@ requires-dist = [
     { name = "gwmock-data", specifier = ">=0.2.0" },
     { name = "h5py", marker = "extra == 'hdf5'", specifier = ">=3.16.0" },
     { name = "jax", specifier = ">=0.5.0" },
-    { name = "networkx", specifier = ">=3.4" },
+    { name = "networkx", specifier = ">=3.5" },
     { name = "pydantic", specifier = ">=2.10.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "ruyaml", specifier = ">=0.91.0" },
