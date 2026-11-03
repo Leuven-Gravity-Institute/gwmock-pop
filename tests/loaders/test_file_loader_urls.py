@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from io import BytesIO
 from pathlib import Path
 from typing import Self
@@ -53,6 +54,9 @@ def test_remote_loader_uses_cache_without_refetch(monkeypatch: pytest.MonkeyPatc
     assert first_loader.metadata["fetch"]["cache_hit"] is False
     assert second_loader.metadata["fetch"]["cache_hit"] is True
     assert Path(first_loader.metadata["resolved_path"]).exists()
+    expected = hashlib.sha256(_catalogue_bytes()).hexdigest()
+    assert first_loader.metadata["sha256"] == expected
+    assert second_loader.metadata["sha256"] == expected
 
 
 def test_remote_loader_refresh_forces_redownload(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

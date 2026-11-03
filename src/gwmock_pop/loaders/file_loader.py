@@ -13,7 +13,7 @@ import numpy as np
 from gwmock_data import hdf5
 
 from gwmock_pop.exceptions import PopulationValidationError
-from gwmock_pop.loaders._fetch import resolve_population_path
+from gwmock_pop.loaders._fetch import _sha256_file, resolve_population_path
 from gwmock_pop.loaders._validate import validate_population_catalogue
 from gwmock_pop.provenance import (
     EngineDescription,
@@ -265,6 +265,8 @@ class FilePopulationLoader:
             timeout=download_timeout,
         )
         self._path = fetch_result.path
+        # A path does not identify a file whose content can change, so the record names the content too.
+        sha256 = _sha256_file(self._path)
 
         try:
             raw_catalogue = read_population_catalogue(self._path, hdf5_dataset=hdf5_dataset)
@@ -284,6 +286,7 @@ class FilePopulationLoader:
             "fetch": fetch_result.metadata,
             "original_path": os.fspath(path),
             "resolved_path": str(self._path),
+            "sha256": sha256,
             "source_type": source_type,
         }
 
@@ -307,7 +310,10 @@ class FilePopulationLoader:
 
     @property
     def metadata(self) -> dict[str, Any]:
-        """Return loader metadata, including remote cache details when relevant."""
+        """Return loader metadata.
+
+        It holds the input's paths, the SHA-256 of the file read and, for a remote input, the cache details.
+        """
         return self._metadata
 
     @property
