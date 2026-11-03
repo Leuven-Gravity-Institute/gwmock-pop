@@ -265,15 +265,22 @@ class FilePopulationLoader:
             timeout=download_timeout,
         )
         self._path = fetch_result.path
-        # A path does not identify a file whose content can change, so the record names the content too.
-        sha256 = _sha256_file(self._path)
 
         try:
+            # The format is checked first so that an unsupported suffix is reported as such even
+            # when the path cannot be opened.
+            infer_population_file_format(self._path)
+            # A path does not identify a file whose content can change, so the record names the
+            # content too.
+            sha256 = _sha256_file(self._path)
             raw_catalogue = read_population_catalogue(self._path, hdf5_dataset=hdf5_dataset)
             mapped_catalogue = apply_population_column_map(raw_catalogue, column_map)
             validated_catalogue = validate_population_catalogue(source_type, mapped_catalogue)
         except ValueError as exc:
             raise PopulationValidationError(str(exc)) from exc
+        # The digest recorded must describe the bytes parsed, so it is taken again after parsing.
+        if _sha256_file(self._path) != sha256:
+            raise PopulationValidationError(f"Population file {self._path} changed while it was read.")
 
         import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
 
