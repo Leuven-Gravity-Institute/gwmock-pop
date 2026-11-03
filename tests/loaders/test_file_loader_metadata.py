@@ -9,7 +9,7 @@ import pytest
 
 from gwmock_pop import FilePopulationLoader, PopulationValidationError
 from gwmock_pop.loaders import file_loader
-from gwmock_pop.provenance import write_provenance_sidecar
+from gwmock_pop.provenance import provenance_sidecar_path, write_provenance_sidecar
 
 
 def _write_csv_catalogue(path: Path, n_rows: int) -> None:
@@ -67,37 +67,38 @@ def test_an_unsupported_suffix_is_reported_before_the_file_is_opened(make, tmp_p
         FilePopulationLoader("bbh", path)
 
 
-def test_provenance_is_refused_once_the_file_has_changed_since_loading(tmp_path: Path) -> None:
-    """The record read later must come from the bytes the recorded digest describes."""
-    path = tmp_path / "catalogue.csv"
-    _write_csv_catalogue(path, 3)
-    loader = FilePopulationLoader("bbh", path)
-    assert loader.provenance is None
-    _write_csv_catalogue(path, 2)
-
-    with pytest.raises(PopulationValidationError, match="changed since it was loaded"):
-        _ = loader.provenance
-
-
-def test_provenance_is_refused_once_the_sidecar_has_changed_since_loading(tmp_path: Path) -> None:
-    """A CSV's record lives beside it, so the sidecar must also be the one present at load."""
+def test_provenance_is_the_record_present_at_load(tmp_path: Path) -> None:
+    """A later change to the catalogue or its sidecar does not reach the loaded record."""
     path = tmp_path / "catalogue.csv"
     _write_csv_catalogue(path, 3)
     write_provenance_sidecar(path, {"origin": "first"})
     loader = FilePopulationLoader("bbh", path)
-    assert loader.provenance == {"origin": "first"}
+    _write_csv_catalogue(path, 2)
     write_provenance_sidecar(path, {"origin": "second"})
 
-    with pytest.raises(PopulationValidationError, match="changed since it was loaded"):
-        _ = loader.provenance
+    assert loader.provenance == {"origin": "first"}
+    path.unlink()
+    assert loader.provenance == {"origin": "first"}
 
 
-def test_provenance_is_refused_once_the_file_is_gone(tmp_path: Path) -> None:
-    """A catalogue removed after loading is reported as changed, not as a filesystem error."""
+def test_provenance_returns_a_copy(tmp_path: Path) -> None:
+    """A caller editing the record it was given does not edit the loader's."""
     path = tmp_path / "catalogue.csv"
     _write_csv_catalogue(path, 3)
+    write_provenance_sidecar(path, {"origin": {"name": "first"}})
     loader = FilePopulationLoader("bbh", path)
-    path.unlink()
 
-    with pytest.raises(PopulationValidationError, match="changed since it was loaded"):
+    loader.provenance["origin"]["name"] = "edited"
+
+    assert loader.provenance == {"origin": {"name": "first"}}
+
+
+def test_an_undecodable_record_is_raised_only_when_asked_for(tmp_path: Path) -> None:
+    """The catalogue still loads; the record's error surfaces on access, as when it was read lazily."""
+    path = tmp_path / "catalogue.csv"
+    _write_csv_catalogue(path, 3)
+    provenance_sidecar_path(path).write_text("not json", encoding="utf-8")
+    loader = FilePopulationLoader("bbh", path)
+
+    with pytest.raises(ValueError, match=r"provenance"):
         _ = loader.provenance

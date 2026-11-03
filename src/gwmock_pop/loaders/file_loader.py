@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import os
 import shutil
 import uuid
@@ -272,17 +273,24 @@ class FilePopulationLoader:
             infer_population_file_format(self._path)
             # A path does not identify a file whose content can change, so the record names the
             # content too.
-            digests = self._input_digests()
+            sha256 = _sha256_file(self._path)
             raw_catalogue = read_population_catalogue(self._path, hdf5_dataset=hdf5_dataset)
             mapped_catalogue = apply_population_column_map(raw_catalogue, column_map)
             validated_catalogue = validate_population_catalogue(source_type, mapped_catalogue)
         except ValueError as exc:
             raise PopulationValidationError(str(exc)) from exc
+        # The record is read now, between the two digests, so that it comes from the catalogue they describe; a
+        # record that cannot be read is raised only when asked for, so it does not stop the catalogue loading.
+        self._provenance: dict[str, Any] | None = None
+        self._provenance_error: Exception | None = None
+        try:
+            self._provenance = read_provenance(self._path)
+        except (OSError, ValueError) as exc:
+            self._provenance_error = exc
         # The digest recorded must describe the bytes parsed, so it is taken again after parsing. This catches a
         # change made during the read; a change undone before it ends goes unseen.
-        if self._input_digests() != digests:
+        if _sha256_file(self._path) != sha256:
             raise PopulationValidationError(f"Population file {self._path} changed while it was read.")
-        sha256, self._sidecar_sha256 = digests
 
         import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
 
@@ -329,29 +337,20 @@ class FilePopulationLoader:
     def provenance(self) -> dict[str, Any] | None:
         """Return the provenance record the loaded catalogue carries, if any.
 
+        The record is the one read when the catalogue was loaded, so a later change to the
+        file or its sidecar does not reach it.
+
         Returns:
             The record found in or beside the input file, or ``None`` when the
             catalogue arrived undocumented.
 
         Raises:
-            PopulationValidationError: If the input file no longer has the digest
-                recorded when it was loaded.
+            OSError: If the record could not be read at load.
+            ValueError: If the stored record could not be decoded at load.
         """
-        # The record is read when asked for, so the file, and the sidecar a record may be read from, must
-        # still be the ones present at load.
-        try:
-            record = read_provenance(self._path)
-            unchanged = self._input_digests() == (self._metadata["sha256"], self._sidecar_sha256)
-        except OSError:
-            unchanged = False
-        if not unchanged:
-            raise PopulationValidationError(f"Population file {self._path} changed since it was loaded.")
-        return record
-
-    def _input_digests(self) -> tuple[str, str | None]:
-        """Return the SHA-256 of the input file and of its provenance sidecar (``None`` when it has none)."""
-        sidecar = provenance_sidecar_path(self._path)
-        return _sha256_file(self._path), _sha256_file(sidecar) if sidecar.is_file() else None
+        if self._provenance_error is not None:
+            raise self._provenance_error
+        return copy.deepcopy(self._provenance)
 
     def provenance_origin(self, engine: EngineDescription) -> dict[str, Any]:
         """Describe this loaded catalogue as the origin of a new one.
