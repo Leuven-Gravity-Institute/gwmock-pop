@@ -149,3 +149,19 @@ def test_a_stored_provenance_error_keeps_no_frame_of_the_constructor(tmp_path: P
             traceback = traceback.tb_next
     assert "FilePopulationLoader.__init__" not in names
     assert any("Raised while the catalogue was loaded" in note for note in caught.value.__notes__)
+
+
+def test_a_note_added_to_a_raised_provenance_error_does_not_reach_the_next(tmp_path: Path) -> None:
+    """Each raised error has its own notes, so a caller's note is not kept by the loader."""
+    path = tmp_path / "catalogue.csv"
+    _write_csv_catalogue(path, 3)
+    provenance_sidecar_path(path).write_text("not json", encoding="utf-8")
+    loader = FilePopulationLoader("bbh", path)
+
+    with pytest.raises(ValueError, match=r"provenance") as first:
+        _ = loader.provenance
+    first.value.add_note("added by a caller")
+    with pytest.raises(ValueError, match=r"provenance") as second:
+        _ = loader.provenance
+
+    assert "added by a caller" not in second.value.__notes__

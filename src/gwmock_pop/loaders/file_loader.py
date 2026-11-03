@@ -55,7 +55,10 @@ def infer_population_file_format(path: str | os.PathLike) -> str:
 def _detached(error: BaseException) -> BaseException:
     """Copy an exception, and the exceptions it chains to, without their tracebacks."""
     detached = copy.copy(error)
-    # copy.copy keeps the arguments and attributes (an OSError's filename, the notes) but not the chain.
+    # copy.copy keeps the arguments and attributes (an OSError's filename, the notes) but not the chain. It shares
+    # the notes list, so the copy gets its own: a note added to one raised error must not reach the others.
+    if hasattr(error, "__notes__"):
+        detached.__notes__ = list(error.__notes__)
     cause, context = error.__cause__, error.__context__
     detached.__cause__ = None if cause is None else _detached(cause)
     if context is cause:
