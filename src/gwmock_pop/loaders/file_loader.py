@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import os
 import shutil
+import traceback
 import uuid
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -49,6 +50,20 @@ def infer_population_file_format(path: str | os.PathLike) -> str:
         supported = ", ".join(sorted(_SUPPORTED_CATALOGUE_SUFFIXES))
         raise ValueError(f"Unsupported population-file format for {output_path}. Supported suffixes: {supported}.")
     return file_format
+
+
+def _detached(error: BaseException) -> BaseException:
+    """Copy an exception, and the exceptions it chains to, without their tracebacks."""
+    detached = copy.copy(error)
+    # copy.copy keeps the arguments and attributes (an OSError's filename, the notes) but not the chain.
+    cause, context = error.__cause__, error.__context__
+    detached.__cause__ = None if cause is None else _detached(cause)
+    if context is cause:
+        detached.__context__ = detached.__cause__
+    else:
+        detached.__context__ = None if context is None else _detached(context)
+    detached.__suppress_context__ = error.__suppress_context__
+    return detached
 
 
 def apply_population_column_map(
@@ -286,7 +301,12 @@ class FilePopulationLoader:
         try:
             self._provenance = read_provenance(self._path)
         except (OSError, ValueError) as exc:
-            self._provenance_error = exc
+            # Kept without tracebacks: through its frames, a traceback would keep this constructor's locals, the
+            # parsed catalogue among them, alive for the loader's lifetime.
+            self._provenance_error = _detached(exc)
+            self._provenance_error.add_note(
+                "Raised while the catalogue was loaded:\n" + "".join(traceback.format_exception(exc))
+            )
         # The digest recorded must describe the bytes parsed, so it is taken again after parsing. This catches a
         # change made during the read; a change undone before it ends goes unseen.
         if _sha256_file(self._path) != sha256:
@@ -349,13 +369,8 @@ class FilePopulationLoader:
             ValueError: If the stored record could not be decoded at load.
         """
         if self._provenance_error is not None:
-            # A copy for each access, carrying the load-time traceback: raising the stored exception itself would add
-            # every access's frames to it.
-            stored = self._provenance_error
-            error = copy.copy(stored)
-            error.__cause__, error.__context__ = stored.__cause__, stored.__context__
-            error.__suppress_context__ = stored.__suppress_context__
-            raise error.with_traceback(stored.__traceback__)
+            # A copy for each access: raising the stored exception itself would add every access's frames to it.
+            raise _detached(self._provenance_error)
         return copy.deepcopy(self._provenance)
 
     def provenance_origin(self, engine: EngineDescription) -> dict[str, Any]:

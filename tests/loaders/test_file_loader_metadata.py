@@ -121,3 +121,31 @@ def test_repeated_access_to_an_undecodable_record_does_not_grow_its_traceback(tm
         return frames
 
     assert depth() == depth() == depth()
+
+
+def test_a_stored_provenance_error_keeps_no_frame_of_the_constructor(tmp_path: Path) -> None:
+    """The constructor's locals hold the parsed catalogue, so no kept traceback may reach its frame."""
+    path = tmp_path / "catalogue.csv"
+    _write_csv_catalogue(path, 3)
+    provenance_sidecar_path(path).write_text("not json", encoding="utf-8")
+    loader = FilePopulationLoader("bbh", path)
+
+    with pytest.raises(ValueError, match=r"provenance") as caught:
+        _ = loader.provenance
+
+    names, chained, seen = set(), [caught.value], set()
+    while chained:
+        error = chained.pop()
+        if error is None or id(error) in seen:
+            continue
+        seen.add(id(error))
+        chained += [error.__cause__, error.__context__]
+        traceback = error.__traceback__
+        while traceback is not None:
+            frame = traceback.tb_frame
+            while frame is not None:
+                names.add(frame.f_code.co_qualname)
+                frame = frame.f_back
+            traceback = traceback.tb_next
+    assert "FilePopulationLoader.__init__" not in names
+    assert any("Raised while the catalogue was loaded" in note for note in caught.value.__notes__)
