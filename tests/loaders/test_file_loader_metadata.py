@@ -64,3 +64,15 @@ def test_an_unsupported_suffix_is_reported_before_the_file_is_opened(make, tmp_p
 
     with pytest.raises(PopulationValidationError, match=r"Supported suffixes: \.csv, \.h5, \.hdf5"):
         FilePopulationLoader("bbh", path)
+
+
+def test_provenance_is_refused_once_the_file_has_changed_since_loading(tmp_path: Path) -> None:
+    """The record read later must come from the bytes the recorded digest describes."""
+    path = tmp_path / "catalogue.csv"
+    _write_csv_catalogue(path, 3)
+    loader = FilePopulationLoader("bbh", path)
+    assert loader.provenance is None
+    _write_csv_catalogue(path, 2)
+
+    with pytest.raises(PopulationValidationError, match="changed since it was loaded"):
+        _ = loader.provenance

@@ -278,7 +278,8 @@ class FilePopulationLoader:
             validated_catalogue = validate_population_catalogue(source_type, mapped_catalogue)
         except ValueError as exc:
             raise PopulationValidationError(str(exc)) from exc
-        # The digest recorded must describe the bytes parsed, so it is taken again after parsing.
+        # The digest recorded must describe the bytes parsed, so it is taken again after parsing. This catches a
+        # change made during the read; a change undone before it ends goes unseen.
         if _sha256_file(self._path) != sha256:
             raise PopulationValidationError(f"Population file {self._path} changed while it was read.")
 
@@ -330,8 +331,16 @@ class FilePopulationLoader:
         Returns:
             The record found in or beside the input file, or ``None`` when the
             catalogue arrived undocumented.
+
+        Raises:
+            PopulationValidationError: If the input file no longer has the digest
+                recorded when it was loaded.
         """
-        return read_provenance(self._path)
+        record = read_provenance(self._path)
+        # The record is read when asked for, so the file must still be the one the recorded digest describes.
+        if _sha256_file(self._path) != self._metadata["sha256"]:
+            raise PopulationValidationError(f"Population file {self._path} changed since it was loaded.")
+        return record
 
     def provenance_origin(self, engine: EngineDescription) -> dict[str, Any]:
         """Describe this loaded catalogue as the origin of a new one.
