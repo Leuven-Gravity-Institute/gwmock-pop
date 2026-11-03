@@ -349,7 +349,13 @@ class FilePopulationLoader:
             ValueError: If the stored record could not be decoded at load.
         """
         if self._provenance_error is not None:
-            raise self._provenance_error
+            # A copy for each access, carrying the load-time traceback: raising the stored exception itself would add
+            # every access's frames to it.
+            stored = self._provenance_error
+            error = copy.copy(stored)
+            error.__cause__, error.__context__ = stored.__cause__, stored.__context__
+            error.__suppress_context__ = stored.__suppress_context__
+            raise error.with_traceback(stored.__traceback__)
         return copy.deepcopy(self._provenance)
 
     def provenance_origin(self, engine: EngineDescription) -> dict[str, Any]:

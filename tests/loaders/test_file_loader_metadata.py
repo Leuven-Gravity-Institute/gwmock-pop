@@ -100,5 +100,24 @@ def test_an_undecodable_record_is_raised_only_when_asked_for(tmp_path: Path) -> 
     provenance_sidecar_path(path).write_text("not json", encoding="utf-8")
     loader = FilePopulationLoader("bbh", path)
 
-    with pytest.raises(ValueError, match=r"provenance"):
+    with pytest.raises(ValueError, match=r"provenance") as caught:
         _ = loader.provenance
+    assert caught.value.__cause__ is not None
+
+
+def test_repeated_access_to_an_undecodable_record_does_not_grow_its_traceback(tmp_path: Path) -> None:
+    """Each access raises its own exception, so earlier accesses' frames are not kept."""
+    path = tmp_path / "catalogue.csv"
+    _write_csv_catalogue(path, 3)
+    provenance_sidecar_path(path).write_text("not json", encoding="utf-8")
+    loader = FilePopulationLoader("bbh", path)
+
+    def depth() -> int:
+        with pytest.raises(ValueError, match=r"provenance") as caught:
+            _ = loader.provenance
+        frames, traceback = 0, caught.value.__traceback__
+        while traceback is not None:
+            frames, traceback = frames + 1, traceback.tb_next
+        return frames
+
+    assert depth() == depth() == depth()
