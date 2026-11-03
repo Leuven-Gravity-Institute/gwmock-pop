@@ -9,6 +9,7 @@ import pytest
 
 from gwmock_pop import FilePopulationLoader, PopulationValidationError
 from gwmock_pop.loaders import file_loader
+from gwmock_pop.provenance import write_provenance_sidecar
 
 
 def _write_csv_catalogue(path: Path, n_rows: int) -> None:
@@ -73,6 +74,30 @@ def test_provenance_is_refused_once_the_file_has_changed_since_loading(tmp_path:
     loader = FilePopulationLoader("bbh", path)
     assert loader.provenance is None
     _write_csv_catalogue(path, 2)
+
+    with pytest.raises(PopulationValidationError, match="changed since it was loaded"):
+        _ = loader.provenance
+
+
+def test_provenance_is_refused_once_the_sidecar_has_changed_since_loading(tmp_path: Path) -> None:
+    """A CSV's record lives beside it, so the sidecar must also be the one present at load."""
+    path = tmp_path / "catalogue.csv"
+    _write_csv_catalogue(path, 3)
+    write_provenance_sidecar(path, {"origin": "first"})
+    loader = FilePopulationLoader("bbh", path)
+    assert loader.provenance == {"origin": "first"}
+    write_provenance_sidecar(path, {"origin": "second"})
+
+    with pytest.raises(PopulationValidationError, match="changed since it was loaded"):
+        _ = loader.provenance
+
+
+def test_provenance_is_refused_once_the_file_is_gone(tmp_path: Path) -> None:
+    """A catalogue removed after loading is reported as changed, not as a filesystem error."""
+    path = tmp_path / "catalogue.csv"
+    _write_csv_catalogue(path, 3)
+    loader = FilePopulationLoader("bbh", path)
+    path.unlink()
 
     with pytest.raises(PopulationValidationError, match="changed since it was loaded"):
         _ = loader.provenance

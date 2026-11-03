@@ -272,7 +272,7 @@ class FilePopulationLoader:
             infer_population_file_format(self._path)
             # A path does not identify a file whose content can change, so the record names the
             # content too.
-            sha256 = _sha256_file(self._path)
+            digests = self._input_digests()
             raw_catalogue = read_population_catalogue(self._path, hdf5_dataset=hdf5_dataset)
             mapped_catalogue = apply_population_column_map(raw_catalogue, column_map)
             validated_catalogue = validate_population_catalogue(source_type, mapped_catalogue)
@@ -280,8 +280,9 @@ class FilePopulationLoader:
             raise PopulationValidationError(str(exc)) from exc
         # The digest recorded must describe the bytes parsed, so it is taken again after parsing. This catches a
         # change made during the read; a change undone before it ends goes unseen.
-        if _sha256_file(self._path) != sha256:
+        if self._input_digests() != digests:
             raise PopulationValidationError(f"Population file {self._path} changed while it was read.")
+        sha256, self._sidecar_sha256 = digests
 
         import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
 
@@ -336,11 +337,21 @@ class FilePopulationLoader:
             PopulationValidationError: If the input file no longer has the digest
                 recorded when it was loaded.
         """
-        record = read_provenance(self._path)
-        # The record is read when asked for, so the file must still be the one the recorded digest describes.
-        if _sha256_file(self._path) != self._metadata["sha256"]:
+        # The record is read when asked for, so the file, and the sidecar a record may be read from, must
+        # still be the ones present at load.
+        try:
+            record = read_provenance(self._path)
+            unchanged = self._input_digests() == (self._metadata["sha256"], self._sidecar_sha256)
+        except OSError:
+            unchanged = False
+        if not unchanged:
             raise PopulationValidationError(f"Population file {self._path} changed since it was loaded.")
         return record
+
+    def _input_digests(self) -> tuple[str, str | None]:
+        """Return the SHA-256 of the input file and of its provenance sidecar (``None`` when it has none)."""
+        sidecar = provenance_sidecar_path(self._path)
+        return _sha256_file(self._path), _sha256_file(sidecar) if sidecar.is_file() else None
 
     def provenance_origin(self, engine: EngineDescription) -> dict[str, Any]:
         """Describe this loaded catalogue as the origin of a new one.
