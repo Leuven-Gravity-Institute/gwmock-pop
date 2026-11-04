@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import copy
 import os
 import shutil
+import traceback
 import uuid
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -13,7 +15,7 @@ import numpy as np
 from gwmock_data import hdf5
 
 from gwmock_pop.exceptions import PopulationValidationError
-from gwmock_pop.loaders._fetch import resolve_population_path
+from gwmock_pop.loaders._fetch import _sha256_file, resolve_population_path
 from gwmock_pop.loaders._validate import validate_population_catalogue
 from gwmock_pop.provenance import (
     EngineDescription,
@@ -48,6 +50,23 @@ def infer_population_file_format(path: str | os.PathLike) -> str:
         supported = ", ".join(sorted(_SUPPORTED_CATALOGUE_SUFFIXES))
         raise ValueError(f"Unsupported population-file format for {output_path}. Supported suffixes: {supported}.")
     return file_format
+
+
+def _detached(error: BaseException) -> BaseException:
+    """Copy an exception, and the exceptions it chains to, without their tracebacks."""
+    detached = copy.copy(error)
+    # copy.copy keeps the arguments and attributes (an OSError's filename, the notes) but not the chain. It shares
+    # the notes list, so the copy gets its own: a note added to one raised error must not reach the others.
+    if hasattr(error, "__notes__"):
+        detached.__notes__ = list(error.__notes__)
+    cause, context = error.__cause__, error.__context__
+    detached.__cause__ = None if cause is None else _detached(cause)
+    if context is cause:
+        detached.__context__ = detached.__cause__
+    else:
+        detached.__context__ = None if context is None else _detached(context)
+    detached.__suppress_context__ = error.__suppress_context__
+    return detached
 
 
 def apply_population_column_map(
@@ -267,11 +286,34 @@ class FilePopulationLoader:
         self._path = fetch_result.path
 
         try:
+            # The format is checked first so that an unsupported suffix is reported as such even
+            # when the path cannot be opened.
+            infer_population_file_format(self._path)
+            # A path does not identify a file whose content can change, so the record names the
+            # content too.
+            sha256 = _sha256_file(self._path)
             raw_catalogue = read_population_catalogue(self._path, hdf5_dataset=hdf5_dataset)
             mapped_catalogue = apply_population_column_map(raw_catalogue, column_map)
             validated_catalogue = validate_population_catalogue(source_type, mapped_catalogue)
         except ValueError as exc:
             raise PopulationValidationError(str(exc)) from exc
+        # The record is read now, between the two digests, so that it comes from the catalogue they describe; a
+        # record that cannot be read is raised only when asked for, so it does not stop the catalogue loading.
+        self._provenance: dict[str, Any] | None = None
+        self._provenance_error: Exception | None = None
+        try:
+            self._provenance = read_provenance(self._path)
+        except (OSError, ValueError) as exc:
+            # Kept without tracebacks: through its frames, a traceback would keep this constructor's locals, the
+            # parsed catalogue among them, alive for the loader's lifetime.
+            self._provenance_error = _detached(exc)
+            self._provenance_error.add_note(
+                "Raised while the catalogue was loaded:\n" + "".join(traceback.format_exception(exc))
+            )
+        # The digest recorded must describe the bytes parsed, so it is taken again after parsing. This catches a
+        # change made during the read; a change undone before it ends goes unseen.
+        if _sha256_file(self._path) != sha256:
+            raise PopulationValidationError(f"Population file {self._path} changed while it was read.")
 
         import jax.numpy as jnp  # noqa: PLC0415  # deferred JAX import
 
@@ -284,6 +326,7 @@ class FilePopulationLoader:
             "fetch": fetch_result.metadata,
             "original_path": os.fspath(path),
             "resolved_path": str(self._path),
+            "sha256": sha256,
             "source_type": source_type,
         }
 
@@ -307,18 +350,31 @@ class FilePopulationLoader:
 
     @property
     def metadata(self) -> dict[str, Any]:
-        """Return loader metadata, including remote cache details when relevant."""
+        """Return loader metadata.
+
+        It holds the input's paths, the SHA-256 of the file read and, for a remote input, the cache details.
+        """
         return self._metadata
 
     @property
     def provenance(self) -> dict[str, Any] | None:
         """Return the provenance record the loaded catalogue carries, if any.
 
+        The record is the one read when the catalogue was loaded, so a later change to the
+        file or its sidecar does not reach it.
+
         Returns:
             The record found in or beside the input file, or ``None`` when the
             catalogue arrived undocumented.
+
+        Raises:
+            OSError: If the record could not be read at load.
+            ValueError: If the stored record could not be decoded at load.
         """
-        return read_provenance(self._path)
+        if self._provenance_error is not None:
+            # A copy for each access: raising the stored exception itself would add every access's frames to it.
+            raise _detached(self._provenance_error)
+        return copy.deepcopy(self._provenance)
 
     def provenance_origin(self, engine: EngineDescription) -> dict[str, Any]:
         """Describe this loaded catalogue as the origin of a new one.
