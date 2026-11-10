@@ -50,4 +50,7 @@ def eos_tidal_deformability(detector_frame_mass: Array, redshift: Array, eos: st
         values[inside] = tidal_deformability(masses[inside], eos)
         return values.astype(dtype)
 
-    return jax.pure_callback(_on_host, jax.ShapeDtypeStruct(source_frame_mass.shape, dtype), source_frame_mass)
+    # _on_host works element by element on any shape, so a vmapped call can pass the whole batch at once.
+    return jax.pure_callback(
+        _on_host, jax.ShapeDtypeStruct(source_frame_mass.shape, dtype), source_frame_mass, vmap_method="expand_dims"
+    )

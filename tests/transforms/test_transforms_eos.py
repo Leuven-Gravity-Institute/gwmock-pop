@@ -77,6 +77,19 @@ def test_a_traced_mass_without_a_neutron_star_is_nan() -> None:
     np.testing.assert_array_equal(np.asarray(traced)[[0, 2]], np.asarray(eager))
 
 
+def test_a_vmapped_call_matches_the_eager_one_and_is_nan_without_a_neutron_star() -> None:
+    """Under vmap too, whether each call takes one star or a row of them."""
+    _, high = neutron_star_mass_range("SLY")
+    masses = jnp.array([[1.4, 1.6], [high + 0.1, 1.2]])
+    redshift = jnp.zeros_like(masses)
+    per_row = jax.vmap(lambda m, z: eos_tidal_deformability(m, z, "SLY"))(masses, redshift)
+    per_star = jax.vmap(lambda m, z: eos_tidal_deformability(m, z, "SLY"))(masses.ravel(), redshift.ravel())
+    eager = eos_tidal_deformability(jnp.array([1.4, 1.6, 1.2]), jnp.zeros(3), "SLY")
+    for values in (np.asarray(per_row).ravel(), np.asarray(per_star)):
+        assert np.isnan(values[2])
+        np.testing.assert_array_equal(values[[0, 1, 3]], np.asarray(eager))
+
+
 def test_an_unknown_equation_of_state_is_refused_even_when_traced() -> None:
     """A misspelt name fails when the population is built, not as NaN in every row."""
     with pytest.raises(ValueError, match="no neutron-star equation of state called 'NOT_AN_EOS'"):
