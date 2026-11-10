@@ -46,6 +46,9 @@ def _family(eos: str) -> tuple[Any, float, float]:
             f"lalsimulation has no neutron-star equation of state called {eos!r}; "
             "its names are listed in lalsimulation's LALSimNeutronStarEOS."
         ) from error
+    # min_fam=0 solves for every stellar parameter; 1 solves for mass, radius and k2 only, with another
+    # integrator, and moves Lambda by up to 1.3e-4. A family is built once per EOS, so 0 costs nothing that
+    # matters. The second argument exists from lalsuite 8.0.0, the floor of the eos extra.
     family = lalsimulation.CreateSimNeutronStarFamily(equation_of_state, 0)
     minimum = lalsimulation.SimNeutronStarFamMinimumMass(family) / lal.MSUN_SI
     maximum = lalsimulation.SimNeutronStarMaximumMass(family) / lal.MSUN_SI

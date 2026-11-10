@@ -31,16 +31,17 @@ dependencies = [
 
 [project.optional-dependencies]
 hdf5 = ["h5py>=3.16.0"] # a faster HDF5 backend, which also compresses
-# Tidal deformabilities from a named equation of state (lalsimulation). 7.26.0 is the first release with
-# wheels for Python 3.13, and it names PCP_BSK24_BSK24 and XMLSLZ_DDLZ1_BSK24 (checked). No Windows wheels.
-eos = ["lalsuite>=7.26.0"]
+# Tidal deformabilities from a named equation of state (lalsimulation). 8.0.0 rebuilt the neutron-star
+# family, changing its call and moving Lambda by up to 0.2 % from 7.x; one major version keeps one code path
+# and one set of values. It names PCP_BSK24_BSK24 and XMLSLZ_DDLZ1_BSK24 (checked). No Windows wheels.
+eos = ["lalsuite>=8.0.0"]
 
 [dependency-groups]
 dev = [
   # For the HDF5 tests. h5py publishes no wheel for Python 3.15 yet, where those tests skip.
   "h5py>=3.16.0; python_version < '3.15'",
   # For the equation-of-state tests (the eos extra); lalsuite publishes no Windows wheels.
-  "lalsuite>=7.26.0; sys_platform != 'win32'",
+  "lalsuite>=8.0.0; sys_platform != 'win32'",
   "astropy>=8.0.2",
   "hypothesis>=6.170.15",
   "prek>=0.5.10",

@@ -18,7 +18,13 @@ interpolated. It needs the `eos` extra:
 uv pip install "gwmock-pop[eos]"
 ```
 
-LALSuite publishes no wheels for Windows.
+The extra needs LALSuite 8.0.0 or later. LALSuite publishes no wheels for
+Windows.
+
+Λ depends a little on the LALSuite release: 8.0.0 rebuilt the neutron-star
+structure solution, and its values differ from 7.x by up to 0.2% (SLY) and
+1.3×10⁻⁴ for PCP(BSK24) and DD-LZ1. A population is reproduced exactly with the
+LALSuite version its run recorded.
 
 ## In a population
 
