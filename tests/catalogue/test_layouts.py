@@ -324,3 +324,27 @@ def test_an_offline_refresh_re_extracts_from_the_cached_archive(archived):
     assert again.path == first.path
     assert again.metadata["cache_hit"] is False
     assert _sha256(again.path.read_bytes()) == entries[0].sha256
+
+
+@pytest.mark.parametrize("rows", [0, "ragged"])
+def test_a_layout_file_with_ragged_or_no_rows_is_refused(tmp_path, rows):
+    """The draw refuses such a file whatever its layout, as it does for the design-comparison files."""
+    from gwmock_pop.catalogue.population import _catalogue_columns
+    from gwmock_pop.catalogue.source import ResolvedCatalogue
+
+    rng = np.random.default_rng(8)
+    count = 0 if rows == 0 else N
+    columns = {
+        name: rng.uniform(1.0, 2.0, count)
+        for name in ("m1_src", "m2_src", "z", "dL", "psi", "Phicoal", "ra", "dec", "iota")
+    }
+    columns.update(
+        {name: rng.uniform(-0.5, 0.5, count) for name in ("chi1x", "chi1y", "chi1z", "chi2x", "chi2y", "chi2z")}
+    )
+    if rows == "ragged":
+        columns["psi"] = columns["psi"][:-1]
+    _write_flat(tmp_path / "bbh.h5", columns)
+    resolved = ResolvedCatalogue(catalogue=DUPLETSA2026_BBH, path=tmp_path / "bbh.h5", metadata={})
+
+    with pytest.raises(PopulationValidationError, match="empty" if rows == 0 else "mismatched column lengths"):
+        _catalogue_columns(resolved)
