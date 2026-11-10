@@ -9,6 +9,11 @@ still reproducible from the published product. See
 Telescope Mock Data Challenge CBC injection lists from local catalogue copies,
 and :mod:`gwmock_pop.catalogue.imbh_list` for intermediate-mass black-hole
 binary lists in the same per-event format, drawn from a parametric population.
+
+Two published products are pinned: the Einstein Telescope design-comparison catalogues
+(:data:`COBA_CATALOGUES`) and the populations of Dupletsa et al. 2026 on Zenodo
+(:data:`DUPLETSA2026_CATALOGUES`), whose files are read through
+:mod:`gwmock_pop.catalogue.layouts` into the same columns a draw uses.
 """
 
 from __future__ import annotations
@@ -37,9 +42,15 @@ from gwmock_pop.catalogue.manifest import (
     COBA_BBH,
     COBA_BNS,
     COBA_CATALOGUES,
+    DUPLETSA2026_BBH,
+    DUPLETSA2026_BNS,
+    DUPLETSA2026_CATALOGUES,
+    DUPLETSA2026_PBH,
+    DUPLETSA2026_POP3_BBH,
     SCIENCE_REFERENCE_CITATION,
     TDS_CATALOGUE_DOCUMENT,
     TDS_CATALOGUE_RECORD,
+    CatalogueArchive,
     CatalogueFile,
 )
 from gwmock_pop.catalogue.mdc_list import (
@@ -65,6 +76,11 @@ __all__ = [
     "COBA_BBH",
     "COBA_BNS",
     "COBA_CATALOGUES",
+    "DUPLETSA2026_BBH",
+    "DUPLETSA2026_BNS",
+    "DUPLETSA2026_CATALOGUES",
+    "DUPLETSA2026_PBH",
+    "DUPLETSA2026_POP3_BBH",
     "IMBH_ROUTING_KEY",
     "IMBH_TYPE",
     "IMRI_TYPE",
@@ -75,6 +91,7 @@ __all__ = [
     "TDS_CATALOGUE_DOCUMENT",
     "TDS_CATALOGUE_RECORD",
     "BandComposition",
+    "CatalogueArchive",
     "CatalogueBandAnchor",
     "CatalogueDraw",
     "CatalogueFile",

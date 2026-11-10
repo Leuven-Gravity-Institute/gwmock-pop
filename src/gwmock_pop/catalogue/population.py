@@ -56,6 +56,7 @@ from pathlib import Path
 import numpy as np
 from gwmock_data import hdf5
 
+from gwmock_pop.catalogue.layouts import read_layout
 from gwmock_pop.catalogue.manifest import COBA_CATALOGUES, OPTIONAL_COLUMNS, CatalogueFile
 from gwmock_pop.catalogue.source import ResolvedCatalogue, fetch_catalogues
 from gwmock_pop.exceptions import PopulationValidationError
@@ -283,6 +284,47 @@ def read_catalogue_columns(
     return read_columns
 
 
+def _catalogue_columns(resolved: ResolvedCatalogue) -> dict[str, np.ndarray]:
+    """Read a verified catalogue into the draw's columns, through its layout.
+
+    A file carrying an optional column its manifest entry does not declare is refused, whatever its
+    layout: the draw would otherwise emit that column as zero.
+
+    Args:
+        resolved: The verified catalogue.
+
+    Returns:
+        The draw's columns and the entry's declared extra columns.
+
+    Raises:
+        PopulationValidationError: If the file lacks a column, or carries an undeclared optional one.
+    """
+    catalogue = resolved.catalogue
+    extra_columns = catalogue.extra_columns
+    undeclared = [name for name in OPTIONAL_COLUMNS if name not in extra_columns]
+    if catalogue.layout == "coba":
+        present = hdf5.read(resolved.path, members=undeclared).members if undeclared else {}
+        found = [name for name in undeclared if isinstance(present.get(name), hdf5.Dataset)]
+        columns = None
+    else:
+        columns = read_layout(resolved.path, catalogue.layout, catalogue.spin_reference_frequency)
+        found = [name for name in undeclared if name in columns]
+    if found:
+        raise PopulationValidationError(
+            f"Catalogue {catalogue.filename} carries {', '.join(found)}, which its manifest entry "
+            "does not declare in extra_columns; declare them, or the draw would emit them as zero."
+        )
+    wanted = (*_CATALOGUE_COLUMNS, *extra_columns)
+    if columns is None:
+        return read_catalogue_columns(resolved.path, wanted)
+    missing = [name for name in wanted if name not in columns]
+    if missing:
+        raise PopulationValidationError(
+            f"Catalogue {catalogue.filename} is missing required columns: {', '.join(missing)}."
+        )
+    return {name: columns[name] for name in wanted}
+
+
 def _draw_from_catalogue(
     resolved: ResolvedCatalogue,
     *,
@@ -320,15 +362,7 @@ def _draw_from_catalogue(
             value in any catalogue column.
     """
     extra_columns = resolved.catalogue.extra_columns
-    undeclared = [name for name in OPTIONAL_COLUMNS if name not in extra_columns]
-    present = hdf5.read(resolved.path, members=undeclared).members if undeclared else {}
-    found = [name for name in undeclared if isinstance(present.get(name), hdf5.Dataset)]
-    if found:
-        raise PopulationValidationError(
-            f"Catalogue {resolved.catalogue.filename} carries {', '.join(found)}, which its manifest entry "
-            "does not declare in extra_columns; declare them, or the draw would emit them as zero."
-        )
-    columns = read_catalogue_columns(resolved.path, (*_CATALOGUE_COLUMNS, *extra_columns))
+    columns = _catalogue_columns(resolved)
     n_catalogue = columns["m1_source"].shape[0]
     expected = n_catalogue * (span_seconds / SECONDS_PER_YEAR) * rate_multiplier
     count = int(rng.poisson(expected))

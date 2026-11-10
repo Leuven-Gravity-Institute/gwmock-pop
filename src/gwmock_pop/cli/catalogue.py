@@ -75,6 +75,16 @@ def _fetch_block(draw: CatalogueDraw) -> list[dict[str, Any]]:
             "n_rows": resolved.catalogue.n_rows,
             "extra_columns": list(resolved.catalogue.extra_columns),
             "spin_reference_frequency": resolved.catalogue.spin_reference_frequency,
+            "layout": resolved.catalogue.layout,
+            "record": resolved.catalogue.record_url,
+            "citation": resolved.catalogue.citation,
+            "archive": None
+            if resolved.catalogue.archive is None
+            else {
+                "filename": resolved.catalogue.archive.filename,
+                "sha256": resolved.catalogue.archive.sha256,
+                "size_bytes": resolved.catalogue.archive.size_bytes,
+            },
             "verified": bool(resolved.metadata.get("verified", False)),
             "cache_hit": bool(resolved.metadata.get("cache_hit", False)),
         }

@@ -56,6 +56,7 @@ nav = [
   { "User Guide" = [
     { "Quick Start" = "user_guide/quick_start.md" },
     { "Equation of State" = "user_guide/equation_of_state.md" },
+    { "Published Populations" = "user_guide/published_populations.md" },
   ] },
   { "API Reference" = [
     { "Overview" = "api/index.md" },
@@ -132,6 +133,7 @@ nav = [
     ] },
     { "Catalogue Draws" = [
       { "Overview" = "api/catalogue/index.md" },
+      { "Layouts" = "api/catalogue/layouts.md" },
     ] },
     { "Transforms" = [
       { "Overview" = "api/transforms/index.md" },
