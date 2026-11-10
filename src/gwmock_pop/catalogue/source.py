@@ -61,6 +61,9 @@ def fetch_catalogue(
     A file the record publishes inside an archive is fetched by fetching the
     archive -- verified against its own pin -- and extracting the member beside
     it, verified against the member's pin; a verified extracted copy is reused.
+    For such a file, ``refresh`` re-extracts the member, and re-downloads the
+    archive too unless ``offline`` is set, in which case the verified cached
+    archive is used.
 
     Raises:
         PopulationFetchError: If the file cannot be fetched, or the bytes do not
@@ -73,7 +76,8 @@ def fetch_catalogue(
         size=catalogue.size_bytes if archive is None else archive.size_bytes,
         filename=catalogue.filename if archive is None else archive.filename,
         cache_dir=cache_dir,
-        refresh=refresh,
+        # Offline, a refresh of an archive member re-extracts it from the verified cached archive.
+        refresh=refresh and not (offline and archive is not None),
         offline=offline,
         timeout=timeout,
     )
@@ -130,9 +134,14 @@ def _extract_member(archive_path: Path, catalogue: CatalogueFile, *, refresh: bo
             with bundle.open(info) as source, tempfile.NamedTemporaryFile(dir=target.parent, delete=False) as staged:
                 staged_path = Path(staged.name)
                 digest = hashlib.sha256()
-                for block in iter(lambda: source.read(1 << 20), b""):
-                    digest.update(block)
-                    staged.write(block)
+                try:
+                    for block in iter(lambda: source.read(1 << 20), b""):
+                        digest.update(block)
+                        staged.write(block)
+                except BaseException:
+                    staged.close()
+                    staged_path.unlink(missing_ok=True)
+                    raise
     except KeyError as error:
         raise PopulationFetchError(f"{archive_path.name} holds no member {catalogue.filename!r}.") from error
     except zipfile.BadZipFile as error:

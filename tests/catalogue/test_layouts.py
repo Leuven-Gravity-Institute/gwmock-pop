@@ -252,6 +252,9 @@ def archived(tmp_path, monkeypatch):
 
     def _pinned(url, **kwargs):
         assert url == archive.url
+        # As the real fetch behaves: a refresh while offline cannot be met.
+        if kwargs.get("refresh") and kwargs.get("offline"):
+            raise PopulationFetchError("not cached and downloads are disabled")
         return source.FetchResult(path=cached_archive, metadata={"cache_hit": True, "verified": True})
 
     monkeypatch.setattr(source, "resolve_digest_pinned_path", _pinned)
@@ -308,3 +311,16 @@ def test_catalogue_file_still_builds_without_an_archive():
     plain = CatalogueFile(name="x", source_class="BNS", filename="a.h5", sha256="0" * 64, size_bytes=1, n_rows=1)
     assert plain.url.startswith("https://apps.et-gw.eu/tds/?call_file=")
     assert plain.layout == "coba"
+
+
+def test_an_offline_refresh_re_extracts_from_the_cached_archive(archived):
+    """Refreshing a member offline needs no download: the verified archive is already cached."""
+    entries, _ = archived
+    first = source.fetch_catalogue(entries[0])
+    first.path.write_bytes(b"damaged")
+
+    again = source.fetch_catalogue(entries[0], refresh=True, offline=True)
+
+    assert again.path == first.path
+    assert again.metadata["cache_hit"] is False
+    assert _sha256(again.path.read_bytes()) == entries[0].sha256
