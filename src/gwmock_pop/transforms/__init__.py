@@ -19,10 +19,12 @@ from gwmock_pop.transforms.basic import (
     spherical_to_cartesian_z,
     take_row,
 )
+from gwmock_pop.transforms.eos import eos_tidal_deformability
 
 __all__ = [
     "beta_spin_magnitude",
     "constant_like",
+    "eos_tidal_deformability",
     "gaussian_chi_eff",
     "identity",
     "isotropic_declination",

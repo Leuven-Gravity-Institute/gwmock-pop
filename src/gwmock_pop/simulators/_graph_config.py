@@ -234,16 +234,29 @@ def _merge_node(default_node: Any, override_node: Any) -> Any:
         preserved = {key: default_node[key] for key in ("intermediate", "exclude") if key in default_node}
         preserved.update(copy.deepcopy(dict(override_node)))
         return preserved
-    return _merge_dict(default_node, override_node)
+    merged = _merge_dict(default_node, override_node)
+    for block in ("sampler", "transform"):
+        default_block, override_block = default_node.get(block), override_node.get(block)
+        if (
+            isinstance(default_block, dict)
+            and isinstance(override_block, Mapping)
+            and "function" in override_block
+            and override_block["function"] != default_block.get("function")
+        ):
+            # Another function: the default's arguments were the old function's, so they go with it.
+            merged[block] = copy.deepcopy(dict(override_block))
+    return merged
 
 
 def deep_merge_graph_config(defaults: GraphConfig, override: Mapping[str, Any] | None) -> GraphConfig:
     """Deep-merge a user ``parameters`` override onto a default graph config.
 
     Existing nodes are merged recursively (a node's ``arguments`` can be patched
-    without restating ``function``); switching a node's block type
-    (``sampler`` <-> ``transform``) replaces the node while preserving its
-    ``intermediate``/``exclude`` flags unless overridden. Nodes not present in
+    without restating ``function``); naming another ``function`` replaces that
+    block, arguments included, since the default's arguments were the old
+    function's; switching a node's block type (``sampler`` <-> ``transform``)
+    replaces the node while preserving its ``intermediate``/``exclude`` flags
+    unless overridden. Nodes not present in
     the defaults are appended, extending the output parameter set.
 
     Args:

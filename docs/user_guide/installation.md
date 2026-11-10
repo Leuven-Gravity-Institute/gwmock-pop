@@ -44,6 +44,14 @@ adds `h5py`, which is faster and compresses what it writes:
 uv pip install "gwmock-pop[hdf5]"
 ```
 
+Tidal deformabilities from a named equation of state (the
+[`eos_tidal_deformability`](equation_of_state.md) transform) need LALSuite's
+`lalsimulation`, the `eos` extra. LALSuite publishes no wheels for Windows.
+
+```bash
+uv pip install "gwmock-pop[eos]"
+```
+
 ## Install from Source
 
 For the latest development version:
