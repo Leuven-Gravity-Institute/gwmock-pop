@@ -203,3 +203,51 @@ def test_parameters_override_with_unknown_function_raises() -> None:
     """An override referencing an unknown sampler fails fast with a clear error."""
     with pytest.raises(ConfigValidationError):
         CBCSimulator(parameters={"distance": {"sampler": {"function": "does_not_exist", "arguments": {}}}})
+
+
+def test_parameters_override_with_another_function_drops_the_old_functions_arguments() -> None:
+    """The default's arguments belonged to its function; another function does not inherit them."""
+    from gwmock_pop.simulators._graph_config import deep_merge_graph_config
+
+    defaults = {
+        "lambda_1": {"transform": {"function": "constant_like", "arguments": {"reference": "@m", "value": 0.0}}}
+    }
+    override = {"lambda_1": {"transform": {"function": "multiply", "arguments": {"left": 2.0, "right": 3.0}}}}
+    merged = deep_merge_graph_config(defaults, override)
+    assert merged["lambda_1"]["transform"] == {"function": "multiply", "arguments": {"left": 2.0, "right": 3.0}}
+
+
+def test_parameters_override_with_the_same_function_patches_its_arguments() -> None:
+    """Naming the same function, or none, still merges: only the given arguments change."""
+    from gwmock_pop.simulators._graph_config import deep_merge_graph_config
+
+    defaults = {"distance": {"sampler": {"function": "uniform", "arguments": {"minimum": 0.0, "maximum": 1.0}}}}
+    for override_block in ({"arguments": {"maximum": 5.0}}, {"function": "uniform", "arguments": {"maximum": 5.0}}):
+        merged = deep_merge_graph_config(defaults, {"distance": {"sampler": override_block}})
+        assert merged["distance"]["sampler"] == {"function": "uniform", "arguments": {"minimum": 0.0, "maximum": 5.0}}
+
+
+def test_a_bns_population_takes_its_deformabilities_from_an_equation_of_state() -> None:
+    """Swapping the preset's deformabilities for the equation-of-state transform, at the source-frame masses."""
+    pytest.importorskip("lalsimulation", reason="the eos extra (lalsuite) is not installed")
+    from gwmock_pop.eos import tidal_deformability
+
+    def from_eos(mass: str) -> dict:
+        arguments = {"detector_frame_mass": mass, "redshift": "@redshift", "eos": "PCP_BSK24_BSK24"}
+        return {"transform": {"function": "eos_tidal_deformability", "arguments": arguments}}
+
+    simulator = CBCSimulator(
+        source_type="bns",
+        m_min=1.1,
+        m_max=2.0,
+        d_max=500.0,
+        seed=3,
+        parameters={"lambda_1": from_eos("@detector_frame_mass_1"), "lambda_2": from_eos("@detector_frame_mass_2")},
+    )
+    population = simulator.simulate(64)
+    redshift = np.asarray(population["redshift"])
+    for index in (1, 2):
+        source_frame = np.asarray(population[f"detector_frame_mass_{index}"]) / (1 + redshift)
+        np.testing.assert_array_equal(
+            np.asarray(population[f"lambda_{index}"]), tidal_deformability(source_frame, "PCP_BSK24_BSK24")
+        )

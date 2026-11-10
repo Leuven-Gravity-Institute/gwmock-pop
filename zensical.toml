@@ -55,6 +55,7 @@ nav = [
   { "Installation" = "user_guide/installation.md" },
   { "User Guide" = [
     { "Quick Start" = "user_guide/quick_start.md" },
+    { "Equation of State" = "user_guide/equation_of_state.md" },
   ] },
   { "API Reference" = [
     { "Overview" = "api/index.md" },
@@ -87,6 +88,7 @@ nav = [
       { "Overview" = "api/conversion/index.md" },
       { "CBC" = "api/conversion/cbc.md" },
     ] },
+    { "Equation of State" = "api/eos/index.md" },
     { "Cosmology Models" = [
       { "Overview" = "api/cosmology/index.md" },
       { "Flat Lambda CDM" = "api/cosmology/flat_lambda_cdm.md" },
