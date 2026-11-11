@@ -86,41 +86,84 @@ def test_the_nsbh_entry_names_its_record_and_file() -> None:
     )
 
 
-def test_the_nsbh_entry_is_drawn_with_the_dupletsa_populations(tmp_path) -> None:
-    """A file in the deposit's format, under the entry's identity, is drawn as class NSBH beside the others."""
-    rng = np.random.default_rng(3)
-    n = 400
+def _resolved(path, entry):
+    return ResolvedCatalogue(
+        catalogue=dataclasses.replace(
+            entry, sha256=hashlib.sha256(path.read_bytes()).hexdigest(), size_bytes=path.stat().st_size
+        ),
+        path=path,
+        metadata={},
+    )
+
+
+def _write(path, rng, mass_1, mass_2, lambda_2):
+    """Write a catalogue as the deposit was written; the first component is a black hole (Lambda1 = 0)."""
+    n = mass_1.size
     columns = catalogue_columns(
         rng.uniform(0.1, 3.0, n),
-        rng.uniform(6.0, 30.0, n),
-        rng.uniform(1.1, 1.6, n),
+        mass_1,
+        mass_2,
         rng.uniform(-0.05, 0.05, n),
         rng.uniform(-0.05, 0.05, n),
         rng=rng,
         lambda_1=np.zeros(n),
-        lambda_2=rng.uniform(200.0, 1500.0, n),
+        lambda_2=lambda_2,
     )
-    path = tmp_path / manifest.IORIO2023_NSBH.filename
     write_catalogue(path, columns, {"test": True})
-    entry = dataclasses.replace(
-        manifest.IORIO2023_NSBH,
-        sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
-        size_bytes=path.stat().st_size,
+
+
+def test_the_nsbh_entry_is_drawn_after_a_bbh_catalogue_and_keeps_its_class(tmp_path) -> None:
+    """Drawn after a BBH catalogue, as with the Dupletsa populations, NSBH rows follow it and stay NSBH.
+
+    Half of each catalogue's rows exceed the IMBH mass threshold: the BBH ones are relabelled IMBH,
+    the NSBH ones, whose black holes are as heavy, are not.
+    """
+    rng = np.random.default_rng(3)
+    n = 400
+    heavy = np.where(np.arange(n) % 2 == 0, 150.0, 10.0)
+    bbh_path, nsbh_path = tmp_path / "bbh.h5", tmp_path / manifest.IORIO2023_NSBH.filename
+    _write(bbh_path, rng, heavy, np.full(n, 8.0), np.zeros(n))
+    _write(nsbh_path, rng, heavy, rng.uniform(1.1, 1.6, n), rng.uniform(200.0, 1500.0, n))
+    bbh_entry = manifest.CatalogueFile(
+        name="bbh_fixture",
+        source_class="BBH",
+        filename="bbh.h5",
+        sha256="0" * 64,
+        size_bytes=1,
         n_rows=n,
+        extra_columns=("Lambda1", "Lambda2"),
     )
-    resolved = ResolvedCatalogue(catalogue=entry, path=path, metadata={})
+    nsbh_entry = dataclasses.replace(manifest.IORIO2023_NSBH, n_rows=n)
+    resolved = (_resolved(bbh_path, bbh_entry), _resolved(nsbh_path, nsbh_entry))
     draw = draw_catalogue_population(
-        seed=1, span_seconds=0.5 * SECONDS_PER_YEAR, catalogues=(entry,), resolved=(resolved,)
+        seed=1,
+        span_seconds=0.5 * SECONDS_PER_YEAR,
+        catalogues=tuple(item.catalogue for item in resolved),
+        resolved=resolved,
     )
-    assert set(draw.source_class.tolist()) == {"NSBH"}
-    assert abs(draw.n_rows - n / 2) < 5 * np.sqrt(n / 2)
-    assert np.all(draw.parameters["lambda_1"] == 0.0)
-    assert np.all((draw.parameters["lambda_2"] >= 200.0) & (draw.parameters["lambda_2"] <= 1500.0))
+    source = draw.source_class.tolist()
+    n_bbh, n_nsbh = source.count("BBH"), source.count("NSBH")
+    assert source == ["BBH"] * n_bbh + ["NSBH"] * n_nsbh  # catalogue order, in blocks
+    for count in (n_bbh, n_nsbh):
+        assert abs(count - n / 2) < 5 * np.sqrt(n / 2)
+    nsbh_rows = draw.source_class == "NSBH"
+    assert set(draw.population_class[nsbh_rows].tolist()) == {"NSBH"}
+    assert np.any(draw.parameters["detector_frame_mass_1"][nsbh_rows] > 100.0)  # heavy enough to be relabelled
+    assert set(draw.population_class[~nsbh_rows].tolist()) == {"BBH", "IMBH"}
+    assert np.all(draw.parameters["lambda_1"][nsbh_rows] == 0.0)
+    assert np.all(
+        (draw.parameters["lambda_2"][nsbh_rows] >= 200.0) & (draw.parameters["lambda_2"][nsbh_rows] <= 1500.0)
+    )
+
+
+def test_the_manifest_exports_the_nsbh_entry() -> None:
+    """``from gwmock_pop.catalogue.manifest import *`` carries the entry and its record, as for the other products."""
+    assert {"IORIO2023_NSBH", "IORIO2023_NSBH_RECORD"} <= set(manifest.__all__)
 
 
 @pytest.mark.integration
 def test_the_nsbh_record_serves_the_pinned_file(tmp_path) -> None:
-    """The published file downloads, verifies against its pins, and reads at the one-year rate (network)."""
+    """The published file downloads, verifies against its pins, and holds the pinned rows (network)."""
     resolved = fetch_catalogue(manifest.IORIO2023_NSBH, cache_dir=tmp_path)
     columns = read_catalogue_columns(resolved.path, ("m1_source", "m2_source", "z", "Lambda1", "Lambda2"))
     assert columns["z"].size == manifest.IORIO2023_NSBH.n_rows

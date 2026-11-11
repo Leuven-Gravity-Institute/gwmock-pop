@@ -26,7 +26,7 @@ come from the same SEVN run (Iorio et al. 2023, fiducial model, common-envelope
 efficiency 1), turned into mergers by the same method, so the two classes share
 their normalisation.
 
-## The Zenodo record
+## The Dupletsa et al. Zenodo record
 
 The record publishes its four population files in one archive, `injections.zip`.
 gwmock-pop downloads the archive once, checks it against its pinned SHA-256, and
@@ -66,6 +66,7 @@ What the reading decides:
 hole + neutron star mergers, 39,027 of them out to redshift 15. They were made
 by [Population Synthesis](population_synthesis.md) from the merging black hole +
 neutron star binaries of Iorio et al. (2023). The file is in the draw's own
-columns and is read as is. Its spins are aligned, uniform in (−0.05, 0.05); its
-tidal deformabilities are from PCP(BSK24). The record's README documents every
-step and the checks run on it, and the file carries its provenance.
+columns and is read as is. Its spins are aligned, uniform in (−0.05, 0.05). The
+black holes' tidal deformability is zero, and the neutron stars' is from
+PCP(BSK24). The record's README documents every step and the checks run on it,
+and the file carries its provenance.
