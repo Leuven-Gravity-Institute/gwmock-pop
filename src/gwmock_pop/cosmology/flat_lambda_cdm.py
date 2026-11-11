@@ -73,30 +73,6 @@ def compute_comoving_distance(redshift: Array, hubble_constant: Array, omega_m: 
     return SPEED_OF_LIGHT / 1000 / hubble_constant * jscipy.integrate.trapezoid(y=integrand, x=z_grid, axis=0)
 
 
-#: Kilometres per megaparsec (IAU 2015 parsec).
-KM_PER_MPC = 3.0856775814913673e19
-#: Seconds per gigayear (Julian years).
-SECONDS_PER_GYR = 365.25 * 86400.0 * 1e9
-
-
-def compute_lookback_time(redshift: Array, hubble_constant: Array, omega_m: Array, n_grid: int = 1000) -> Array:
-    """Compute the lookback time.
-
-    Args:
-        redshift: Redshift to evaluate the lookback time.
-        hubble_constant: Hubble constant in km / s / Mpc.
-        omega_m: Matter density.
-        n_grid: Number of grid points to perform the numerical integration.
-
-    Returns:
-        Lookback time in Gyr.
-    """
-    z_grid = jnp.linspace(start=0.0, stop=redshift, num=n_grid)
-    integrand = 1.0 / ((1.0 + z_grid) * compute_normalized_hubble_parameter(redshift=z_grid, omega_m=omega_m))
-    hubble_time_gyr = KM_PER_MPC / hubble_constant / SECONDS_PER_GYR
-    return hubble_time_gyr * jscipy.integrate.trapezoid(y=integrand, x=z_grid, axis=0)
-
-
 def compute_differential_comoving_volume(
     redshift: Array, hubble_constant: Array, omega_m: Array, n_grid: int = 1000
 ) -> Array:

@@ -61,20 +61,15 @@ The cosmology is :mod:`gwmock_pop.cosmology.flat_lambda_cdm` at the Planck 2018 
 
 from __future__ import annotations
 
+import functools
 from dataclasses import dataclass
 
 import jax.numpy as jnp
 import numpy as np
 from jax.scipy.special import erf
 
-from gwmock_pop.constants import PLANCK18_H0_KM_S_MPC, PLANCK18_OMEGA_M
-from gwmock_pop.cosmology.flat_lambda_cdm import (
-    KM_PER_MPC,
-    SECONDS_PER_GYR,
-    compute_differential_comoving_volume,
-    compute_lookback_time,
-    compute_normalized_hubble_parameter,
-)
+from gwmock_pop.constants import PLANCK18_H0_KM_S_MPC, PLANCK18_OMEGA_M, SPEED_OF_LIGHT
+from gwmock_pop.cosmology.flat_lambda_cdm import compute_normalized_hubble_parameter
 from gwmock_pop.exceptions import PopulationValidationError
 
 #: Years per gigayear.
@@ -85,6 +80,12 @@ _MPC3_PER_GPC3 = 1e9
 _MIN_METALLICITY_PROBABILITY = 0.98
 #: Fine redshift points per bin when drawing a merger's redshift within its bin.
 _POINTS_PER_BIN = 64
+#: Kilometres per megaparsec (IAU 2015 parsec), and seconds per year (Julian).
+_KM_PER_MPC = 3.0856775814913673e19
+_SECONDS_PER_YEAR = 365.25 * 86400.0
+#: Points of the cosmology table, from redshift 0 to twice the history's highest redshift. Its step,
+#: 1e-4 at the default 15, puts the table's integration and interpolation errors below 1e-8.
+_TABLE_POINTS = 300_001
 
 
 @dataclass(frozen=True)
@@ -203,13 +204,34 @@ class MergerRate:
         return 0.5 * (self.redshift_edges[1:] + self.redshift_edges[:-1])
 
 
+@functools.cache
+def _cosmology_table(history: CosmicHistory) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Redshift, lookback time (yr), comoving distance (Mpc) and E(z), from 0 to twice z_max.
+
+    One cumulative trapezoid of 1 / E(z) and 1 / ((1 + z) E(z)) on a uniform grid, so a call costs a
+    few megabytes, and a history computes its table once.
+    """
+    redshift = np.linspace(0.0, 2.0 * history.max_redshift, _TABLE_POINTS)
+    e_z = np.asarray(compute_normalized_hubble_parameter(jnp.asarray(redshift), history.omega_m))
+
+    def cumulative(integrand: np.ndarray) -> np.ndarray:
+        steps = 0.5 * (integrand[1:] + integrand[:-1]) * np.diff(redshift)
+        return np.concatenate([[0.0], np.cumsum(steps)])
+
+    hubble_time_yr = _KM_PER_MPC / history.hubble_constant / _SECONDS_PER_YEAR
+    hubble_distance_mpc = SPEED_OF_LIGHT / 1000.0 / history.hubble_constant
+    lookback = hubble_time_yr * cumulative(1.0 / ((1.0 + redshift) * e_z))
+    comoving = hubble_distance_mpc * cumulative(1.0 / e_z)
+    return redshift, lookback, comoving, e_z
+
+
 def _lookback_years(redshift: np.ndarray, history: CosmicHistory) -> np.ndarray:
-    gyr = compute_lookback_time(jnp.asarray(redshift), history.hubble_constant, history.omega_m, n_grid=4096)
-    return np.asarray(gyr) * _YR_PER_GYR
+    table_redshift, lookback, _, _ = _cosmology_table(history)
+    return np.interp(redshift, table_redshift, lookback)
 
 
 def _years_per_unit_redshift(redshift: np.ndarray, history: CosmicHistory) -> np.ndarray:
-    hubble_time_yr = KM_PER_MPC / history.hubble_constant / SECONDS_PER_GYR * _YR_PER_GYR
+    hubble_time_yr = _KM_PER_MPC / history.hubble_constant / _SECONDS_PER_YEAR
     e_z = np.asarray(compute_normalized_hubble_parameter(jnp.asarray(redshift), history.omega_m))
     return hubble_time_yr / ((1.0 + redshift) * e_z)
 
@@ -288,10 +310,12 @@ def merger_rate_density(binaries: MergingBinaries, history: CosmicHistory | None
 
 def _observed_rate_density(redshift: np.ndarray, history: CosmicHistory) -> np.ndarray:
     """dV_c/dz / (1 + z), in Gpc^3: mergers per observer year per unit z per unit source-frame rate."""
-    volume_mpc3 = compute_differential_comoving_volume(
-        jnp.asarray(redshift), history.hubble_constant, history.omega_m, n_grid=4096
-    )
-    return np.asarray(volume_mpc3) / _MPC3_PER_GPC3 / (1.0 + redshift)
+    table_redshift, _, comoving, _ = _cosmology_table(history)
+    distance = np.interp(redshift, table_redshift, comoving)
+    e_z = np.asarray(compute_normalized_hubble_parameter(jnp.asarray(redshift), history.omega_m))
+    hubble_distance_mpc = SPEED_OF_LIGHT / 1000.0 / history.hubble_constant
+    volume_mpc3 = 4.0 * np.pi * hubble_distance_mpc * distance**2 / e_z
+    return volume_mpc3 / _MPC3_PER_GPC3 / (1.0 + redshift)
 
 
 def expected_mergers(rate: MergerRate, history: CosmicHistory | None = None, years: float = 1.0) -> float:
@@ -339,8 +363,7 @@ def _formation_redshift(redshift: np.ndarray, delay_time: np.ndarray, history: C
         PopulationValidationError: If a formation would lie beyond twice the history's highest
             redshift, where the lookback table ends.
     """
-    grid = np.linspace(0.0, 2.0 * history.max_redshift, 20001)
-    lookback = _lookback_years(grid, history)
+    grid, lookback, _, _ = _cosmology_table(history)
     formation_lookback = np.interp(redshift, grid, lookback) + delay_time
     if np.any(formation_lookback > lookback[-1]):
         raise PopulationValidationError(f"A merger formed beyond z = {grid[-1]}, where the lookback table ends.")

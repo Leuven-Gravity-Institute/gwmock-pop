@@ -302,3 +302,25 @@ def test_a_formation_beyond_the_lookback_table_is_refused() -> None:
     assert _formation_redshift(np.array([0.5]), np.array([1e9]), history)[0] > 0.5
     with pytest.raises(PopulationValidationError, match="lookback table ends"):
         _formation_redshift(np.array([0.5]), np.array([1e10]), history)
+
+
+def test_the_cosmology_table_matches_astropy() -> None:
+    """Lookback time and dV_c/dz from the table are astropy's for the same flat cosmology, to 1e-6."""
+    from gwmock_pop.synthesis.convolution import _lookback_years, _observed_rate_density
+
+    redshift = np.array([0.01, 0.1, 1.0, 3.0, 8.0, 15.0, 29.0])
+    lookback = _COSMOLOGY.lookback_time(redshift).to(u.yr).value
+    assert np.allclose(_lookback_years(redshift, _HISTORY), lookback, rtol=1e-6, atol=0.0)
+    volume = _COSMOLOGY.differential_comoving_volume(redshift).to(u.Gpc**3 / u.sr).value * 4.0 * np.pi
+    assert np.allclose(_observed_rate_density(redshift, _HISTORY), volume / (1.0 + redshift), rtol=1e-6, atol=0.0)
+
+
+def test_the_lookback_time_is_the_einstein_de_sitter_value() -> None:
+    """With matter only, t_L = 2 / (3 H0) [1 - (1 + z)^(-3/2)]: an analytic check, units included."""
+    from gwmock_pop.synthesis.convolution import _lookback_years
+
+    history = CosmicHistory(hubble_constant=70.0, omega_m=1.0)
+    redshift = np.array([0.5, 2.0, 10.0, 25.0])
+    hubble_time_yr = 3.0856775814913673e19 / 70.0 / (365.25 * 86400.0)
+    expected = 2.0 / 3.0 * hubble_time_yr * (1.0 - (1.0 + redshift) ** -1.5)
+    assert np.allclose(_lookback_years(redshift, history), expected, rtol=1e-8, atol=0.0)
