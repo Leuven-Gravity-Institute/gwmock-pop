@@ -27,8 +27,8 @@ Figs. 21 and 22):
   ``InitialConditions/estimate_mass_correction.py``): the share of primary mass, in a Kroupa
   population of 0.08 to 150 solar masses with Sana et al. (2012) mass ratios, held by binaries with a
   primary of at least 5 solar masses and a secondary of at least 2.2. :func:`imf_fraction` computes
-  it exactly. They quote 0.255 +- 0.001, from a Monte Carlo of the same definition; the exact value,
-  not 0.255, reproduces their published rates.
+  it by numerical integration, converged to 1e-6. They quote 0.255 +- 0.001, from a Monte Carlo of
+  the same definition; 0.25643, not 0.255, reproduces their published rates.
 - **Binary fraction 0.4**, the default of :class:`~gwmock_pop.synthesis.convolution.CosmicHistory`.
 
 Neither value is stated for the rates; both are recovered from the cosmoRate output behind their
@@ -103,7 +103,10 @@ _PROPERTIES = {
 
 @functools.cache
 def imf_fraction() -> float:
-    """Iorio et al.'s correction for their mass cuts, computed exactly from its definition.
+    """Iorio et al.'s correction for their mass cuts, integrated numerically from its definition.
+
+    Trapezoidal quadrature on a logarithmic grid of primary masses; the value changes by less than
+    1e-6 when the grid is refined sixteenfold.
 
     Returns:
         The share of primary mass, in the full population, held by binaries passing both mass cuts.

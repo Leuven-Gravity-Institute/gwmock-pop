@@ -125,7 +125,7 @@ def _sana_q(floor: np.ndarray, rng: np.random.Generator) -> np.ndarray:
 def test_the_imf_fraction_is_the_published_cut_fraction() -> None:
     """A Monte Carlo of their estimate_mass_correction.py gives imf_fraction: primary mass passing both cuts.
 
-    They quote 0.255 +- 0.001, from a Monte Carlo; this exact value, not 0.255, reproduces their
+    They quote 0.255 +- 0.001, from a Monte Carlo; the integrated value, not 0.255, reproduces their
     published rates.
     """
     rng = np.random.default_rng(1)
