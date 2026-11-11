@@ -15,6 +15,7 @@ from gwmock_pop.cosmology.flat_lambda_cdm import (
     compute_comoving_distance,
     compute_differential_comoving_volume,
     compute_hubble_parameter,
+    compute_lookback_time,
     compute_luminosity_distance,
     compute_normalized_hubble_parameter,
     compute_redshift_from_luminosity_distance,
@@ -236,3 +237,21 @@ class TestFlatLambdaCDM:
             measured_redshift = float(compute_redshift_from_luminosity_distance(jnp.array(luminosity_distance)))
             reference_redshift = self._astropy_redshift_from_distance(luminosity_distance)
             assert self._relative_error(measured_redshift, reference_redshift) < 1e-3
+
+
+def test_lookback_time_matches_astropy() -> None:
+    """The lookback time is astropy's for the same flat cosmology, to 1e-5 out to z = 15."""
+    redshift = jnp.array([0.01, 0.1, 1.0, 3.0, 8.0, 15.0])
+    computed = compute_lookback_time(redshift, PLANCK18_H0_KM_S_MPC, PLANCK18_OMEGA_M, n_grid=4096)
+    expected = _REFERENCE_COSMOLOGY.lookback_time(redshift).to(u.Gyr).value
+    assert jnp.allclose(computed, expected, rtol=1e-5, atol=0.0)
+
+
+def test_lookback_time_is_the_einstein_de_sitter_value() -> None:
+    """With matter only, t_L = 2 / (3 H0) [1 - (1 + z)^(-3/2)], to the integration error (2e-6 at z = 10)."""
+    redshift = jnp.array([0.5, 2.0, 10.0])
+    hubble_constant = 70.0
+    hubble_time_gyr = 3.0856775814913673e19 / hubble_constant / (365.25 * 86400.0 * 1e9)
+    expected = 2.0 / 3.0 * hubble_time_gyr * (1.0 - (1.0 + redshift) ** -1.5)
+    computed = compute_lookback_time(redshift, hubble_constant, 1.0, n_grid=4096)
+    assert jnp.allclose(computed, expected, rtol=1e-5, atol=0.0)
