@@ -72,8 +72,6 @@ from gwmock_pop.constants import PLANCK18_H0_KM_S_MPC, PLANCK18_OMEGA_M, SPEED_O
 from gwmock_pop.cosmology.flat_lambda_cdm import compute_normalized_hubble_parameter
 from gwmock_pop.exceptions import PopulationValidationError
 
-#: Years per gigayear.
-_YR_PER_GYR = 1e9
 #: Cubic megaparsecs per cubic gigaparsec.
 _MPC3_PER_GPC3 = 1e9
 #: Probability the metallicity bins must hold at every formation redshift, as cosmoRate requires.
