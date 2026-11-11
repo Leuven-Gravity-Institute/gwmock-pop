@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
+import dataclasses
+import hashlib
+
+import numpy as np
 import pytest
 
-from gwmock_pop.catalogue import manifest
+from gwmock_pop.catalogue import draw_catalogue_population, manifest
+from gwmock_pop.catalogue.population import SECONDS_PER_YEAR, read_catalogue_columns
+from gwmock_pop.catalogue.source import ResolvedCatalogue, fetch_catalogue
+from gwmock_pop.synthesis.catalogue import catalogue_columns, write_catalogue
 
 
 def test_catalogue_files_are_pinned_with_usable_identity() -> None:
@@ -60,3 +67,62 @@ def test_the_published_catalogues_declare_their_extra_columns() -> None:
     assert manifest.COBA_BNS.spin_reference_frequency is None
     assert manifest.COBA_BBH.extra_columns == ("chi1x", "chi1y", "chi2x", "chi2y")
     assert manifest.COBA_BBH.spin_reference_frequency == 2.0
+
+
+def test_the_nsbh_entry_names_its_record_and_file() -> None:
+    """The NSBH file is fetched from its Zenodo record, read as is, with its tidal deformabilities."""
+    entry = manifest.IORIO2023_NSBH
+    assert entry.source_class == "NSBH"
+    assert entry.layout == "coba"
+    assert entry.archive is None
+    assert entry.url == "https://zenodo.org/records/24127546/files/nsbh_iorio2023_F_alpha1.h5?download=1"
+    assert entry.record_url == manifest.IORIO2023_NSBH_RECORD == "https://zenodo.org/records/24127546"
+    assert entry.citation == "https://doi.org/10.5281/zenodo.24127546"
+    assert entry.extra_columns == ("Lambda1", "Lambda2")
+    assert (entry.sha256, entry.size_bytes, entry.n_rows) == (
+        "91057e685e5298a9f3b5d5611d41f414e9e10fc25d50f777b285b0afd23c50ac",
+        4064328,
+        39027,
+    )
+
+
+def test_the_nsbh_entry_is_drawn_with_the_dupletsa_populations(tmp_path) -> None:
+    """A file in the deposit's format, under the entry's identity, is drawn as class NSBH beside the others."""
+    rng = np.random.default_rng(3)
+    n = 400
+    columns = catalogue_columns(
+        rng.uniform(0.1, 3.0, n),
+        rng.uniform(6.0, 30.0, n),
+        rng.uniform(1.1, 1.6, n),
+        rng.uniform(-0.05, 0.05, n),
+        rng.uniform(-0.05, 0.05, n),
+        rng=rng,
+        lambda_1=np.zeros(n),
+        lambda_2=rng.uniform(200.0, 1500.0, n),
+    )
+    path = tmp_path / manifest.IORIO2023_NSBH.filename
+    write_catalogue(path, columns, {"test": True})
+    entry = dataclasses.replace(
+        manifest.IORIO2023_NSBH,
+        sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+        size_bytes=path.stat().st_size,
+        n_rows=n,
+    )
+    resolved = ResolvedCatalogue(catalogue=entry, path=path, metadata={})
+    draw = draw_catalogue_population(
+        seed=1, span_seconds=0.5 * SECONDS_PER_YEAR, catalogues=(entry,), resolved=(resolved,)
+    )
+    assert set(draw.source_class.tolist()) == {"NSBH"}
+    assert abs(draw.n_rows - n / 2) < 5 * np.sqrt(n / 2)
+    assert np.all(draw.parameters["lambda_1"] == 0.0)
+    assert np.all((draw.parameters["lambda_2"] >= 200.0) & (draw.parameters["lambda_2"] <= 1500.0))
+
+
+@pytest.mark.integration
+def test_the_nsbh_record_serves_the_pinned_file(tmp_path) -> None:
+    """The published file downloads, verifies against its pins, and reads at the one-year rate (network)."""
+    resolved = fetch_catalogue(manifest.IORIO2023_NSBH, cache_dir=tmp_path)
+    columns = read_catalogue_columns(resolved.path, ("m1_source", "m2_source", "z", "Lambda1", "Lambda2"))
+    assert columns["z"].size == manifest.IORIO2023_NSBH.n_rows
+    assert columns["m1_source"].min() > 5.0
+    assert columns["m2_source"].max() < 2.0

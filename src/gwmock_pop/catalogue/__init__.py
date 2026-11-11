@@ -10,10 +10,13 @@ Telescope Mock Data Challenge CBC injection lists from local catalogue copies,
 and :mod:`gwmock_pop.catalogue.imbh_list` for intermediate-mass black-hole
 binary lists in the same per-event format, drawn from a parametric population.
 
-Two published products are pinned: the Einstein Telescope design-comparison catalogues
-(:data:`COBA_CATALOGUES`) and the populations of Dupletsa et al. 2026 on Zenodo
-(:data:`DUPLETSA2026_CATALOGUES`), whose files are read through
-:mod:`gwmock_pop.catalogue.layouts` into the same columns a draw uses.
+Three published products are pinned:
+
+- the Einstein Telescope design-comparison catalogues (:data:`COBA_CATALOGUES`);
+- the populations of Dupletsa et al. 2026 on Zenodo (:data:`DUPLETSA2026_CATALOGUES`). Their files
+  are read through :mod:`gwmock_pop.catalogue.layouts` into the same columns a draw uses.
+- one year of black hole + neutron star mergers from Iorio et al. (2023)'s SEVN run, made with
+  :mod:`gwmock_pop.synthesis` (:data:`IORIO2023_NSBH`).
 """
 
 from __future__ import annotations
@@ -47,6 +50,8 @@ from gwmock_pop.catalogue.manifest import (
     DUPLETSA2026_CATALOGUES,
     DUPLETSA2026_PBH,
     DUPLETSA2026_POP3_BBH,
+    IORIO2023_NSBH,
+    IORIO2023_NSBH_RECORD,
     SCIENCE_REFERENCE_CITATION,
     TDS_CATALOGUE_DOCUMENT,
     TDS_CATALOGUE_RECORD,
@@ -84,6 +89,8 @@ __all__ = [
     "IMBH_ROUTING_KEY",
     "IMBH_TYPE",
     "IMRI_TYPE",
+    "IORIO2023_NSBH",
+    "IORIO2023_NSBH_RECORD",
     "MDC1_CATALOGUE_SHA256",
     "MDC1_SETTINGS",
     "PARAMETER_NAMES",
