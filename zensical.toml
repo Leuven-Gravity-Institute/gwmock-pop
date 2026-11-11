@@ -57,6 +57,7 @@ nav = [
     { "Quick Start" = "user_guide/quick_start.md" },
     { "Equation of State" = "user_guide/equation_of_state.md" },
     { "Published Populations" = "user_guide/published_populations.md" },
+    { "Population Synthesis" = "user_guide/population_synthesis.md" },
   ] },
   { "API Reference" = [
     { "Overview" = "api/index.md" },
@@ -135,6 +136,7 @@ nav = [
       { "Overview" = "api/catalogue/index.md" },
       { "Layouts" = "api/catalogue/layouts.md" },
     ] },
+    { "Population Synthesis" = "api/synthesis/index.md" },
     { "Transforms" = [
       { "Overview" = "api/transforms/index.md" },
     ] },
