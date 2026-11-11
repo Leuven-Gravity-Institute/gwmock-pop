@@ -25,20 +25,31 @@ sampling in its ``cosmo_functions.py``, branch ``v2``), with that code's isolate
   binary fraction, and :math:`f_\mathrm{IMF}` the fraction of a full initial mass function the
   simulated mass range covers.
 
-Only the product :math:`f_\mathrm{bin} f_\mathrm{IMF}` enters. The defaults, 0.4 and 0.255, give
-0.102. Iorio et al. (2023) state 0.255 for their runs, and cosmoRate offers 0.4 beside its own 0.5.
-Neither paper states the product, so it is fitted to the following count.
+The defaults are the values Iorio et al. (2023) state for their runs, also cosmoRate's for isolated
+binaries:
+
+- :math:`f_\mathrm{bin} = 0.5`;
+- :math:`f_\mathrm{IMF} = 0.255`. That is the mass fraction of their binaries (primary of at least
+  5 solar masses, secondary of at least 2.2) among all binaries with Kroupa primaries from 0.08 to
+  150 solar masses and mass ratios from 0.1 to 1. Recomputed independently from that definition, it
+  is 0.26.
+
+The metallicity relation is Madau & Fragos's fit to the mass-weighted mean of :math:`Z/Z_\odot`, on
+the Anders & Grevesse (1989) solar scale. That is why the log-normal is shifted down by
+:math:`\ln(10)\,\sigma_Z^2/2`, which keeps its mean at the fit, and why :math:`Z_\odot = 0.019`.
 
 Zenodo record 21682194 (Dupletsa et al. 2026) holds a population built from Iorio et al.'s merging
 binary neutron stars (``simulation_F``, :math:`\alpha_\mathrm{CE} = 1`; Loffredo et al. 2025). It
-has 351,205 mergers in one year, with a local rate of 107 Gpc^-3 yr^-1. From the same binaries and
-these defaults:
+has 351,205 mergers in one year, with a local rate of 107 Gpc^-3 yr^-1. From the same binaries:
 
-- 348,450 mergers per year to :math:`z = 15`, and 105.4 Gpc^-3 yr^-1 at :math:`z = 0.0075`.
 - The redshift distribution's largest difference from the record's is 0.005 in cumulative
   probability; two draws of this module differ from each other by 0.0015.
-- cosmoRate's 100 edges give 0.010 instead: a rate constant over bins 0.15 wide misplaces mergers
-  around its peak at :math:`z \approx 2`. The difference stops falling at about 750 edges.
+- cosmoRate's own 100 edges give 0.010 instead: a rate constant over bins 0.15 wide misplaces
+  mergers around the peak at :math:`z \approx 2`. The difference stops falling at about 750 edges.
+- These defaults give 435,560 mergers per year to :math:`z = 15`, and 131.8 Gpc^-3 yr^-1 at
+  :math:`z = 0.0075`: 1.25 times the record. The record's count is matched, to 0.8 %, by
+  :math:`f_\mathrm{bin} f_\mathrm{IMF} = 0.102`, for example a binary fraction of 0.4. Neither paper
+  states that value, so the defaults keep the stated ones.
 
 The cosmology is :mod:`gwmock_pop.cosmology.flat_lambda_cdm` at the Planck 2018 parameters.
 """
@@ -127,7 +138,7 @@ class CosmicHistory:
 
     metallicity_spread: float = 0.2
     solar_metallicity: float = 0.019
-    binary_fraction: float = 0.4
+    binary_fraction: float = 0.5
     imf_fraction: float = 0.255
     max_redshift: float = 15.0
     n_redshift: int = 1001
@@ -314,10 +325,18 @@ def _lookback_bin(lookback: np.ndarray, lookback_edges: np.ndarray) -> np.ndarra
 
 
 def _formation_redshift(redshift: np.ndarray, delay_time: np.ndarray, history: CosmicHistory) -> np.ndarray:
-    """Redshift at which a binary merging at ``redshift`` after ``delay_time`` years formed."""
+    """Redshift at which a binary merging at ``redshift`` after ``delay_time`` years formed.
+
+    Raises:
+        PopulationValidationError: If a formation would lie beyond twice the history's highest
+            redshift, where the lookback table ends.
+    """
     grid = np.linspace(0.0, 2.0 * history.max_redshift, 20001)
     lookback = _lookback_years(grid, history)
-    return np.interp(np.interp(redshift, grid, lookback) + delay_time, lookback, grid)
+    formation_lookback = np.interp(redshift, grid, lookback) + delay_time
+    if np.any(formation_lookback > lookback[-1]):
+        raise PopulationValidationError(f"A merger formed beyond z = {grid[-1]}, where the lookback table ends.")
+    return np.interp(formation_lookback, lookback, grid)
 
 
 def draw_mergers(
@@ -352,8 +371,10 @@ def draw_mergers(
     history = history or CosmicHistory()
     edges = rate.redshift_edges
     per_bin = rate.rate * _bin_volumes(edges, history) * years
-    n_mergers = rng.poisson(per_bin.sum())
-    bins = rng.choice(per_bin.size, size=n_mergers, p=per_bin / per_bin.sum())
+    total = per_bin.sum()
+    n_mergers = rng.poisson(total)
+    # a run none of whose binaries merges by z = 0 has no rate to share the (zero) mergers out by
+    bins = rng.choice(per_bin.size, size=n_mergers, p=per_bin / total) if n_mergers else np.empty(0, dtype=np.int64)
 
     fine = _fine_grid(edges)
     density = _observed_rate_density(fine.ravel(), history).reshape(fine.shape)

@@ -49,9 +49,9 @@ columns = catalogue_columns(
 write_catalogue("nsbh.h5", columns, {"input": "Iorio et al. 2023, BHNSm.csv, alpha = 1", "seed": 1})
 ```
 
-These mergers come to a local rate of 20.4 Gpc⁻³ yr⁻¹ and 39,000 mergers a year
-out to redshift 15. The neutron-star masses run from 1.10 to 1.66 solar masses
-and the black-hole masses from 5.7 to 47.5.
+These mergers come to a local rate of 25.5 Gpc⁻³ yr⁻¹ and 48,800 mergers a year
+out to redshift 15. In the table, the neutron-star masses run from 1.10 to 1.66
+solar masses and the black-hole masses from 5.7 to 47.5.
 
 ## Checked against a published population
 
@@ -60,13 +60,12 @@ publish binary neutron stars built from Iorio et al.'s `NSNSm.csv` at the same
 common-envelope efficiency (Loffredo et al. 2025). The record holds 351,205
 mergers in a year, with a local rate of 107 Gpc⁻³ yr⁻¹.
 
-From the same file, `gwmock_pop.synthesis` gives:
+From the same file, `gwmock_pop.synthesis` gives a redshift distribution within
+0.005 of the record's in cumulative probability, so the shape matches.
 
-- 348,450 mergers a year;
-- 105.4 Gpc⁻³ yr⁻¹ at redshift 0.0075;
-- a redshift distribution within 0.005 of the record's in cumulative
-  probability.
-
-Neither paper states the product of the binary fraction and the IMF correction
-that sets the normalisation. The default, 0.4 × 0.255, is the value that
-reproduces this count.
+The normalisation does not. The defaults give 435,560 mergers a year and 131.8
+Gpc⁻³ yr⁻¹ at redshift 0.0075, 1.25 times the record. The defaults are the
+corrections Iorio et al. state for their runs: an IMF correction of 0.255 and a
+binary fraction of 0.5. The record's count follows from a product of 0.102
+instead (for example, a binary fraction of 0.4), which neither paper states.
+Pass `CosmicHistory(binary_fraction=0.4)` to reproduce the record's count.

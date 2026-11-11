@@ -128,8 +128,13 @@ def test_only_the_product_of_the_two_fractions_matters() -> None:
 
 def test_a_delay_longer_than_the_universe_gives_no_mergers() -> None:
     """A binary whose delay exceeds the age of the Universe at z_max never merges."""
-    rate = merger_rate_density(_single_metallicity(1.4e10), _HISTORY)
+    run = _single_metallicity(1.4e10)
+    rate = merger_rate_density(run, _HISTORY)
     assert np.all(rate.rate == 0.0)
+    assert expected_mergers(rate, _HISTORY) == 0.0
+    mergers = draw_mergers(run, rate, np.random.default_rng(0), history=_HISTORY)
+    assert set(mergers) == {"label", "redshift", "formation_redshift", "delay_time", "metallicity"}
+    assert all(values.size == 0 for values in mergers.values())
 
 
 def test_expected_mergers_integrate_the_rate_over_the_volume() -> None:
@@ -196,7 +201,7 @@ def test_a_merger_comes_only_from_binaries_that_can_merge_then(two_delays) -> No
     assert np.all(mergers["metallicity"][too_early] == 0.002)
     assert np.all(mergers["delay_time"][too_early] == 1e6)
     late = mergers["redshift"] < 0.5
-    assert set(np.unique(mergers["metallicity"][late])) == {0.002, 0.02}
+    assert np.any(mergers["delay_time"][late] == 5e9)
 
 
 def test_properties_follow_their_binary(two_delays) -> None:
@@ -261,3 +266,13 @@ def test_within_a_bin_redshifts_follow_the_observed_volume() -> None:
     empirical = np.searchsorted(np.sort(nearest), grid, side="right") / nearest.size
     assert nearest.size > 1000
     assert np.max(np.abs(empirical - cdf)) < 1.63 / np.sqrt(nearest.size)  # KS at 1 %
+
+
+def test_a_formation_beyond_the_lookback_table_is_refused() -> None:
+    """A formation redshift past twice z_max, where the table ends, is refused rather than clamped."""
+    from gwmock_pop.synthesis.convolution import _formation_redshift
+
+    history = CosmicHistory(max_redshift=1.0, n_redshift=11)
+    assert _formation_redshift(np.array([0.5]), np.array([1e9]), history)[0] > 0.5
+    with pytest.raises(PopulationValidationError, match="lookback table ends"):
+        _formation_redshift(np.array([0.5]), np.array([1e10]), history)
