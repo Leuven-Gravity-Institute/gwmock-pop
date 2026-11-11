@@ -49,7 +49,7 @@ columns = catalogue_columns(
 write_catalogue("nsbh.h5", columns, {"input": "Iorio et al. 2023, BHNSm.csv, alpha = 1", "seed": 1})
 ```
 
-These mergers come to a local rate of 25.5 Gpc⁻³ yr⁻¹ and 48,800 mergers a year
+These mergers come to a local rate of 28.4 Gpc⁻³ yr⁻¹ and 54,300 mergers a year
 out to redshift 15. In the table, the neutron-star masses run from 1.10 to 1.66
 solar masses and the black-hole masses from 5.7 to 47.5.
 
@@ -63,9 +63,10 @@ mergers in a year, with a local rate of 107 Gpc⁻³ yr⁻¹.
 From the same file, `gwmock_pop.synthesis` gives a redshift distribution within
 0.005 of the record's in cumulative probability, so the shape matches.
 
-The normalisation does not. The defaults give 435,560 mergers a year and 131.8
-Gpc⁻³ yr⁻¹ at redshift 0.0075, 1.25 times the record. The defaults are the
-corrections Iorio et al. state for their runs: an IMF correction of 0.255 and a
-binary fraction of 0.5. The record's count follows from a product of 0.102
-instead (for example, a binary fraction of 0.4), which neither paper states.
-Pass `CosmicHistory(binary_fraction=0.4)` to reproduce the record's count.
+The normalisation does not: 460,500 mergers a year and 140 Gpc⁻³ yr⁻¹ at
+redshift 0.0075, 1.31 times the record. gwmock-pop uses the binary fraction
+Iorio et al. state, 0.5, and normalises their run as its own initial conditions
+define it; see
+[the Iorio et al. reader](../api/synthesis/index.md#gwmock_pop.synthesis.iorio2023)
+for why that differs from their stated IMF correction of 0.255. Neither Dupletsa
+et al. nor Loffredo et al. state the normalisation behind the record's count.

@@ -25,18 +25,24 @@ _COSMOLOGY = FlatLambdaCDM(H0=PLANCK18_H0_KM_S_MPC, Om0=PLANCK18_OMEGA_M)
 _HISTORY = CosmicHistory(n_redshift=301)
 #: Merging binaries per solar mass of star formation, before the binary-fraction and IMF factors.
 _PER_MASS = 1e-5
+#: The test runs' IMF fraction.
+_IMF_FRACTION = 0.3
 
 
 def _madau_fragos(redshift: np.ndarray) -> np.ndarray:
     return 0.01 * (1.0 + redshift) ** 2.6 / (1.0 + ((1.0 + redshift) / 3.2) ** 6.2)
 
 
-def _run(delays: list[float], metallicities: list[float], evolved_mass: float = 1.0) -> MergingBinaries:
+def _run(
+    delays: list[float], metallicities: list[float], evolved_mass: float = 1.0, weight: list[float] | None = None
+) -> MergingBinaries:
     return MergingBinaries(
         delay_time=np.asarray(delays, dtype=float),
         metallicity=np.asarray(metallicities, dtype=float),
         evolved_mass=evolved_mass,
+        imf_fraction=_IMF_FRACTION,
         properties={"label": np.arange(len(delays))},
+        weight=None if weight is None else np.asarray(weight, dtype=float),
     )
 
 
@@ -45,7 +51,7 @@ def _single_metallicity(delay: float, count: int = 10) -> MergingBinaries:
 
 
 def _efficiency(history: CosmicHistory) -> float:
-    return _PER_MASS * history.binary_fraction * history.imf_fraction
+    return _PER_MASS * history.binary_fraction * _IMF_FRACTION
 
 
 def test_immediate_mergers_follow_star_formation() -> None:
@@ -113,17 +119,49 @@ def test_metallicities_are_weighted_by_the_shifted_log_normal() -> None:
     spread = history.metallicity_spread
     mean = 0.153 - 0.074 * centres**1.34 - math.log(10.0) / 2.0 * spread**2
     below = 0.5 * (1.0 + np.array([math.erf((midpoint - m) / (spread * math.sqrt(2.0))) for m in mean]))
-    factor = history.binary_fraction * history.imf_fraction * _PER_MASS
+    factor = history.binary_fraction * _IMF_FRACTION * _PER_MASS
     expected = factor * _madau_fragos(centres) * 1e9 * (3.0 * below + 1.0 * (1.0 - below))
     assert np.allclose(rate.rate, expected, rtol=1e-3, atol=0.0)
 
 
-def test_only_the_product_of_the_two_fractions_matters() -> None:
-    """Swapping the binary fraction and the IMF fraction leaves the rate unchanged."""
+def test_the_binary_fraction_and_imf_fraction_scale_the_rate() -> None:
+    """The rate is proportional to each fraction, so only their product matters."""
+    history = CosmicHistory(n_redshift=101)
     run = _single_metallicity(1e8)
-    one = merger_rate_density(run, CosmicHistory(n_redshift=101, binary_fraction=0.4, imf_fraction=0.255))
-    other = merger_rate_density(run, CosmicHistory(n_redshift=101, binary_fraction=0.255, imf_fraction=0.4))
-    assert np.allclose(one.rate, other.rate, rtol=1e-12, atol=0.0)
+    base = merger_rate_density(run, history).rate
+    halved = merger_rate_density(run, CosmicHistory(n_redshift=101, binary_fraction=0.25)).rate
+    assert np.allclose(halved, 0.5 * base, rtol=1e-12, atol=0.0)
+    lighter = MergingBinaries(
+        delay_time=run.delay_time,
+        metallicity=run.metallicity,
+        evolved_mass=run.evolved_mass,
+        imf_fraction=_IMF_FRACTION / 2.0,
+        properties=run.properties,
+    )
+    assert np.allclose(merger_rate_density(lighter, history).rate, 0.5 * base, rtol=1e-12, atol=0.0)
+
+
+def test_a_weighted_binary_counts_as_that_fraction_of_one() -> None:
+    """Weights 1 and 0.5 give the rate of two copies of the first and one of the second, from twice the mass."""
+    history = CosmicHistory(n_redshift=101)
+    weighted = _run([0.0, 3e9], [0.01, 0.01], evolved_mass=1e5, weight=[1.0, 0.5])
+    copies = _run([0.0, 0.0, 3e9], [0.01, 0.01, 0.01], evolved_mass=2e5)
+    assert np.allclose(
+        merger_rate_density(weighted, history).rate, merger_rate_density(copies, history).rate, rtol=1e-12, atol=0.0
+    )
+
+
+def test_binaries_are_drawn_in_proportion_to_their_weights() -> None:
+    """Of two otherwise identical binaries weighted 1 and 0.25, the first is drawn four times as often."""
+    history = CosmicHistory(n_redshift=101)
+    run = _run([0.0, 0.0], [0.01, 0.01], evolved_mass=2e5, weight=[1.0, 0.25])
+    rate = merger_rate_density(run, history)
+    labels = draw_mergers(run, rate, np.random.default_rng(5), history=history)["label"]
+    first, second = np.sum(labels == 0), np.sum(labels == 1)
+    assert first + second > 5000
+    expected_share = 0.8
+    share = first / (first + second)
+    assert abs(share - expected_share) < 5.0 * np.sqrt(expected_share * (1 - expected_share) / (first + second))
 
 
 def test_a_delay_longer_than_the_universe_gives_no_mergers() -> None:
@@ -248,7 +286,32 @@ def test_an_inconsistent_run_is_refused(delays, metallicities, mass, match) -> N
             delay_time=np.asarray(delays, dtype=float),
             metallicity=np.asarray(metallicities, dtype=float),
             evolved_mass=mass,
+            imf_fraction=_IMF_FRACTION,
             properties={},
+        )
+
+
+@pytest.mark.parametrize(
+    ("imf_fraction", "weight", "match"),
+    [
+        (0.0, None, "IMF fraction"),
+        (1.5, None, "IMF fraction"),
+        (np.nan, None, "IMF fraction"),
+        (0.3, [1.0], "do not match"),
+        (0.3, [1.0, 0.0], "Weights"),
+        (0.3, [1.0, np.inf], "Weights"),
+    ],
+)
+def test_an_invalid_imf_fraction_or_weight_is_refused(imf_fraction, weight, match) -> None:
+    """The IMF fraction lies in (0, 1]; there is one finite, positive weight per binary."""
+    with pytest.raises(PopulationValidationError, match=match):
+        MergingBinaries(
+            delay_time=np.array([1.0, 2.0]),
+            metallicity=np.array([0.01, 0.01]),
+            evolved_mass=1.0,
+            imf_fraction=imf_fraction,
+            properties={},
+            weight=None if weight is None else np.asarray(weight),
         )
 
 
