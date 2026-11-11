@@ -20,41 +20,39 @@ them from the archive yourself and pass the path: the archive is too large to fe
 Normalisation
 -------------
 
-The archive's ``InitialConditions`` folder defines the binaries' sampling:
+:func:`read_iorio2023` normalises the run as Iorio et al.'s own published merger rates do (their
+Figs. 21 and 22):
 
-- primaries are drawn from a Kroupa IMF (slopes -1.3 below 0.5 solar masses and -2.3 above) from 5
-  to 150 solar masses;
-- mass ratios are drawn as :math:`q^{-0.1}` (Sana et al. 2012) on
-  :math:`[\max(2.2\,M_\odot/m_1, 0.1), 1]`.
+- **IMF fraction 0.25643.** This is their correction for the mass cuts (their footnote 13 and
+  ``InitialConditions/estimate_mass_correction.py``): the share of primary mass, in a Kroupa
+  population of 0.08 to 150 solar masses with Sana et al. (2012) mass ratios, held by binaries with a
+  primary of at least 5 solar masses and a secondary of at least 2.2. :func:`imf_fraction` computes
+  it exactly. They quote 0.255 +- 0.001, from a Monte Carlo of the same definition; the exact value,
+  not 0.255, reproduces their published rates.
+- **Binary fraction 0.4**, the default of :class:`~gwmock_pop.synthesis.convolution.CosmicHistory`.
 
-That folder also defines the full population those binaries are drawn from: primaries from 0.08 to
-150 solar masses and :math:`q` on :math:`[\max(0.08\,M_\odot/m_1, 0.1), 1]`.
+Neither value is stated for the rates; both are recovered from the cosmoRate output behind their
+figures (``gitlab.com/iogiul/iorio22_plot``, tag ``v3``, ``Merger_rate/cosmo_rate_bavera``):
 
-A simulated binary with primary :math:`m_1` stands for the binaries of that primary in the full
-population whose secondary is at least 2.2 solar masses. Lighter secondaries end as white dwarfs or
-less, and form no compact merger. So the binary carries weight :math:`w(m_1)`, the full population's
-probability of such a secondary: below 1 for primaries under 22 solar masses, and 1 above. The run
-then stands for :math:`N/F_5` full-population binaries, where :math:`N` is the number of simulated
-binaries and :math:`F_5` the full population's share of primaries of at least 5 solar masses.
-:func:`imf_fraction` gives the evolved mass's share of their mass,
-:math:`F_5 \langle m_1 + m_2 \rangle_\mathrm{run} / \langle m_1 + m_2 \rangle_\mathrm{full}`, which
-is 0.284.
+- cosmoRate names its output after the binary fraction, and theirs is ``MRD_spread_15Z_40_...``.
+- With both values, this module reproduces their binary neutron star and black hole + neutron star
+  curves below redshift 8 to a median of 0.3 %, and within 1.1 % in every bin.
+- The 0.3 % is this package's cosmology, which departs from cosmoRate's on purpose; see
+  :mod:`gwmock_pop.synthesis.convolution`. With cosmoRate's, the median is 0.02 %.
 
-Iorio et al. state 0.255 instead: the mass fraction of binaries that pass both mass cuts in the full
-population. That treats the run as if it held only those binaries. It does not: the run gives every
-primary above 5 solar masses a secondary above 2.2, so its binaries with primaries under 22 solar
-masses are over-represented, and the rest are counted against too much mass.
+Their text uses a binary fraction of 0.5 elsewhere, for the merger efficiencies of their Sec. 4.3, and
+explains neither value. A different normalisation is a different population: pass a different
+``binary_fraction``, or build :class:`~gwmock_pop.synthesis.convolution.MergingBinaries` with a
+different ``imf_fraction``.
 
-- Against 0.255 and unit weights, the merging binary neutron stars' rate is 5.7 % higher, and the
-  black hole + neutron star mergers' 11.3 % higher. Their progenitors' primaries have medians of 14
-  and 27 solar masses.
-- cosmoRate's 0.285 is the same construction for runs whose secondaries are not truncated, and the
-  value agrees.
-
-With these weights and a binary fraction of 0.5 (Iorio et al.'s), ``NSNSm.csv`` at
-:math:`\alpha_\mathrm{CE} = 1` gives 460,500 mergers per year, with 140 Gpc^-3 yr^-1 at
-:math:`z = 0.0075`. Zenodo record 21682194, built from the same binaries, holds 351,205, 0.76 times as
-many. The record's redshift distribution matches; its normalisation is not stated.
+The run's sampling does not hold exactly the binaries the IMF fraction counts. It gives every primary
+of at least 5 solar masses a secondary of at least 2.2, redrawing the mass ratio, where the
+correction counts only the binaries of the full population that pass both cuts. Weighting each binary
+by the full population's chance of so heavy a secondary, and normalising the run's mass accordingly,
+raises the binary neutron stars' rate by 5.7 % and the black hole + neutron star mergers' by 11.3 %.
+This module follows the authors' normalisation rather than correcting it: the correction rests on an
+assumption, that binaries with lighter secondaries contribute no merger, that nothing external
+checks.
 """
 
 from __future__ import annotations
@@ -78,16 +76,15 @@ IORIO2023_TABLES: dict[str, str] = {
 #: Initial mass, in solar masses, evolved in each run of the fiducial model (``total_evolved_mass.txt``).
 IORIO2023_EVOLVED_MASS = 22154859.025999993
 
-#: The initial-condition sampling of the deposit's ``InitialConditions``: Kroupa slopes and break,
-#: primary range of the full population and of the run, the q slope and its floor, and the full
-#: population's and the run's lightest secondary (solar masses).
+#: The sampling of the deposit's ``InitialConditions``: Kroupa slopes and break, the full population's
+#: primary range, the q slope and floor, its lightest secondary, and the run's mass cuts (solar masses).
 _KROUPA_SLOPES = (-1.3, -2.3)
 _KROUPA_BREAK = 0.5
 _FULL_PRIMARY_RANGE = (0.08, 150.0)
-_RUN_MIN_PRIMARY = 5.0
 _Q_SLOPE = -0.1
 _Q_MIN = 0.1
 _FULL_MIN_SECONDARY = 0.08
+_RUN_MIN_PRIMARY = 5.0
 _RUN_MIN_SECONDARY = 2.2
 #: Points on the primary-mass grid the IMF fraction is integrated over.
 _IMF_GRID = 400_001
@@ -104,58 +101,24 @@ _PROPERTIES = {
 }
 
 
-def _q_floor(primary: np.ndarray, lightest_secondary: float) -> np.ndarray:
-    return np.maximum(lightest_secondary / primary, _Q_MIN)
-
-
-def _q_tail(floor: np.ndarray, threshold: np.ndarray) -> np.ndarray:
-    """P(q >= threshold) for q ~ q^-0.1 on [floor, 1]; 1 where the floor is already at or above it."""
-    exponent = _Q_SLOPE + 1.0
-    floor = np.minimum(floor, 1.0)
-    span = 1.0 - floor**exponent
-    tail = 1.0 - np.maximum(threshold, floor) ** exponent
-    return np.where(span > 0.0, tail / np.where(span > 0.0, span, 1.0), 1.0)
-
-
-def _q_mean(floor: np.ndarray) -> np.ndarray:
-    """Mean of q ~ q^-0.1 on [floor, 1]; 1 where the floor is 1."""
-    floor = np.minimum(floor, 1.0)
-    span = (1.0 - floor ** (_Q_SLOPE + 1.0)) / (_Q_SLOPE + 1.0)
-    first = (1.0 - floor ** (_Q_SLOPE + 2.0)) / (_Q_SLOPE + 2.0)
-    return np.where(span > 0.0, first / np.where(span > 0.0, span, 1.0), 1.0)
-
-
-def secondary_weight(primary: np.ndarray) -> np.ndarray:
-    """The full population's probability that a binary of this primary mass has a secondary of 2.2 or more.
-
-    Args:
-        primary: Primary ZAMS mass, solar masses.
-
-    Returns:
-        The weight of a simulated binary with that primary.
-    """
-    primary = np.asarray(primary, dtype=float)
-    return _q_tail(_q_floor(primary, _FULL_MIN_SECONDARY), _q_floor(primary, _RUN_MIN_SECONDARY))
-
-
 @functools.cache
 def imf_fraction() -> float:
-    """The evolved mass's share of the mass of the full population the run stands for.
+    """Iorio et al.'s correction for their mass cuts, computed exactly from its definition.
 
     Returns:
-        F_5 <m1 + m2>_run / <m1 + m2>_full, integrated over the Kroupa IMF.
+        The share of primary mass, in the full population, held by binaries passing both mass cuts.
     """
     primary = np.geomspace(*_FULL_PRIMARY_RANGE, _IMF_GRID)
     low, high = _KROUPA_SLOPES
     density = np.where(primary < _KROUPA_BREAK, (primary / _KROUPA_BREAK) ** low, (primary / _KROUPA_BREAK) ** high)
-    in_run = primary >= _RUN_MIN_PRIMARY
-    full_system = primary * (1.0 + _q_mean(_q_floor(primary, _FULL_MIN_SECONDARY)))
-    run_system = primary * (1.0 + _q_mean(_q_floor(primary, _RUN_MIN_SECONDARY)))
-    full_count = np.trapezoid(density, primary)
-    run_count = np.trapezoid(density[in_run], primary[in_run])
-    mean_full = np.trapezoid(density * full_system, primary) / full_count
-    mean_run = np.trapezoid(density[in_run] * run_system[in_run], primary[in_run]) / run_count
-    return float(run_count / full_count * mean_run / mean_full)
+    # P(q >= the run's floor) for q ~ q^-0.1 on the full population's [floor, 1]
+    exponent = _Q_SLOPE + 1.0
+    full_floor = np.minimum(np.maximum(_FULL_MIN_SECONDARY / primary, _Q_MIN), 1.0)
+    run_floor = np.maximum(np.maximum(_RUN_MIN_SECONDARY / primary, _Q_MIN), full_floor)
+    span = 1.0 - full_floor**exponent
+    passes = np.where(span > 0.0, (1.0 - run_floor**exponent) / np.where(span > 0.0, span, 1.0), 0.0)
+    passes = np.where(primary >= _RUN_MIN_PRIMARY, passes, 0.0)
+    return float(np.trapezoid(density * primary * passes, primary) / np.trapezoid(density * primary, primary))
 
 
 def read_iorio2023(path: str | os.PathLike[str], alpha: float = 1.0) -> MergingBinaries:
@@ -163,8 +126,7 @@ def read_iorio2023(path: str | os.PathLike[str], alpha: float = 1.0) -> MergingB
 
     The file must match its pin in :data:`IORIO2023_TABLES`. A binary's delay is its
     formation-to-compact-binary time ``BWorldtime`` plus its gravitational-wave inspiral time
-    ``GWtime``. Its weight is :func:`secondary_weight` of its primary, the heavier of its two stars'
-    ZAMS masses (``Mzams_0``, ``Mzams_1``), and the run's IMF fraction is :func:`imf_fraction`.
+    ``GWtime``. The run's IMF fraction is :func:`imf_fraction`.
 
     Args:
         path: ``BHNSm.csv`` or ``NSNSm.csv`` from ``simulation_F``.
@@ -185,7 +147,7 @@ def read_iorio2023(path: str | os.PathLike[str], alpha: float = 1.0) -> MergingB
     digest = hashlib.sha256(table.read_bytes()).hexdigest()
     if digest != expected:
         raise PopulationValidationError(f"{table} has SHA-256 {digest}, not the pinned {expected}.")
-    columns = ("alpha", "Z", "BWorldtime", "GWtime", "Mzams_0", "Mzams_1", *_PROPERTIES)
+    columns = ("alpha", "Z", "BWorldtime", "GWtime", *_PROPERTIES)
     data = np.genfromtxt(table, delimiter=",", names=True, usecols=columns, dtype=None, encoding="utf-8")
     selected = data[data["alpha"] == alpha]
     if selected.size == 0:
@@ -196,7 +158,6 @@ def read_iorio2023(path: str | os.PathLike[str], alpha: float = 1.0) -> MergingB
         evolved_mass=IORIO2023_EVOLVED_MASS,
         imf_fraction=imf_fraction(),
         properties={name: np.asarray(selected[column]) for column, name in _PROPERTIES.items()},
-        weight=secondary_weight(np.maximum(selected["Mzams_0"], selected["Mzams_1"])),
     )
 
 

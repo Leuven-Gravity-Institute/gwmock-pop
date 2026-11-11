@@ -19,16 +19,15 @@ sampling in its ``cosmo_functions.py``, branch ``v2``), with that code's isolate
   centre of each bin with mass :math:`\psi(z)\,|\mathrm{d}t/\mathrm{d}z|\,\Delta z` per comoving
   volume, and the binaries of metallicity :math:`Z` merge at the formation lookback time less their
   delay. Mergers with a negative lookback time, which have not happened yet, are dropped.
-- Each simulated metallicity :math:`Z` contributes :math:`\eta_Z = \sum_{i \in Z} w_i / M \cdot
-  f_\mathrm{bin} f_\mathrm{IMF}` merging binaries per solar mass of star formation. Here :math:`w_i`
-  is binary :math:`i`'s weight (1 unless the run's sampling needs one, below), :math:`M` the mass
-  evolved at :math:`Z`, :math:`f_\mathrm{bin}` the binary fraction (a property of the stars, in
-  :class:`CosmicHistory`), and :math:`f_\mathrm{IMF}` the evolved mass's share of a full
-  population (a property of the run's sampling, in :class:`MergingBinaries`). cosmoRate has every
-  :math:`w_i = 1`.
+- Each simulated metallicity :math:`Z` contributes :math:`\eta_Z = N_Z / M \cdot f_\mathrm{bin}
+  f_\mathrm{IMF}` merging binaries per solar mass of star formation. Here :math:`N_Z` is the number
+  of merging binaries at :math:`Z`, :math:`M` the mass evolved there, :math:`f_\mathrm{bin}` the
+  binary fraction (a property of the stars, in :class:`CosmicHistory`), and :math:`f_\mathrm{IMF}`
+  the evolved mass's share of the full population it is drawn from (a property of the run's
+  sampling, in :class:`MergingBinaries`).
 
-The binary fraction defaults to 0.5, the value Iorio et al. (2023) state and cosmoRate's for
-isolated binaries. The metallicity relation is Madau & Fragos's fit to the mass-weighted mean of
+The binary fraction defaults to 0.4, the value behind Iorio et al.'s (2023) published merger rates
+(see :mod:`gwmock_pop.synthesis.iorio2023`). The metallicity relation is Madau & Fragos's fit to the mass-weighted mean of
 :math:`Z/Z_\odot`, on the Anders & Grevesse (1989) solar scale. That is why the log-normal is shifted
 down by :math:`\ln(10)\,\sigma_Z^2/2`, which keeps its mean at the fit, and why
 :math:`Z_\odot = 0.019`.
@@ -42,8 +41,20 @@ by :func:`gwmock_pop.synthesis.iorio2023.read_iorio2023`:
   probability; two draws of this module differ from each other by 0.0015.
 - cosmoRate's own 100 edges give 0.010 instead: a rate constant over bins 0.15 wide misplaces
   mergers around the peak at :math:`z \approx 2`. The difference stops falling at about 750 edges.
-- The count is not the record's: see :mod:`gwmock_pop.synthesis.iorio2023` for the normalisation
-  and how it differs from the record's.
+- With :func:`gwmock_pop.synthesis.iorio2023.read_iorio2023`'s normalisation and the defaults, the
+  count is 350,400 mergers per year, 0.23 % below the record, and the rate at :math:`z = 0.0075` is
+  106.0 Gpc^-3 yr^-1.
+
+Two departures from cosmoRate, each deliberate:
+
+- **Redshift grid.** 1001 edges by default, against cosmoRate's 100; see above.
+- **Cosmology.** One flat Planck 2018 cosmology, with matter density 0.3111 (cold matter and massive
+  neutrinos), gives both the lookback times and :math:`\mathrm{d}t/\mathrm{d}z`. cosmoRate takes its
+  lookback times from astropy's ``Planck18``, which includes the neutrinos and radiation, but
+  computes :math:`\mathrm{d}t/\mathrm{d}z` by hand from ``Planck18.Om0`` = 0.30966 with
+  :math:`\Omega_\Lambda = 1 - \Omega_m`, leaving them out. The two disagree; here they cannot.
+  The rate is 0.25 % lower than cosmoRate's for the same run, nearly uniformly in redshift.
+  Substituting cosmoRate's two expressions makes the two codes agree bin for bin.
 
 The cosmology is :mod:`gwmock_pop.cosmology.flat_lambda_cdm` at the Planck 2018 parameters.
 """
@@ -85,12 +96,9 @@ class MergingBinaries:
         metallicity: Absolute metallicity :math:`Z` the binary was evolved at.
         evolved_mass: Total initial mass, in solar masses, of the binaries evolved at each
             metallicity (the same for every metallicity).
-        imf_fraction: :math:`f_\mathrm{IMF}`: ``evolved_mass`` divided by the mass of all the binaries
-            it stands for, once each binary is weighted by ``weight``.
+        imf_fraction: :math:`f_\mathrm{IMF}`: ``evolved_mass`` divided by the mass of the full
+            population the run is drawn from.
         properties: Further per-binary columns, carried to each merger drawn from the binary.
-        weight: How many of the binaries it stands for each simulated binary counts as, relative to
-            one; ``None`` for 1 each. A run whose sampling over-represents some binaries weights
-            them down.
     """
 
     delay_time: np.ndarray
@@ -98,7 +106,6 @@ class MergingBinaries:
     evolved_mass: float
     imf_fraction: float
     properties: dict[str, np.ndarray]
-    weight: np.ndarray | None = None
 
     def __post_init__(self) -> None:
         """Refuse an empty run, misaligned columns, or a non-positive mass or delay.
@@ -110,8 +117,6 @@ class MergingBinaries:
         if n_rows == 0:
             raise PopulationValidationError("A population-synthesis run must hold at least one merging binary.")
         lengths = {"metallicity": self.metallicity.shape[0], **{k: v.shape[0] for k, v in self.properties.items()}}
-        if self.weight is not None:
-            lengths["weight"] = self.weight.shape[0]
         misaligned = {name: length for name, length in lengths.items() if length != n_rows}
         if misaligned:
             raise PopulationValidationError(f"Columns {misaligned} do not match the {n_rows} delay times.")
@@ -123,13 +128,6 @@ class MergingBinaries:
             raise PopulationValidationError("The evolved mass must be finite and positive.")
         if not (np.isfinite(self.imf_fraction) and 0 < self.imf_fraction <= 1):
             raise PopulationValidationError("The IMF fraction must lie in (0, 1].")
-        if self.weight is not None and not (np.all(np.isfinite(self.weight)) and np.all(self.weight > 0)):
-            raise PopulationValidationError("Weights must be finite and positive.")
-
-    @property
-    def weights(self) -> np.ndarray:
-        """Each binary's weight: ``weight``, or 1 each."""
-        return np.ones(self.delay_time.shape[0]) if self.weight is None else self.weight
 
 
 @dataclass(frozen=True)
@@ -139,7 +137,8 @@ class CosmicHistory:
     Attributes:
         metallicity_spread: :math:`\sigma_Z`, the spread of :math:`\log_{10} Z` at a redshift.
         solar_metallicity: :math:`Z_\odot` (cosmoRate's 0.019).
-        binary_fraction: :math:`f_\mathrm{bin}`, the fraction of the stellar mass formed in binaries.
+        binary_fraction: :math:`f_\mathrm{bin}`, the fraction of the stellar mass formed in binaries;
+            0.4 by default, as in Iorio et al.'s published rates.
         max_redshift: Highest formation redshift.
         n_redshift: Number of redshift bin edges, from ``max_redshift`` to 0.
         hubble_constant: Hubble constant in km / s / Mpc.
@@ -148,7 +147,7 @@ class CosmicHistory:
 
     metallicity_spread: float = 0.2
     solar_metallicity: float = 0.019
-    binary_fraction: float = 0.5
+    binary_fraction: float = 0.4
     max_redshift: float = 15.0
     n_redshift: int = 1001
     hubble_constant: float = PLANCK18_H0_KM_S_MPC
@@ -263,23 +262,18 @@ def merger_rate_density(binaries: MergingBinaries, history: CosmicHistory | None
             [mean_high + 1000.0 * history.metallicity_spread],
         ]
     )
-    members = [binaries.metallicity == z for z in metallicities]
-    delays = [binaries.delay_time[member] for member in members]
-    binary_weights = [binaries.weights[member] for member in members]
+    delays = [binaries.delay_time[binaries.metallicity == z] for z in metallicities]
     efficiency = (
-        np.array([w.sum() for w in binary_weights])
-        / binaries.evolved_mass
-        * history.binary_fraction
-        * binaries.imf_fraction
+        np.array([d.size for d in delays]) / binaries.evolved_mass * history.binary_fraction * binaries.imf_fraction
     )
 
     weights = np.zeros((n_bins, n_bins, metallicities.size))
     for i in range(n_bins):
         probabilities = _metallicity_probabilities(formation_redshift[i], metallicities, probability_edges, history)
-        for m, (delay, binary_weight) in enumerate(zip(delays, binary_weights, strict=True)):
-            counts, _ = np.histogram(formation_lookback[i] - delay, bins=lookback_edges, weights=binary_weight)
+        for m, delay in enumerate(delays):
+            counts, _ = np.histogram(formation_lookback[i] - delay, bins=lookback_edges)
             weights[:, i, m] = (
-                counts[::-1] / binary_weight.sum() * efficiency[m] * probabilities[m] * formed_mass[i] / merger_widths
+                counts[::-1] / delay.size * efficiency[m] * probabilities[m] * formed_mass[i] / merger_widths
             )
     rate = weights.sum(axis=(1, 2)) * _MPC3_PER_GPC3
     return MergerRate(
@@ -367,7 +361,7 @@ def draw_mergers(
     of that number, and its redshift within the bin in proportion to dV_c/dz / (1 + z). Then, as
     cosmoRate's ``SFR_pw`` sampling does, its formation bin and metallicity are drawn by their
     part of the bin's rate, and its binary from those of that metallicity whose merger falls in the
-    bin, in proportion to their weights (uniformly, when the run has none).
+    bin, uniformly.
 
     Args:
         binaries: The run the rate was computed from.
@@ -412,9 +406,7 @@ def draw_mergers(
             i, m = divmod(int(cell), n_metallicities)
             candidates = by_metallicity[m]
             in_bin = _lookback_bin(rate.formation_lookback[i] - binaries.delay_time[candidates], rate.lookback_edges)
-            candidates = candidates[in_bin == lookback_bin]
-            candidate_weights = binaries.weights[candidates]
-            rows[chosen] = rng.choice(candidates, size=chosen.size, p=candidate_weights / candidate_weights.sum())
+            rows[chosen] = rng.choice(candidates[in_bin == lookback_bin], size=chosen.size)
         metallicity_index[members] = metallicity_bin
 
     columns = {name: values[rows] for name, values in binaries.properties.items()}
