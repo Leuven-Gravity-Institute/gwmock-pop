@@ -1,26 +1,32 @@
 # Published Populations
 
-gwmock-pop pins two published population products by digest, and draws from
-either with the same seeded draw: a Poisson count per class over the span, rows
-sampled without replacement, and merger times uniform in the span.
+gwmock-pop pins three published population products by digest, and draws from
+any of them with the same seeded draw: a Poisson count per class over the span,
+rows sampled without replacement, and merger times uniform in the span.
 
-| Product                                                                                                                      | Entries                   | Classes                                                                                               |
-| ---------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Einstein Telescope design-comparison catalogues (ET document 18321)                                                          | `COBA_CATALOGUES`         | binary neutron stars, binary black holes                                                              |
-| [Dupletsa et al. 2026](https://arxiv.org/abs/2607.27311), [Zenodo 21682194](https://zenodo.org/records/21682194) (CC BY 4.0) | `DUPLETSA2026_CATALOGUES` | binary neutron stars, Pop I/II binary black holes, Pop III binary black holes, primordial black holes |
+| Product                                                                                                                                 | Entries                   | Classes                                                                                               |
+| --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Einstein Telescope design-comparison catalogues (ET document 18321)                                                                     | `COBA_CATALOGUES`         | binary neutron stars, binary black holes                                                              |
+| [Dupletsa et al. 2026](https://arxiv.org/abs/2607.27311), [Zenodo 21682194](https://zenodo.org/records/21682194) (CC BY 4.0)            | `DUPLETSA2026_CATALOGUES` | binary neutron stars, Pop I/II binary black holes, Pop III binary black holes, primordial black holes |
+| Black hole + neutron star mergers from Iorio et al. 2023's SEVN run, [Zenodo 24127546](https://zenodo.org/records/24127546) (CC BY 4.0) | `IORIO2023_NSBH`          | black hole + neutron star mergers                                                                     |
 
 ```python
-from gwmock_pop.catalogue import DUPLETSA2026_CATALOGUES, draw_catalogue_population
+from gwmock_pop.catalogue import DUPLETSA2026_CATALOGUES, IORIO2023_NSBH, draw_catalogue_population
 
 draw = draw_catalogue_population(
     seed=1,
     span_seconds=30 * 86400,
-    catalogues=DUPLETSA2026_CATALOGUES,
+    catalogues=(*DUPLETSA2026_CATALOGUES, IORIO2023_NSBH),
 )
 draw.parameters["detector_frame_mass_1"], draw.population_class
 ```
 
-## The Zenodo record
+Dupletsa et al.'s binary neutron stars and the black hole + neutron star mergers
+come from the same SEVN run (Iorio et al. 2023, fiducial model, common-envelope
+efficiency 1), turned into mergers by the same method, so the two classes share
+their normalisation.
+
+## The Dupletsa et al. Zenodo record
 
 The record publishes its four population files in one archive, `injections.zip`.
 gwmock-pop downloads the archive once, checks it against its pinned SHA-256, and
@@ -53,3 +59,14 @@ What the reading decides:
   the PCP(BSK24) equation of state. To use another equation of state, recompute
   them from the masses (see
   [Tidal Deformabilities from an Equation of State](equation_of_state.md)).
+
+## Black hole + neutron star mergers
+
+[Zenodo 24127546](https://zenodo.org/records/24127546) holds one year of black
+hole + neutron star mergers, 39,027 of them out to redshift 15. They were made
+by [Population Synthesis](population_synthesis.md) from the merging black hole +
+neutron star binaries of Iorio et al. (2023). The file is in the draw's own
+columns and is read as is. Its spins are aligned, uniform in (−0.05, 0.05). The
+black holes' tidal deformability is zero, and the neutron stars' is from
+PCP(BSK24). The record's README documents every step and the checks run on it,
+and the file carries its provenance.

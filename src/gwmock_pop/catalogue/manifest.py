@@ -308,6 +308,29 @@ DUPLETSA2026_CATALOGUES: tuple[CatalogueFile, ...] = (
 )
 
 
+#: Zenodo record of the black hole + neutron star mergers drawn from Iorio et al. (2023)'s SEVN run (CC BY 4.0).
+IORIO2023_NSBH_RECORD = "https://zenodo.org/records/24127546"
+
+#: One year of black hole + neutron star mergers: the merging NSBHs of Iorio et al.'s fiducial SEVN model
+#: (common-envelope efficiency 1), convolved with the cosmic star-formation history by
+#: :mod:`gwmock_pop.synthesis` with the normalisation of Iorio et al.'s published rates. Dupletsa et al.'s
+#: binary neutron stars come from the same run by the same method, so the two classes share their
+#: normalisation; draw them together as ``(*DUPLETSA2026_CATALOGUES, IORIO2023_NSBH)``. Spins are aligned,
+#: uniform in (-0.05, 0.05); Lambda2 is from PCP(BSK24).
+IORIO2023_NSBH = CatalogueFile(
+    name="iorio2023_nsbh",
+    source_class="NSBH",
+    filename="nsbh_iorio2023_F_alpha1.h5",
+    sha256="91057e685e5298a9f3b5d5611d41f414e9e10fc25d50f777b285b0afd23c50ac",
+    size_bytes=4064328,
+    n_rows=39027,
+    extra_columns=("Lambda1", "Lambda2"),
+    download_url="https://zenodo.org/records/24127546/files/nsbh_iorio2023_F_alpha1.h5?download=1",
+    record=IORIO2023_NSBH_RECORD,
+    citation="https://doi.org/10.5281/zenodo.24127546",
+)
+
+
 def catalogue_url(name: str) -> str:
     """Return the pinned download URL for a named catalogue.
 
@@ -338,6 +361,8 @@ __all__ = [
     "DUPLETSA2026_PBH",
     "DUPLETSA2026_POP3_BBH",
     "DUPLETSA2026_RECORD",
+    "IORIO2023_NSBH",
+    "IORIO2023_NSBH_RECORD",
     "SCIENCE_REFERENCE_CITATION",
     "TDS_BASE_URL",
     "TDS_CATALOGUE_DOCUMENT",
