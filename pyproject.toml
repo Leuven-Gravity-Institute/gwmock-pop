@@ -34,7 +34,7 @@ hdf5 = ["h5py>=3.16.0"] # a faster HDF5 backend, which also compresses
 # Tidal deformabilities from a named equation of state (lalsimulation). 8.0.0 rebuilt the neutron-star
 # family, changing its call and moving Lambda by up to 0.2 % from 7.x; one major version keeps one code path
 # and one set of values. It names PCP_BSK24_BSK24 and XMLSLZ_DDLZ1_BSK24 (checked). No Windows wheels.
-eos = ["lalsuite>=8.0.1"]
+eos = ["lalsuite>=8.0.2"]
 
 [dependency-groups]
 dev = [
