@@ -41,7 +41,7 @@ dev = [
   # For the HDF5 tests. h5py publishes no wheel for Python 3.15 yet, where those tests skip.
   "h5py>=3.16.0; python_version < '3.15'",
   # For the equation-of-state tests (the eos extra); lalsuite publishes no Windows wheels.
-  "lalsuite>=8.0.0; sys_platform != 'win32'",
+  "lalsuite>=8.0.1; sys_platform != 'win32'",
   "astropy>=8.0.2",
   "hypothesis>=6.170.15",
   "prek>=0.5.10",
@@ -51,7 +51,7 @@ dev = [
   "pytest-github-actions-annotate-failures>=0.4.2",
   "mutmut>=3.8.1",
 ]
-docs = ["zensical>=0.1.0", "mkdocstrings-python>=2.0.10"]
+docs = ["zensical>=0.1.1", "mkdocstrings-python>=2.0.10"]
 build = ["hatch>=1.18.2"]
 release = ["git-cliff>=2.14.2"]
 
