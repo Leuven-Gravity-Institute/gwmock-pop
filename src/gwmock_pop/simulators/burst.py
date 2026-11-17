@@ -42,6 +42,10 @@ STANDARD_CANDLE_LABEL = "standard_candle"
 #: averaged over orientations mean what they say, and the hrss follows from them.
 FAMILY_KEYS = frozenset({"burst_model", "quality_factor", "frequency", "low_frequency", "bandwidth", "duration"})
 
+#: The shape each model needs from its family: a sine-Gaussian's quality factor, and a white-noise
+#: burst's band and duration. A sine-Gaussian that does not fix its frequency draws one.
+_REQUIRED_SHAPE = {SINE_GAUSSIAN: ("quality_factor",), WHITE_NOISE_BURST: ("low_frequency", "bandwidth", "duration")}
+
 #: Largest ``max_distance``, Mpc. The volume is Euclidean and redshift is ignored; at 100 Mpc
 #: (z of about 0.02) the luminosity distance and the volume already differ from Euclidean by a few
 #: per cent, so a farther component needs a cosmological draw this population does not make.
@@ -132,9 +136,9 @@ def _central_frequency(event: Mapping[str, Any]) -> float:
 def _check_component(component: Mapping[str, Any], index: int) -> tuple[dict[str, Any], float, float]:
     """Return a component's family, rate density and farthest distance, after checking them."""
     unknown = set(component) - {"family", "rate_density", "max_distance"}
-    if unknown or "family" not in component:
+    if unknown or not isinstance(component.get("family"), Mapping):
         raise ValueError(
-            f"component {index} must have 'family', 'rate_density' and 'max_distance', got {sorted(component)}."
+            f"component {index} must have a mapping 'family', 'rate_density' and 'max_distance', got {sorted(component)}."
         )
     family = dict(component["family"])
     model = family.get("burst_model")
@@ -149,6 +153,12 @@ def _check_component(component: Mapping[str, Any], index: int) -> tuple[dict[str
             f"component {index}: a family fixes only its model and shape ({sorted(FAMILY_KEYS)}); "
             f"it must not fix {fixed}, which the population draws."
         )
+    required = _REQUIRED_SHAPE[model]
+    missing = sorted(set(required) - set(family))
+    if missing:
+        raise ValueError(f"component {index}: a {model!r} family must fix {missing}.")
+    for key in sorted(set(family) - {"burst_model"}):
+        family[key] = _positive_finite(family[key], f"component {index}: {key}")
     rate_density = float(component.get("rate_density", math.nan))
     if not (math.isfinite(rate_density) and rate_density >= 0):
         raise ValueError(f"component {index}: rate_density must be finite and non-negative, got {rate_density!r}.")

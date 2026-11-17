@@ -224,6 +224,12 @@ def test_the_draw_is_reproducible_and_may_be_empty():
         ({"components": _components(families=(SG | {"hrss": 1e-22},))}, "hrss"),
         ({"components": _components(families=(WNB | {"seed": 1},))}, "seed"),
         ({"sine_gaussian_frequency_range": (0.0, 10.0)}, "sine_gaussian_frequency_range"),
+        ({"components": _components(families=({"burst_model": "white_noise_burst"},))}, "low_frequency"),
+        ({"components": _components(families=({"burst_model": "sine_gaussian"},))}, "quality_factor"),
+        ({"components": _components(families=(WNB | {"bandwidth": -100.0},))}, "bandwidth"),
+        ({"components": _components(families=(SG | {"frequency": math.nan},))}, "frequency"),
+        ({"components": _components(families=(SG | {"quality_factor": 0.0},))}, "quality_factor"),
+        ({"components": [{"family": "sine_gaussian", "rate_density": 1.0, "max_distance": 1.0}]}, "mapping"),
     ],
 )
 def test_the_draw_rejects_invalid_settings(overrides, match):
