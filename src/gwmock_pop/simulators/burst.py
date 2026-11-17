@@ -22,6 +22,7 @@ keys of ``gwmock-signal``'s ``BurstSimulator``, which injects them.
 
 from __future__ import annotations
 
+import copy
 import math
 from collections.abc import Mapping, Sequence
 from typing import Any
@@ -333,8 +334,9 @@ class StandardCandleBurstPopulation:
 
     @property
     def metadata(self) -> dict[str, Any]:
-        """The settings and seed that fix the population."""
-        return {**self._settings, "seed": self._seed, "generator": f"{__name__}.draw_standard_candle_population"}
+        """The settings and seed that fix the population, as a copy a caller may change freely."""
+        settings = copy.deepcopy(self._settings)
+        return {**settings, "seed": self._seed, "generator": f"{__name__}.draw_standard_candle_population"}
 
     def simulate(self, n_samples: int | None = None, seed: int | None = None, **_: Any) -> dict[str, np.ndarray]:
         """Return the whole population, one object column per name in :data:`PARAMETER_NAMES`.

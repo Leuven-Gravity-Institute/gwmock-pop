@@ -287,3 +287,15 @@ def test_the_population_checks_its_settings_when_built(overrides, match):
     """A bad setting fails when the population is built, before anything is simulated."""
     with pytest.raises(ValueError, match=match):
         _population(**overrides)
+
+
+def test_changing_the_metadata_does_not_change_the_population():
+    """The metadata is a copy: editing it leaves the next draw unchanged."""
+    population = _population()
+    before = population.simulate()
+    metadata = population.metadata
+    metadata["components"][0]["rate_density"] = 0.0
+    metadata["components"][0]["family"]["quality_factor"] = 3.0
+    after = population.simulate()
+    assert all(np.array_equal(before[name], after[name]) for name in PARAMETER_NAMES)
+    assert population.metadata["components"][0]["rate_density"] == RATE
