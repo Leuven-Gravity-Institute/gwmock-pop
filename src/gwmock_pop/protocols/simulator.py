@@ -57,6 +57,8 @@ class GWPopSimulator(Protocol):
     +------------------+-------------------------------------------+
     | ``"cosmic_string"`` | Cosmic string burst                    |
     +------------------+-------------------------------------------+
+    | ``"burst"``      | Unmodelled burst (ad hoc morphologies)    |
+    +------------------+-------------------------------------------+
 
     **Array contract**
 
