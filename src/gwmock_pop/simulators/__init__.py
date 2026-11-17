@@ -6,6 +6,7 @@ from importlib import import_module
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from .burst import StandardCandleBurstPopulation
     from .cbc import BBHSimulator, BNSSimulator, CBCSimulator, NSBHSimulator
     from .graph import GraphSimulator
     from .mixture import MixtureSimulator
@@ -21,6 +22,7 @@ __all__ = [
     "NSBHSimulator",
     "PoissonEventSampler",
     "Simulator",
+    "StandardCandleBurstPopulation",
 ]
 
 
@@ -35,6 +37,7 @@ def __getattr__(name: str) -> Any:
         "NSBHSimulator": ".cbc",
         "PoissonEventSampler": ".poisson_event",
         "Simulator": ".simulator",
+        "StandardCandleBurstPopulation": ".burst",
     }
     if name not in module_map:
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

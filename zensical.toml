@@ -58,6 +58,7 @@ nav = [
     { "Equation of State" = "user_guide/equation_of_state.md" },
     { "Published Populations" = "user_guide/published_populations.md" },
     { "Population Synthesis" = "user_guide/population_synthesis.md" },
+    { "Burst Populations" = "user_guide/burst_populations.md" },
   ] },
   { "API Reference" = [
     { "Overview" = "api/index.md" },
@@ -158,6 +159,7 @@ nav = [
       { "Graph Simulator" = "api/simulators/graph.md" },
       { "Simulator Base" = "api/simulators/simulator.md" },
       { "CBC Simulators" = "api/simulators/cbc.md" },
+      { "Burst Populations" = "api/simulators/burst.md" },
     ] },
     { "Utilities" = [
       { "Overview" = "api/utils/index.md" },

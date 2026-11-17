@@ -31,7 +31,10 @@ class GWPopSimulator(Protocol):
     **How gwmock uses this protocol**
 
     ``gwmock`` drives a population run by calling ``simulate(n_samples)`` once
-    and slicing the returned mapping into per-event dicts for ``gwmock-signal``::
+    and slicing the returned mapping into per-event dicts for ``gwmock-signal``.
+    ``n_samples`` is the configuration's ``n-samples``, or ``None`` when the
+    configuration leaves it out, for a backend that fixes its own size (a
+    catalogue loaded whole, or a population whose count is drawn from a rate)::
 
         population = sim.simulate(n_samples=1000)
         for i in range(n_samples):
@@ -56,6 +59,8 @@ class GWPopSimulator(Protocol):
     | ``"supernova"``  | Core-collapse supernova                   |
     +------------------+-------------------------------------------+
     | ``"cosmic_string"`` | Cosmic string burst                    |
+    +------------------+-------------------------------------------+
+    | ``"burst"``      | Unmodelled burst (ad hoc morphologies)    |
     +------------------+-------------------------------------------+
 
     **Array contract**
@@ -97,8 +102,8 @@ class GWPopSimulator(Protocol):
         """
         ...
 
-    def simulate(self, n_samples: int, **kwargs: Any) -> Mapping[str, PopulationArray]:
-        """Draw ``n_samples`` parameter sets from the population model.
+    def simulate(self, n_samples: int | None, **kwargs: Any) -> Mapping[str, PopulationArray]:
+        """Draw ``n_samples`` parameter sets from the population model, or the backend's own number.
 
         The returned mapping must satisfy two invariants:
 
@@ -106,17 +111,20 @@ class GWPopSimulator(Protocol):
             ``list(result.keys()) == list(self.parameter_names)``.
         2. **Shape contract**: every value is a 1-D ``numpy.ndarray`` or
            ``jax.Array`` with leading dimension ``n_samples``, i.e.
-           ``result[k].shape[0] == n_samples`` for all ``k``.
+           ``result[k].shape[0] == n_samples`` for all ``k``; with
+           ``n_samples=None``, the same leading dimension for every ``k``.
 
         Args:
-            n_samples: Number of independent source realizations to draw.
-                Must be a positive integer.
+            n_samples: Number of independent source realizations to draw, a
+                positive integer; or ``None`` for a backend that fixes its own
+                size, which may refuse an integer.
             **kwargs: Optional backend-specific keyword arguments (e.g. a JAX
                 PRNG key or a configuration override).  gwmock does not pass
                 any keyword arguments; they exist for direct library use.
 
         Returns:
             Mapping from parameter name to 1-D ``numpy.ndarray`` or
-            ``jax.Array`` of length ``n_samples``.
+            ``jax.Array`` of length ``n_samples``, or of the backend's own
+            length when ``n_samples`` is ``None``.
         """
         ...
