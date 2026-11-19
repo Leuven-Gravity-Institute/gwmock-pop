@@ -44,7 +44,7 @@ dev = [
   "lalsuite>=8.0.2; sys_platform != 'win32'",
   "astropy>=8.0.2",
   "hypothesis>=6.170.15",
-  "prek>=0.5.10",
+  "prek>=0.5.11",
   "pytest-cov>=7.1.0",
   "pytest-mock>=3.17.0",
   "pytest>=9.2.0",
