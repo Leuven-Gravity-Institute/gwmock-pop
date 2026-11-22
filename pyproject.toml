@@ -43,7 +43,7 @@ dev = [
   # For the equation-of-state tests (the eos extra); lalsuite publishes no Windows wheels.
   "lalsuite>=8.0.2; sys_platform != 'win32'",
   "astropy>=8.0.3",
-  "hypothesis>=6.170.15",
+  "hypothesis>=6.170.16",
   "prek>=0.5.11",
   "pytest-cov>=7.1.0",
   "pytest-mock>=3.17.0",
