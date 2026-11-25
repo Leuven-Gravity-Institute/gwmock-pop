@@ -26,6 +26,29 @@ come from the same SEVN run (Iorio et al. 2023, fiducial model, common-envelope
 efficiency 1), turned into mergers by the same method, so the two classes share
 their normalisation.
 
+## Drawing the sky position and orientation
+
+A catalogue row also fixes the source's sky position, inclination, polarisation
+angle and coalescence phase. When the catalogues are public and the drawn data
+are analysed without the truth, an event matched to its row would give these
+away. With `draw_orientation=True`, each row's five angles are drawn from the
+seed instead: isotropic sky, inclination uniform in $\cos\iota$, polarisation
+angle and phase uniform. The catalogue's values for them are not used.
+
+```python
+draw = draw_catalogue_population(
+    seed=1,
+    span_seconds=30 * 86400,
+    catalogues=(*DUPLETSA2026_CATALOGUES, IORIO2023_NSBH),
+    draw_orientation=True,
+)
+```
+
+The angles are drawn once, after every class's rows and merger times, so the
+rows, masses, spins, distances and times are those of the draw without the
+option, bit for bit. The draw records the option in `draw.draw_orientation`, and
+the command line's provenance records it as `draw_orientation`.
+
 ## The Dupletsa et al. Zenodo record
 
 The record publishes its four population files in one archive, `injections.zip`.

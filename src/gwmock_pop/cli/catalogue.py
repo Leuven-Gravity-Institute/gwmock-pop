@@ -99,7 +99,8 @@ def _draw_configuration(draw: CatalogueDraw) -> dict[str, Any]:
     from, so a draw's count of each class can be audited against the mean it
     was drawn from without rebuilding the draw. Whether a class was permitted
     to be sampled with replacement is recorded too, so a draw that may repeat
-    catalogue rows says so.
+    catalogue rows says so. So is whether the sky position and orientation
+    were drawn or read from the catalogue.
 
     Args:
         draw: The draw whose settings are described.
@@ -117,6 +118,7 @@ def _draw_configuration(draw: CatalogueDraw) -> dict[str, Any]:
         "catalogue_order": [resolved.catalogue.name for resolved in draw.resolved],
         "poisson_mean_per_class": dict(draw.expected_per_class),
         "allow_replacement": draw.allow_replacement,
+        "draw_orientation": draw.draw_orientation,
     }
 
 
