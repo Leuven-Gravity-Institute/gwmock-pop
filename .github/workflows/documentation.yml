@@ -38,48 +38,49 @@ jobs:
                   # same-named artifacts in the run, which deploy-pages rejects.
                   name: github-pages-${{ github.run_attempt }}
 
-    # deploy-pages looks the artifact up once, with no retry, and the run's
-    # artifact list can lag the upload: run in the job that uploaded, it found
-    # none a fraction of a second after the upload finalized. So the deploy is
-    # a job of its own, as in GitHub's Pages workflows; it waits until the
-    # artifact is listed, and deploys a second time if the first attempt fails.
-    # The name comes from the build job, so re-running only a failed deploy (a
-    # later attempt) still finds the artifact the earlier build uploaded.
+    # deploy-pages looks the artifact up once, with no retry, through the
+    # Actions artifact service, whose list can lag the upload: run in the job
+    # that uploaded, it found none a fraction of a second after the upload
+    # finalized, and lags of tens of seconds are reported upstream. So the
+    # deploy is a job of its own, as in GitHub's Pages workflows, and a failed
+    # attempt is retried twice, 60 s and then 120 s later. This is bounded
+    # recovery: a lag longer than about three minutes still fails the job, and
+    # re-running the failed job retries again. The artifact's name comes from
+    # the build job, so re-running only the deploy (a later attempt) still
+    # finds the artifact the earlier build uploaded.
     deploy:
         needs: build
         runs-on: ubuntu-latest
         permissions:
-            actions: read
             pages: write
             id-token: write
         environment:
             name: github-pages
+            # The latest attempt that ran: when the job succeeds, the one that deployed.
             url:
-                ${{ steps.deployment.outputs.page_url ||
-                steps.deployment-retry.outputs.page_url }}
+                ${{ steps.deployment-3.outputs.page_url ||
+                steps.deployment-2.outputs.page_url ||
+                steps.deployment-1.outputs.page_url }}
         steps:
-            - name: Wait until the artifact is listed
-              env:
-                  GH_TOKEN: ${{ github.token }}
-                  ARTIFACT: ${{ needs.build.outputs.artifact }}
-              run: |
-                  for _ in $(seq 30); do
-                      count=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts?name=${ARTIFACT}" --jq '.total_count')
-                      if [ "${count}" -ge 1 ]; then exit 0; fi
-                      sleep 10
-                  done
-                  echo "::error::Artifact ${ARTIFACT} was not listed after 5 minutes."
-                  exit 1
-            - id: deployment
+            - id: deployment-1
               continue-on-error: true
               uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
               with:
                   artifact_name: ${{ needs.build.outputs.artifact }}
-            - name: Wait before deploying again
-              if: steps.deployment.outcome == 'failure'
+            - name: Wait before the second attempt
+              if: steps.deployment-1.outcome == 'failure'
               run: sleep 60
-            - id: deployment-retry
-              if: steps.deployment.outcome == 'failure'
+            - id: deployment-2
+              if: steps.deployment-1.outcome == 'failure'
+              continue-on-error: true
+              uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+              with:
+                  artifact_name: ${{ needs.build.outputs.artifact }}
+            - name: Wait before the third attempt
+              if: steps.deployment-2.outcome == 'failure'
+              run: sleep 120
+            - id: deployment-3
+              if: steps.deployment-2.outcome == 'failure'
               uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
               with:
                   artifact_name: ${{ needs.build.outputs.artifact }}
