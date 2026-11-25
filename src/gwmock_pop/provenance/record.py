@@ -27,6 +27,10 @@ Layout versions:
   ``poisson_mean_per_class``, the Poisson mean each class count was drawn from,
   and ``allow_replacement``, whether a class count larger than its catalogue
   was permitted to be sampled with replacement.
+- ``1.2`` -- a ``catalogue_draw`` origin's ``configuration`` also records
+  ``draw_orientation``, whether each row's sky position, inclination,
+  polarisation angle and coalescence phase were drawn from the seed or read
+  from the catalogue.
 """
 
 from __future__ import annotations
@@ -48,7 +52,7 @@ from gwmock_pop.utils.import_utils import import_from_string
 from gwmock_pop.version import __version__
 
 # Version of the record layout documented in this module.
-PROVENANCE_SCHEMA_VERSION = "1.1"
+PROVENANCE_SCHEMA_VERSION = "1.2"
 
 # Name recorded as the producer of a catalogue.
 TOOL_NAME = "gwmock-pop"

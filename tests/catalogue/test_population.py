@@ -20,6 +20,7 @@ from gwmock_pop.catalogue.population import (
     SECONDS_PER_YEAR,
     chirp_mass,
     draw_catalogue_population,
+    draw_catalogue_population_many,
     inband_duration_seconds,
     read_catalogue_columns,
 )
@@ -590,3 +591,132 @@ def test_a_carried_but_undeclared_extra_column_is_refused(tmp_path: Path) -> Non
         draw_catalogue_population(
             allow_replacement=True, seed=0, span_seconds=SECONDS_PER_YEAR * 100.0, resolved=(resolved,)
         )
+
+
+_ANGLES = ("right_ascension", "declination", "inclination", "polarization_angle", "coa_phase")
+_ANGLE_COLUMNS = {
+    "right_ascension": "ra",
+    "declination": "dec",
+    "inclination": "iota",
+    "polarization_angle": "psi",
+    "coa_phase": "Phicoal",
+}
+
+
+@pytest.mark.requires_h5py
+def test_drawing_the_orientation_leaves_every_other_parameter_unchanged(tmp_path: Path) -> None:
+    """With the angles drawn, the rows, times and classes are the draw without the option, bit for bit."""
+    resolved = _large_pair(tmp_path)
+    common = {"seed": 5, "span_seconds": SECONDS_PER_YEAR * 0.5, "resolved": resolved}
+
+    read = draw_catalogue_population(**common)
+    drawn = draw_catalogue_population(draw_orientation=True, **common)
+
+    assert read.draw_orientation is False
+    assert drawn.draw_orientation is True
+    assert drawn.n_rows > 0
+    assert all(count > 0 for count in drawn.drawn_per_class.values())
+    for name in PARAMETER_NAMES:
+        if name in _ANGLES:
+            assert not np.any(drawn.parameters[name] == read.parameters[name]), name
+        else:
+            assert drawn.parameters[name].tobytes() == read.parameters[name].tobytes(), name
+    assert np.array_equal(drawn.population_class, read.population_class)
+    assert drawn.drawn_per_class == read.drawn_per_class
+
+
+@pytest.mark.requires_h5py
+def test_without_the_option_the_angles_are_the_catalogue_rows(tmp_path: Path) -> None:
+    """The default draw reads each row's five angles from the catalogue."""
+    resolved = _large_pair(tmp_path)
+    span = SECONDS_PER_YEAR * 0.5
+
+    draw = draw_catalogue_population(seed=5, span_seconds=span, resolved=resolved)
+
+    rng = np.random.default_rng(5)
+    expected: dict[str, list[np.ndarray]] = {name: [] for name in _ANGLES}
+    for item in resolved:
+        columns = read_catalogue_columns(item.path)
+        n_rows = columns["m1_source"].shape[0]
+        count = int(rng.poisson(n_rows * span / SECONDS_PER_YEAR))
+        indices = rng.choice(n_rows, size=count, replace=False)
+        rng.uniform(0.0, span, size=count)
+        for name, column in _ANGLE_COLUMNS.items():
+            expected[name].append(columns[column][indices])
+    for name, blocks in expected.items():
+        assert draw.parameters[name].tobytes() == np.concatenate(blocks).tobytes(), name
+
+
+@pytest.mark.requires_h5py
+def test_drawn_angles_follow_the_documented_draw(tmp_path: Path) -> None:
+    """The angles are five uniforms per row, drawn after every class, mapped to an isotropic orientation."""
+    resolved = _large_pair(tmp_path)
+    span = SECONDS_PER_YEAR * 0.5
+
+    draw = draw_catalogue_population(seed=8, span_seconds=span, resolved=resolved, draw_orientation=True)
+
+    rng = np.random.default_rng(8)
+    _reference_draw_consuming(rng, resolved, span)
+    uniforms = rng.random((draw.n_rows, 5))
+    expected = {
+        "right_ascension": 2.0 * np.pi * uniforms[:, 0] - np.pi,
+        "declination": np.arcsin(2.0 * uniforms[:, 1] - 1.0),
+        "inclination": np.arccos(2.0 * uniforms[:, 2] - 1.0),
+        "polarization_angle": 2.0 * np.pi * uniforms[:, 3],
+        "coa_phase": 2.0 * np.pi * uniforms[:, 4],
+    }
+    # arcsin(x) and pi/2 - arccos(x) are the same angle but round differently: near the equator the
+    # second carries the rounding of pi/2, about 2e-16 absolute.
+    absolute = {"declination": float(np.spacing(np.pi / 2.0))}
+    for name, values in expected.items():
+        np.testing.assert_allclose(
+            draw.parameters[name], values, rtol=1e-14, atol=absolute.get(name, 0.0), err_msg=name
+        )
+
+
+def _reference_draw_consuming(rng: np.random.Generator, resolved: tuple, span_seconds: float) -> None:
+    """Advance ``rng`` through the documented row and time draws of every class, in order."""
+    for item in resolved:
+        n_rows = read_catalogue_columns(item.path)["m1_source"].shape[0]
+        count = int(rng.poisson(n_rows * span_seconds / SECONDS_PER_YEAR))
+        if count == 0:
+            continue
+        rng.choice(n_rows, size=count, replace=count > n_rows)
+        rng.uniform(0.0, span_seconds, size=count)
+
+
+@pytest.mark.requires_h5py
+def test_drawn_angles_are_isotropic(tmp_path: Path) -> None:
+    """Over many rows the sky is isotropic and the inclination uniform in its cosine."""
+    stats = pytest.importorskip("scipy.stats")
+    resolved = _large_pair(tmp_path, n_rows=4000)
+
+    draw = draw_catalogue_population(
+        seed=3, span_seconds=SECONDS_PER_YEAR * 0.9, resolved=resolved, draw_orientation=True
+    )
+
+    assert draw.n_rows > 6000
+    angles = draw.parameters
+    for name, values in (
+        ("right_ascension", (angles["right_ascension"] + np.pi) / (2.0 * np.pi)),
+        ("sin declination", (np.sin(angles["declination"]) + 1.0) / 2.0),
+        ("cos inclination", (np.cos(angles["inclination"]) + 1.0) / 2.0),
+        ("polarization_angle", angles["polarization_angle"] / (2.0 * np.pi)),
+        ("coa_phase", angles["coa_phase"] / (2.0 * np.pi)),
+    ):
+        assert stats.kstest(values, "uniform").pvalue > 1e-3, name
+
+
+@pytest.mark.requires_h5py
+def test_many_draws_pass_the_option_to_every_seed(tmp_path: Path) -> None:
+    """Each draw of a repeated draw has its angles drawn, as a single draw with its seed would."""
+    resolved = _large_pair(tmp_path)
+    span = SECONDS_PER_YEAR * 0.5
+
+    draws = draw_catalogue_population_many(seeds=(2, 4), span_seconds=span, resolved=resolved, draw_orientation=True)
+
+    for seed, draw in zip((2, 4), draws, strict=True):
+        single = draw_catalogue_population(seed=seed, span_seconds=span, resolved=resolved, draw_orientation=True)
+        assert draw.draw_orientation is True
+        for name in _ANGLES:
+            assert draw.parameters[name].tobytes() == single.parameters[name].tobytes(), name

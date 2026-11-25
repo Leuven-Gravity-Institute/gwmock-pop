@@ -5,7 +5,8 @@ into the parameter set a search engine injects. It answers "which mergers
 happen in this window, and with what parameters" without a population model of
 its own: the masses, spins, distances and sky positions are read from the
 catalogue row by row, and only the number of rows and the merger times are
-drawn.
+drawn. With ``draw_orientation`` set, the sky position, inclination,
+polarisation angle and coalescence phase are drawn as well (see below).
 
 Three properties are deliberate and are what makes the result usable as a
 producer artefact.
@@ -34,6 +35,19 @@ source-frame total mass -- because the published catalogue product has no
 separate intermediate-mass file. It is a labelling convention and is recorded as
 such in the draw's provenance, not a claim about the catalogue.
 
+**Sky position and orientation can be drawn.** A catalogue row also fixes the
+source's sky position, inclination, polarisation angle and coalescence phase.
+When the catalogue is public and the drawn data are to be analysed without the
+truth, an analyst could match an event to its row and read these off. With
+``draw_orientation`` set, each row's five angles are drawn from the seeded
+generator instead -- isotropic sky, inclination uniform in its cosine, uniform
+polarisation angle and phase, the convention of the MDC-list generators -- and
+the catalogue's values are not used. The angles do not depend on the population
+model, so the population is unchanged. The in-plane spin components are defined
+in the frame of the orbital angular momentum, so they keep their meaning. The
+angles are drawn once, after every class's rows and merger times, so every other
+parameter is the same as in the draw without the option, bit for bit.
+
 **Columns a file declares are carried.** Every catalogue gives the aligned spin
 components; a file that also carries in-plane spin components or tidal
 deformabilities declares them in its manifest entry, and the draw emits them.
@@ -58,6 +72,7 @@ from gwmock_data import hdf5
 
 from gwmock_pop.catalogue.layouts import read_layout
 from gwmock_pop.catalogue.manifest import COBA_CATALOGUES, OPTIONAL_COLUMNS, CatalogueFile
+from gwmock_pop.catalogue.mdc_list import _angles_from_uniforms
 from gwmock_pop.catalogue.source import ResolvedCatalogue, fetch_catalogues
 from gwmock_pop.exceptions import PopulationValidationError
 
@@ -173,6 +188,9 @@ class CatalogueDraw:
         resolved: The verified catalogue files the draw was made from.
         allow_replacement: Whether a class whose count exceeds its catalogue's
             rows was permitted to be sampled with replacement.
+        draw_orientation: Whether each row's sky position, inclination,
+            polarisation angle and coalescence phase were drawn from the seeded
+            generator instead of read from the catalogue.
     """
 
     seed: int
@@ -190,6 +208,7 @@ class CatalogueDraw:
     drawn_per_class: Mapping[str, int]
     resolved: tuple[ResolvedCatalogue, ...] = field(repr=False)
     allow_replacement: bool = False
+    draw_orientation: bool = False
 
     @property
     def n_rows(self) -> int:
@@ -442,6 +461,7 @@ def draw_catalogue_population(  # noqa: PLR0913  # the draw's settings, named at
     offline: bool = False,
     timeout: int = 300,
     allow_replacement: bool = False,
+    draw_orientation: bool = False,
 ) -> CatalogueDraw:
     """Draw a seeded population from pinned catalogues into injection parameters.
 
@@ -473,6 +493,10 @@ def draw_catalogue_population(  # noqa: PLR0913  # the draw's settings, named at
         allow_replacement: Whether a class count larger than its catalogue may
             be sampled with replacement, repeating rows, instead of being
             refused. A count the catalogue can meet is unaffected.
+        draw_orientation: Whether to draw each row's sky position,
+            inclination, polarisation angle and coalescence phase from the
+            seeded generator instead of reading them from the catalogue, so
+            that a public catalogue does not reveal them.
 
     Returns:
         The draw, its parameters and its class labels.
@@ -536,6 +560,10 @@ def draw_catalogue_population(  # noqa: PLR0913  # the draw's settings, named at
         name: np.concatenate(blocks) if blocks else np.empty(0, dtype=float)
         for name, blocks in parameter_blocks.items()
     }
+    if draw_orientation:
+        # Drawn once, after every class's rows and merger times, so the rest of the draw is the
+        # draw without the option, bit for bit.
+        parameters.update(_angles_from_uniforms(rng.random((parameters["coa_time"].shape[0], 5))))
     source_class = np.asarray(source_classes, dtype=object)
     mass_1 = parameters["detector_frame_mass_1"]
     mass_2 = parameters["detector_frame_mass_2"]
@@ -566,6 +594,7 @@ def draw_catalogue_population(  # noqa: PLR0913  # the draw's settings, named at
         drawn_per_class=drawn_per_class,
         resolved=resolved_catalogues,
         allow_replacement=bool(allow_replacement),
+        draw_orientation=bool(draw_orientation),
     )
 
 
@@ -583,6 +612,7 @@ def draw_catalogue_population_many(  # noqa: PLR0913  # the draw's settings, nam
     offline: bool = False,
     timeout: int = 300,
     allow_replacement: bool = False,
+    draw_orientation: bool = False,
 ) -> tuple[CatalogueDraw, ...]:
     """Draw the same population once per seed.
 
@@ -606,6 +636,9 @@ def draw_catalogue_population_many(  # noqa: PLR0913  # the draw's settings, nam
         timeout: Timeout in seconds for each catalogue download.
         allow_replacement: Whether a class count larger than its catalogue may
             be sampled with replacement instead of being refused.
+        draw_orientation: Whether to draw each row's sky position,
+            inclination, polarisation angle and coalescence phase from the
+            seeded generator instead of reading them from the catalogue.
 
     Returns:
         One draw per seed, in seed order.
@@ -627,6 +660,7 @@ def draw_catalogue_population_many(  # noqa: PLR0913  # the draw's settings, nam
             band_detector_frame_chirp_mass=band_detector_frame_chirp_mass,
             imbh_total_mass_threshold=imbh_total_mass_threshold,
             allow_replacement=allow_replacement,
+            draw_orientation=draw_orientation,
         )
         for seed in seeds
     )

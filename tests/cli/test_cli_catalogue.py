@@ -202,6 +202,8 @@ def test_catalogue_command_records_whether_replacement_was_allowed(
     assert provenance["origin"]["configuration"]["allow_replacement"] is allow_replacement
     payload = json.loads(stamp.read_text(encoding="utf-8"))
     assert payload["configuration"]["allow_replacement"] is allow_replacement
+    # The command reads the angles from the catalogue rows, and says so.
+    assert provenance["origin"]["configuration"]["draw_orientation"] is False
 
 
 def test_catalogue_command_regeneration_is_data_deterministic(offline_pair: tuple[Path, Path], tmp_path: Path) -> None:
